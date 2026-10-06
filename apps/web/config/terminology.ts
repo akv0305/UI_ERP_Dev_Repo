@@ -105,6 +105,10 @@ export const terminology = {
     searchPlaceholder: 'Search...',
     empty: 'No results found.',
   },
+  validation: {
+    required: 'This field is required.',
+    invalidQuantity: 'Enter a valid quantity.',
+  },
   gallery: {
     description: 'Every shared component rendered with sample data.',
     density: 'Density',
@@ -114,6 +118,7 @@ export const terminology = {
     sectionKeyValue: 'Key/value grid',
     sectionFeedback: 'Feedback states',
     sectionDialog: 'Confirm dialog',
+    sectionToast: 'Toasts',
     sectionTable: 'Data table',
     sectionFilters: 'Filter bar',
     sectionForm: 'Form layout and fields',
