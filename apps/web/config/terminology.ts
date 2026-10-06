@@ -67,6 +67,7 @@ export const terminology = {
     back: 'Back',
     confirm: 'Confirm',
     retry: 'Retry',
+    close: 'Close',
     checkHealth: 'Check API health',
     checking: 'Checking...',
   },

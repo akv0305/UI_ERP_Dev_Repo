@@ -37,7 +37,7 @@ describe('navigation', () => {
     const groups = getVisibleGroups(['planning.wbs.view']);
 
     expect(groups).toHaveLength(1);
-    expect(groups[0]?.labelKey).toBe('nav.planning');
+    expect(groups[0]?.labelKey).toBe('planning');
     expect(groups[0]?.items).toHaveLength(1);
   });
 
@@ -48,13 +48,13 @@ describe('navigation', () => {
 
 describe('findNavigationTrail', () => {
   it('returns the home item for /home', () => {
-    expect(findNavigationTrail('/home')).toEqual([{ labelKey: 'nav.home', href: '/home' }]);
+    expect(findNavigationTrail('/home')).toEqual([{ labelKey: 'home', href: '/home' }]);
   });
 
   it('returns the group and item for a menu route', () => {
     expect(findNavigationTrail('/purchase/indents')).toEqual([
-      { labelKey: 'nav.purchase' },
-      { labelKey: 'nav.indents', href: '/purchase/indents' },
+      { labelKey: 'purchase' },
+      { labelKey: 'indents', href: '/purchase/indents' },
     ]);
   });
 

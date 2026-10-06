@@ -25,6 +25,9 @@ import {
   Warehouse,
   type LucideIcon,
 } from 'lucide-react';
+import { terminology } from './terminology';
+
+export type NavigationLabelKey = keyof typeof terminology.nav;
 
 export const ALL_PERMISSIONS = [
   'purchase.indents.view',
@@ -55,58 +58,58 @@ export const ALL_PERMISSIONS = [
 export type Permission = (typeof ALL_PERMISSIONS)[number];
 
 export interface NavigationItem {
-  labelKey: string;
+  labelKey: NavigationLabelKey;
   href: string;
   icon: LucideIcon;
   permission?: Permission;
 }
 
 export interface NavigationGroup {
-  labelKey: string;
+  labelKey: NavigationLabelKey;
   items: NavigationItem[];
 }
 
 export interface Breadcrumb {
-  labelKey: string;
+  labelKey: NavigationLabelKey;
   href?: string;
 }
 
 export const HOME_ITEM: NavigationItem = {
-  labelKey: 'nav.home',
+  labelKey: 'home',
   href: '/home',
   icon: Home,
 };
 
 export const navigation: NavigationGroup[] = [
   {
-    labelKey: 'nav.purchase',
+    labelKey: 'purchase',
     items: [
       {
-        labelKey: 'nav.indents',
+        labelKey: 'indents',
         href: '/purchase/indents',
         icon: ClipboardList,
         permission: 'purchase.indents.view',
       },
       {
-        labelKey: 'nav.enquiries',
+        labelKey: 'enquiries',
         href: '/purchase/enquiries',
         icon: FileSearch,
         permission: 'purchase.enquiries.view',
       },
       {
-        labelKey: 'nav.quotations',
+        labelKey: 'quotations',
         href: '/purchase/quotations',
         icon: FileText,
         permission: 'purchase.quotations.view',
       },
       {
-        labelKey: 'nav.comparisons',
+        labelKey: 'comparisons',
         href: '/purchase/comparisons',
         icon: GitCompare,
         permission: 'purchase.comparisons.view',
       },
       {
-        labelKey: 'nav.purchaseOrders',
+        labelKey: 'purchaseOrders',
         href: '/purchase/purchase-orders',
         icon: ShoppingCart,
         permission: 'purchase.purchaseOrders.view',
@@ -114,34 +117,34 @@ export const navigation: NavigationGroup[] = [
     ],
   },
   {
-    labelKey: 'nav.stores',
+    labelKey: 'stores',
     items: [
       {
-        labelKey: 'nav.goodsReceipts',
+        labelKey: 'goodsReceipts',
         href: '/stores/goods-receipts',
         icon: PackageCheck,
         permission: 'stores.goodsReceipts.view',
       },
       {
-        labelKey: 'nav.qualityCheck',
+        labelKey: 'qualityCheck',
         href: '/stores/quality-check',
         icon: ShieldCheck,
         permission: 'stores.qualityCheck.view',
       },
       {
-        labelKey: 'nav.stock',
+        labelKey: 'stock',
         href: '/stores/stock',
         icon: Boxes,
         permission: 'stores.stock.view',
       },
       {
-        labelKey: 'nav.materialIssues',
+        labelKey: 'materialIssues',
         href: '/stores/material-issues',
         icon: PackageMinus,
         permission: 'stores.materialIssues.view',
       },
       {
-        labelKey: 'nav.rejectedMaterialReturns',
+        labelKey: 'rejectedMaterialReturns',
         href: '/stores/rejected-material-returns',
         icon: Undo2,
         permission: 'stores.rejectedMaterialReturns.view',
@@ -149,10 +152,10 @@ export const navigation: NavigationGroup[] = [
     ],
   },
   {
-    labelKey: 'nav.planning',
+    labelKey: 'planning',
     items: [
       {
-        labelKey: 'nav.wbs',
+        labelKey: 'wbs',
         href: '/planning/wbs',
         icon: Network,
         permission: 'planning.wbs.view',
@@ -160,34 +163,34 @@ export const navigation: NavigationGroup[] = [
     ],
   },
   {
-    labelKey: 'nav.masters',
+    labelKey: 'masters',
     items: [
       {
-        labelKey: 'nav.companies',
+        labelKey: 'companies',
         href: '/masters/companies',
         icon: Building2,
         permission: 'masters.companies.view',
       },
       {
-        labelKey: 'nav.projects',
+        labelKey: 'projects',
         href: '/masters/projects',
         icon: FolderKanban,
         permission: 'masters.projects.view',
       },
       {
-        labelKey: 'nav.sitesAndStores',
+        labelKey: 'sitesAndStores',
         href: '/masters/sites-and-stores',
         icon: Warehouse,
         permission: 'masters.sitesAndStores.view',
       },
       {
-        labelKey: 'nav.items',
+        labelKey: 'items',
         href: '/masters/items',
         icon: Package,
         permission: 'masters.items.view',
       },
       {
-        labelKey: 'nav.vendors',
+        labelKey: 'vendors',
         href: '/masters/vendors',
         icon: Truck,
         permission: 'masters.vendors.view',
@@ -195,46 +198,46 @@ export const navigation: NavigationGroup[] = [
     ],
   },
   {
-    labelKey: 'nav.administration',
+    labelKey: 'administration',
     items: [
       {
-        labelKey: 'nav.users',
+        labelKey: 'users',
         href: '/administration/users',
         icon: Users,
         permission: 'administration.users.view',
       },
       {
-        labelKey: 'nav.rolesAndPermissions',
+        labelKey: 'rolesAndPermissions',
         href: '/administration/roles-and-permissions',
         icon: Shield,
         permission: 'administration.rolesAndPermissions.view',
       },
       {
-        labelKey: 'nav.approvalMatrix',
+        labelKey: 'approvalMatrix',
         href: '/administration/approval-matrix',
         icon: GitBranch,
         permission: 'administration.approvalMatrix.view',
       },
       {
-        labelKey: 'nav.numberSeries',
+        labelKey: 'numberSeries',
         href: '/administration/number-series',
         icon: Hash,
         permission: 'administration.numberSeries.view',
       },
       {
-        labelKey: 'nav.auditLog',
+        labelKey: 'auditLog',
         href: '/administration/audit-log',
         icon: ScrollText,
         permission: 'administration.auditLog.view',
       },
       {
-        labelKey: 'nav.systemHealth',
+        labelKey: 'systemHealth',
         href: '/administration/system-health',
         icon: Activity,
         permission: 'administration.systemHealth.view',
       },
       {
-        labelKey: 'nav.componentGallery',
+        labelKey: 'componentGallery',
         href: '/administration/component-gallery',
         icon: Component,
         permission: 'administration.componentGallery.view',

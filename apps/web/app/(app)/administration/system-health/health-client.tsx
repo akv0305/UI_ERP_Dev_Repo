@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { HealthResponse } from '@uie/contracts';
-import { HealthFields } from '@/app/health-fields';
 import { terminology } from '@/config/terminology';
+import { HealthFields } from './health-fields';
 
 type ClientState =
   | { kind: 'idle' }
@@ -29,7 +29,7 @@ export function HealthClient() {
   }
 
   return (
-    <section className="rounded-lg border p-4">
+    <section className="rounded-lg border border-border bg-surface p-4">
       <h2 className="mb-1 text-lg font-medium">{terminology.home.clientSectionTitle}</h2>
       <p className="mb-3 text-sm text-muted-foreground">{terminology.home.clientSectionHint}</p>
 
