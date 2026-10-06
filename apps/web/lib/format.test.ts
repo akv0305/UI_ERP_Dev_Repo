@@ -18,6 +18,24 @@ describe('formatINR', () => {
   it('formats negative amounts', () => {
     expect(formatINR(-1234.5)).toBe('-₹1,234.50');
   });
+
+  it('formats decimal strings with Indian grouping and two decimals', () => {
+    expect(formatINR('1234567.895')).toBe('₹12,34,567.90');
+    expect(formatINR('1234567.89')).toBe('₹12,34,567.89');
+  });
+
+  it('pads short decimal strings instead of converting through parseFloat', () => {
+    expect(formatINR('0.1')).toBe('₹0.10');
+    expect(formatINR('1000')).toBe('₹1,000.00');
+  });
+
+  it('formats negative decimal strings', () => {
+    expect(formatINR('-1234.5')).toBe('-₹1,234.50');
+  });
+
+  it('carries into the integer part when rounding up', () => {
+    expect(formatINR('9.999')).toBe('₹10.00');
+  });
 });
 
 describe('formatQty', () => {
@@ -28,6 +46,20 @@ describe('formatQty', () => {
 
   it('uses Indian digit grouping', () => {
     expect(formatQty(1234567.891, 2)).toBe('12,34,567.89');
+  });
+
+  it('formats decimal strings with the requested decimals', () => {
+    expect(formatQty('1234567.895', 2)).toBe('12,34,567.90');
+    expect(formatQty('0.1', 2)).toBe('0.10');
+  });
+
+  it('rounds decimal strings half up', () => {
+    expect(formatQty('1.005', 2)).toBe('1.01');
+    expect(formatQty('1.004', 2)).toBe('1.00');
+  });
+
+  it('supports zero decimals for string input', () => {
+    expect(formatQty('1234.6', 0)).toBe('1,235');
   });
 });
 
