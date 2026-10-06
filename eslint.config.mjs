@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import boundaries from 'eslint-plugin-boundaries';
 import prettierConfig from 'eslint-config-prettier';
 import prettierPlugin from 'eslint-plugin-prettier';
+import react from 'eslint-plugin-react';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -88,6 +89,44 @@ export default tseslint.config(
           ],
         },
       ],
+    },
+  },
+  {
+    files: [
+      'apps/web/app/**/*.{js,jsx,ts,tsx}',
+      'apps/web/components/**/*.{js,jsx,ts,tsx}',
+      'apps/web/features/**/*.{js,jsx,ts,tsx}',
+    ],
+    plugins: { react },
+    rules: {
+      'react/jsx-no-literals': ['error', { noStrings: true, ignoreProps: true }],
+    },
+  },
+  {
+    files: ['apps/web/**/*.{js,jsx,ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/]',
+          message: 'Hex colour literals are only allowed in config/theme.ts.',
+        },
+        {
+          selector: 'Literal[value=/^(?:rgb|rgba|hsl|hsla)\\(/]',
+          message: 'rgb()/hsl() colour literals are only allowed in config/theme.ts.',
+        },
+        {
+          selector:
+            'TemplateElement[value.raw=/(?:#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})|(?:rgb|rgba|hsl|hsla)\\()/]',
+          message: 'Colour literals are only allowed in config/theme.ts.',
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/web/config/theme.ts'],
+    rules: {
+      'no-restricted-syntax': 'off',
     },
   },
   {
