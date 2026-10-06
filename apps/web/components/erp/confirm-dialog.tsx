@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -16,6 +17,9 @@ export interface ConfirmDialogProps {
   description?: string;
   confirmLabel?: string;
   tone?: 'default' | 'danger';
+  /** Optional extra content (for example an input) shown between the description and the buttons. */
+  children?: ReactNode;
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onOpenChange: (open: boolean) => void;
 }
@@ -26,6 +30,8 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   tone = 'default',
+  children,
+  confirmDisabled = false,
   onConfirm,
   onOpenChange,
 }: ConfirmDialogProps) {
@@ -36,6 +42,7 @@ export function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </div>
+        {children}
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             {terminology.actions.cancel}
@@ -43,6 +50,7 @@ export function ConfirmDialog({
           <Button
             type="button"
             variant={tone === 'danger' ? 'destructive' : 'default'}
+            disabled={confirmDisabled}
             onClick={() => {
               onConfirm();
               onOpenChange(false);

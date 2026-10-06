@@ -20,7 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -73,6 +73,13 @@ export interface DataTableProps<TData extends RowData> {
   onRowClick?: (row: TData) => void;
 }
 
+const ROW_FOCUS_CLASSES =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring';
+
+function stopPropagation(event: { stopPropagation: () => void }): void {
+  event.stopPropagation();
+}
+
 function getColumnLabel(header: unknown, id: string): string {
   return typeof header === 'string' ? header : id;
 }
@@ -113,6 +120,18 @@ export function DataTable<TData extends RowData>({
   }
 
   const rows = table.getRowModel().rows;
+
+  // Enter/Space on the focused row activates it; keys pressed on controls inside the row do not.
+  function handleRowKeyDown(event: KeyboardEvent<HTMLElement>, row: TData): void {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onRowClick?.(row);
+    }
+  }
 
   if (rows.length === 0) {
     return <EmptyState title={terminology.labels.noData} />;
@@ -209,9 +228,15 @@ export function DataTable<TData extends RowData>({
               <tr
                 key={row.id}
                 onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                onKeyDown={
+                  onRowClick ? (event) => handleRowKeyDown(event, row.original) : undefined
+                }
+                tabIndex={onRowClick ? 0 : undefined}
                 className={cn(
                   'border-b border-border last:border-0',
-                  onRowClick ? 'cursor-pointer hover:bg-surface-muted' : undefined,
+                  onRowClick
+                    ? cn('cursor-pointer hover:bg-surface-muted', ROW_FOCUS_CLASSES)
+                    : undefined,
                 )}
               >
                 {row.getVisibleCells().map((cell) => {
@@ -231,7 +256,11 @@ export function DataTable<TData extends RowData>({
                   );
                 })}
                 {hasActions ? (
-                  <td className="h-[var(--row-height)] px-3 text-right">
+                  <td
+                    className="h-[var(--row-height)] px-3 text-right"
+                    onClick={stopPropagation}
+                    onKeyDown={stopPropagation}
+                  >
                     {rowActions(row.original)}
                   </td>
                 ) : null}
@@ -246,9 +275,14 @@ export function DataTable<TData extends RowData>({
           <div
             key={row.id}
             onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+            onKeyDown={onRowClick ? (event) => handleRowKeyDown(event, row.original) : undefined}
+            tabIndex={onRowClick ? 0 : undefined}
+            role={onRowClick ? 'button' : undefined}
             className={cn(
               'rounded-lg border border-border bg-surface p-[var(--card-padding)]',
-              onRowClick ? 'cursor-pointer hover:bg-surface-muted' : undefined,
+              onRowClick
+                ? cn('cursor-pointer hover:bg-surface-muted', ROW_FOCUS_CLASSES)
+                : undefined,
             )}
           >
             <dl className="space-y-2">
@@ -264,7 +298,11 @@ export function DataTable<TData extends RowData>({
               ))}
             </dl>
             {hasActions ? (
-              <div className="mt-3 flex justify-end border-t border-border pt-3">
+              <div
+                className="mt-3 flex justify-end border-t border-border pt-3"
+                onClick={stopPropagation}
+                onKeyDown={stopPropagation}
+              >
                 {rowActions(row.original)}
               </div>
             ) : null}

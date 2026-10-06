@@ -12,3 +12,5 @@ export type HealthResponse = z.infer<typeof HealthResponse>;
 export * from './permissions';
 
 export * from './auth';
+
+export * from './admin';
