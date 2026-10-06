@@ -60,3 +60,35 @@ export const MeResponse = z.object({
 });
 
 export type MeResponse = z.infer<typeof MeResponse>;
+
+export interface PasswordFormMessages {
+  required: string;
+  tooShort: string;
+  needsLetter: string;
+  needsDigit: string;
+  mismatch: string;
+}
+
+/**
+ * Change-password form schema (adds confirmPassword). The messages are passed in so that
+ * the web app supplies on-screen text from its terminology file; the rules are the same as ChangePasswordRequest.
+ */
+export function createChangePasswordFormSchema(messages: PasswordFormMessages) {
+  return z
+    .object({
+      currentPassword: z.string().min(1, messages.required),
+      newPassword: z
+        .string()
+        .min(PASSWORD_MIN_LENGTH, messages.tooShort)
+        .max(PASSWORD_MAX_LENGTH)
+        .regex(/[A-Za-z]/, messages.needsLetter)
+        .regex(/\d/, messages.needsDigit),
+      confirmPassword: z.string().min(1, messages.required),
+    })
+    .refine((values) => values.newPassword === values.confirmPassword, {
+      path: ['confirmPassword'],
+      message: messages.mismatch,
+    });
+}
+
+export type ChangePasswordFormValues = z.infer<ReturnType<typeof createChangePasswordFormSchema>>;

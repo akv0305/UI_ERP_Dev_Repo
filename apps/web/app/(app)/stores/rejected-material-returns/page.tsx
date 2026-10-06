@@ -2,8 +2,8 @@ import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
 import { requirePermission } from '@/lib/auth/require-permission';
 
-export default function RejectedMaterialReturnsPage() {
-  if (!requirePermission('stores.rejectedMaterialReturns.view')) {
+export default async function RejectedMaterialReturnsPage() {
+  if (!(await requirePermission('stores.rejectedMaterialReturns.view'))) {
     return <NotAuthorised />;
   }
 

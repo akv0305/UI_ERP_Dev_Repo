@@ -11,10 +11,19 @@ export interface TopBarProps {
   companies: SwitcherOption[];
   projects: SwitcherOption[];
   notificationCount: number;
+  displayName: string;
+  onSignOut: () => void | Promise<void>;
   onOpenMenu: () => void;
 }
 
-export function TopBar({ companies, projects, notificationCount, onOpenMenu }: TopBarProps) {
+export function TopBar({
+  companies,
+  projects,
+  notificationCount,
+  displayName,
+  onSignOut,
+  onOpenMenu,
+}: TopBarProps) {
   return (
     <header className="flex h-[var(--top-bar-height)] items-center gap-3 border-b border-border bg-surface px-4">
       <button
@@ -34,7 +43,7 @@ export function TopBar({ companies, projects, notificationCount, onOpenMenu }: T
           <Switcher options={projects} placeholder={terminology.shell.selectProject} />
         </div>
         <NotificationBell count={notificationCount} />
-        <UserMenu />
+        <UserMenu displayName={displayName} onSignOut={onSignOut} />
       </div>
     </header>
   );

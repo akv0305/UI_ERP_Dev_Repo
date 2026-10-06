@@ -9,7 +9,8 @@ export interface TextFieldProps<
   TValues extends FieldValues = FieldValues,
 > extends BaseFieldProps<TValues> {
   placeholder?: string;
-  type?: 'text' | 'email' | 'tel';
+  type?: 'text' | 'email' | 'tel' | 'password';
+  autoComplete?: string;
 }
 
 export function TextField<TValues extends FieldValues = FieldValues>({
@@ -21,6 +22,7 @@ export function TextField<TValues extends FieldValues = FieldValues>({
   className,
   placeholder,
   type = 'text',
+  autoComplete,
 }: TextFieldProps<TValues>) {
   const { control } = useFormContext<TValues>();
   const { field, fieldState } = useController({ name, control, disabled });
@@ -38,6 +40,7 @@ export function TextField<TValues extends FieldValues = FieldValues>({
       <Input
         id={id}
         type={type}
+        autoComplete={autoComplete}
         name={field.name}
         placeholder={placeholder}
         disabled={disabled}

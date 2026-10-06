@@ -13,6 +13,8 @@ import type { SwitcherOption } from './switcher';
 export interface AppShellProps {
   children: ReactNode;
   permissions: Permission[];
+  displayName: string;
+  onSignOut: () => void | Promise<void>;
   companies: SwitcherOption[];
   projects: SwitcherOption[];
   notificationCount: number;
@@ -21,6 +23,8 @@ export interface AppShellProps {
 export function AppShell({
   children,
   permissions,
+  displayName,
+  onSignOut,
   companies,
   projects,
   notificationCount,
@@ -59,6 +63,8 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar
           companies={companies}
+          displayName={displayName}
+          onSignOut={onSignOut}
           projects={projects}
           notificationCount={notificationCount}
           onOpenMenu={() => setMobileOpen(true)}

@@ -25,7 +25,7 @@ async function fetchServerHealth(): Promise<HealthResponse | null> {
 }
 
 export default async function SystemHealthPage() {
-  if (!requirePermission('administration.systemHealth.view')) {
+  if (!(await requirePermission('administration.systemHealth.view'))) {
     return <NotAuthorised />;
   }
 

@@ -1,6 +1,6 @@
 import type { Permission } from '@uie/contracts';
 import { getCurrentPermissions } from './permissions';
 
-export function requirePermission(permission: Permission): boolean {
-  return getCurrentPermissions().includes(permission);
+export async function requirePermission(permission: Permission): Promise<boolean> {
+  return (await getCurrentPermissions()).includes(permission);
 }

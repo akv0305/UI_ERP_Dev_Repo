@@ -2,8 +2,8 @@ import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
 import { requirePermission } from '@/lib/auth/require-permission';
 
-export default function SitesAndStoresPage() {
-  if (!requirePermission('masters.sitesAndStores.view')) {
+export default async function SitesAndStoresPage() {
+  if (!(await requirePermission('masters.sitesAndStores.view'))) {
     return <NotAuthorised />;
   }
 

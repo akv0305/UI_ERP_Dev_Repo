@@ -13,8 +13,27 @@ export const terminology = {
   },
   login: {
     heading: 'Sign in',
-    loginId: 'Login ID',
+    loginId: 'Employee code / Username or Email',
     password: 'Password',
+    submit: 'Sign in',
+    submitting: 'Signing in...',
+    invalidCredentials: 'The employee code, username, email or password is incorrect.',
+    accountLocked:
+      'This account is temporarily locked. Try again in 15 minutes or contact an administrator.',
+    rateLimited: 'Too many sign-in attempts. Please wait a minute and try again.',
+    genericError: 'Could not sign in. Please try again.',
+  },
+  account: {
+    changePasswordTitle: 'Change password',
+    changePasswordRequired: 'You must change your password before you continue.',
+    currentPassword: 'Current password',
+    newPassword: 'New password',
+    confirmPassword: 'Confirm new password',
+    passwordPolicy: 'At least 8 characters, with at least one letter and one digit.',
+    passwordChanged: 'Password changed.',
+    invalidCurrentPassword: 'The current password is incorrect.',
+    changePasswordError: 'Could not change the password. Please try again.',
+    logoutError: 'Could not sign out. Please try again.',
   },
   nav: {
     home: 'Home',
@@ -108,6 +127,10 @@ export const terminology = {
   validation: {
     required: 'This field is required.',
     invalidQuantity: 'Enter a valid quantity.',
+    passwordTooShort: 'Use at least 8 characters.',
+    passwordNeedsLetter: 'Include at least one letter.',
+    passwordNeedsDigit: 'Include at least one digit.',
+    passwordMismatch: 'The passwords do not match.',
   },
   gallery: {
     description: 'Every shared component rendered with sample data.',
@@ -144,6 +167,7 @@ export const terminology = {
   },
   shell: {
     signOut: 'Sign out',
+    changePassword: 'Change password',
     profile: 'Profile',
     selectCompany: 'Select company',
     selectProject: 'Select project',

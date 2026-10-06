@@ -2,8 +2,8 @@ import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
 import { requirePermission } from '@/lib/auth/require-permission';
 
-export default function RolesAndPermissionsPage() {
-  if (!requirePermission('administration.rolesAndPermissions.view')) {
+export default async function RolesAndPermissionsPage() {
+  if (!(await requirePermission('administration.rolesAndPermissions.view'))) {
     return <NotAuthorised />;
   }
 

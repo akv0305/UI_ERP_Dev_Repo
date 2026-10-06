@@ -2,8 +2,8 @@ import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
 import { requirePermission } from '@/lib/auth/require-permission';
 
-export default function QualityCheckPage() {
-  if (!requirePermission('stores.qualityCheck.view')) {
+export default async function QualityCheckPage() {
+  if (!(await requirePermission('stores.qualityCheck.view'))) {
     return <NotAuthorised />;
   }
 

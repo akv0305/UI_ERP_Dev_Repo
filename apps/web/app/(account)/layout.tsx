@@ -6,7 +6,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AppLayout({ children }: { children: ReactNode }) {
+export default async function AccountLayout({ children }: { children: ReactNode }) {
   const user = await getCurrentUser();
 
   if (user === null) {
@@ -14,7 +14,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   if (user.mustChangePassword) {
-    redirect('/account/change-password');
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md">{children}</div>
+      </main>
+    );
   }
 
   return (
@@ -26,7 +30,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       projects={[]}
       notificationCount={0}
     >
-      {children}
+      <div className="max-w-md">{children}</div>
     </AppShell>
   );
 }
