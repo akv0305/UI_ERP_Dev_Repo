@@ -1,11 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HealthResponse } from '@uie/contracts';
+import { Public } from '../auth/auth.decorators';
 
 @Controller('health')
 export class HealthController {
   constructor(private readonly configService: ConfigService) {}
 
+  @Public()
   @Get()
   getHealth(): HealthResponse {
     return HealthResponse.parse({
