@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { CSSProperties, ReactNode } from 'react';
+import { Toaster } from 'sonner';
 import { fontSans } from '@/app/fonts';
 import { terminology } from '@/config/terminology';
 import { theme } from '@/config/theme';
@@ -61,7 +62,10 @@ function buildThemeVariables(): CSSProperties {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={fontSans.variable} style={buildThemeVariables()}>
-      <body className="min-h-screen bg-background text-foreground antialiased">{children}</body>
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        {children}
+        <Toaster position="top-right" />
+      </body>
     </html>
   );
 }
