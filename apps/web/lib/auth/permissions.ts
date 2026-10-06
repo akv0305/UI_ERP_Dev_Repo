@@ -1,4 +1,4 @@
-import { ALL_PERMISSIONS, type Permission } from '@/config/navigation';
+import { ALL_PERMISSIONS, type Permission } from '@uie/contracts';
 
 const GRANT_ALL = '*';
 

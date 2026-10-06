@@ -25,37 +25,10 @@ import {
   Warehouse,
   type LucideIcon,
 } from 'lucide-react';
+import type { Permission } from '@uie/contracts';
 import { terminology } from './terminology';
 
 export type NavigationLabelKey = keyof typeof terminology.nav;
-
-export const ALL_PERMISSIONS = [
-  'purchase.indents.view',
-  'purchase.enquiries.view',
-  'purchase.quotations.view',
-  'purchase.comparisons.view',
-  'purchase.purchaseOrders.view',
-  'stores.goodsReceipts.view',
-  'stores.qualityCheck.view',
-  'stores.stock.view',
-  'stores.materialIssues.view',
-  'stores.rejectedMaterialReturns.view',
-  'planning.wbs.view',
-  'masters.companies.view',
-  'masters.projects.view',
-  'masters.sitesAndStores.view',
-  'masters.items.view',
-  'masters.vendors.view',
-  'administration.users.view',
-  'administration.rolesAndPermissions.view',
-  'administration.approvalMatrix.view',
-  'administration.numberSeries.view',
-  'administration.auditLog.view',
-  'administration.systemHealth.view',
-  'administration.componentGallery.view',
-] as const;
-
-export type Permission = (typeof ALL_PERMISSIONS)[number];
 
 export interface NavigationItem {
   labelKey: NavigationLabelKey;

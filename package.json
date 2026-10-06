@@ -16,7 +16,11 @@
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @uie/api run db:generate",
+    "db:migrate": "pnpm run build:contracts && pnpm --filter @uie/api run db:migrate",
+    "db:deploy": "pnpm --filter @uie/api run db:deploy",
+    "db:seed": "pnpm run build:contracts && pnpm --filter @uie/api run db:seed"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

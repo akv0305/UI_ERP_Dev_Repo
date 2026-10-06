@@ -1,14 +1,10 @@
 'use client';
 
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
+import type { Permission } from '@uie/contracts';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  getVisibleGroups,
-  HOME_ITEM,
-  type NavigationItem,
-  type Permission,
-} from '@/config/navigation';
+import { getVisibleGroups, HOME_ITEM, type NavigationItem } from '@/config/navigation';
 import { terminology } from '@/config/terminology';
 import { cn } from '@/lib/utils';
 

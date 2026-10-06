@@ -1,4 +1,4 @@
-import type { Permission } from '@/config/navigation';
+import type { Permission } from '@uie/contracts';
 import { getCurrentPermissions } from './permissions';
 
 export function requirePermission(permission: Permission): boolean {

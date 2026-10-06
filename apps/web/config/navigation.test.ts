@@ -1,11 +1,6 @@
+import { ALL_PERMISSIONS } from '@uie/contracts';
 import { describe, expect, it } from 'vitest';
-import {
-  ALL_PERMISSIONS,
-  findNavigationTrail,
-  getVisibleGroups,
-  HOME_ITEM,
-  navigation,
-} from './navigation';
+import { findNavigationTrail, getVisibleGroups, HOME_ITEM, navigation } from './navigation';
 
 describe('navigation', () => {
   it('has a unique href for every item', () => {

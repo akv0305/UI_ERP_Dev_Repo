@@ -8,3 +8,5 @@ export const HealthResponse = z.object({
 });
 
 export type HealthResponse = z.infer<typeof HealthResponse>;
+
+export * from './permissions';

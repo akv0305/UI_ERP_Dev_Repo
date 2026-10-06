@@ -3,7 +3,7 @@
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useState, type ReactNode } from 'react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import type { Permission } from '@/config/navigation';
+import type { Permission } from '@uie/contracts';
 import { terminology } from '@/config/terminology';
 import { cn } from '@/lib/utils';
 import { SidebarNav } from './sidebar-nav';
