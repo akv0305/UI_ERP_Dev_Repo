@@ -59,7 +59,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
           code = payload.code;
         }
 
-        details = payload;
+        if ('details' in payload && payload.details !== undefined) {
+          details = payload.details;
+        }
       }
     }
 
