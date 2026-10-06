@@ -1,11 +1,11 @@
-import { PendingScreen } from '@/components/erp';
+import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
+import { requirePermission } from '@/lib/auth/require-permission';
 
 export default function ApprovalMatrixPage() {
-  return (
-    <PendingScreen
-      title={terminology.nav.approvalMatrix}
-      permission="administration.approvalMatrix.view"
-    />
-  );
+  if (!requirePermission('administration.approvalMatrix.view')) {
+    return <NotAuthorised />;
+  }
+
+  return <PendingScreen title={terminology.nav.approvalMatrix} />;
 }

@@ -1,8 +1,11 @@
-import { PendingScreen } from '@/components/erp';
+import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
+import { requirePermission } from '@/lib/auth/require-permission';
 
 export default function AuditLogPage() {
-  return (
-    <PendingScreen title={terminology.nav.auditLog} permission="administration.auditLog.view" />
-  );
+  if (!requirePermission('administration.auditLog.view')) {
+    return <NotAuthorised />;
+  }
+
+  return <PendingScreen title={terminology.nav.auditLog} />;
 }

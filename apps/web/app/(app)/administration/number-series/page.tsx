@@ -1,11 +1,11 @@
-import { PendingScreen } from '@/components/erp';
+import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
+import { requirePermission } from '@/lib/auth/require-permission';
 
 export default function NumberSeriesPage() {
-  return (
-    <PendingScreen
-      title={terminology.nav.numberSeries}
-      permission="administration.numberSeries.view"
-    />
-  );
+  if (!requirePermission('administration.numberSeries.view')) {
+    return <NotAuthorised />;
+  }
+
+  return <PendingScreen title={terminology.nav.numberSeries} />;
 }

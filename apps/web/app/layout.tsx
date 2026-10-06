@@ -15,7 +15,7 @@ function kebabCase(value: string): string {
 }
 
 function buildThemeVariables(): CSSProperties {
-  const { colors, typography, shape, density } = theme;
+  const { colors, typography, shape, layout, density } = theme;
   const activeDensity = density[density.default];
   const variables: Record<string, string> = {
     '--font-family-mono': typography.fontMono,
@@ -24,6 +24,10 @@ function buildThemeVariables(): CSSProperties {
     '--shape-radius-sm': shape.radiusSm,
     '--shape-radius-md': shape.radiusMd,
     '--shape-radius-lg': shape.radiusLg,
+    '--sidebar-width': layout.sidebarWidth,
+    '--sidebar-collapsed-width': layout.sidebarCollapsedWidth,
+    '--top-bar-height': layout.topBarHeight,
+    '--mobile-sheet-width': layout.mobileSheetWidth,
     '--density': density.default,
     '--row-height': activeDensity.rowHeight,
     '--field-height': activeDensity.fieldHeight,

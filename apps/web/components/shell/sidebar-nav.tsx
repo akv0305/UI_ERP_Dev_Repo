@@ -58,7 +58,7 @@ export function SidebarNav({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-14 items-center gap-2 border-b border-border px-4">
+      <div className="flex h-[var(--top-bar-height)] items-center gap-2 border-b border-border px-4">
         {collapsed ? null : (
           <span className="truncate text-sm font-semibold text-foreground">
             {terminology.app.title}

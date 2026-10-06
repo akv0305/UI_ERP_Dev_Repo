@@ -1,6 +1,11 @@
-import { PendingScreen } from '@/components/erp';
+import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
+import { requirePermission } from '@/lib/auth/require-permission';
 
 export default function EnquiriesPage() {
-  return <PendingScreen title={terminology.nav.enquiries} permission="purchase.enquiries.view" />;
+  if (!requirePermission('purchase.enquiries.view')) {
+    return <NotAuthorised />;
+  }
+
+  return <PendingScreen title={terminology.nav.enquiries} />;
 }

@@ -1,6 +1,11 @@
-import { PendingScreen } from '@/components/erp';
+import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
+import { requirePermission } from '@/lib/auth/require-permission';
 
 export default function WbsPage() {
-  return <PendingScreen title={terminology.nav.wbs} permission="planning.wbs.view" />;
+  if (!requirePermission('planning.wbs.view')) {
+    return <NotAuthorised />;
+  }
+
+  return <PendingScreen title={terminology.nav.wbs} />;
 }

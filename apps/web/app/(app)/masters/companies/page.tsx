@@ -1,6 +1,11 @@
-import { PendingScreen } from '@/components/erp';
+import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
+import { requirePermission } from '@/lib/auth/require-permission';
 
 export default function CompaniesPage() {
-  return <PendingScreen title={terminology.nav.companies} permission="masters.companies.view" />;
+  if (!requirePermission('masters.companies.view')) {
+    return <NotAuthorised />;
+  }
+
+  return <PendingScreen title={terminology.nav.companies} />;
 }

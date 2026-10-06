@@ -33,7 +33,7 @@ export function AppShell({
       <aside
         className={cn(
           'hidden shrink-0 border-r border-border bg-surface md:flex md:flex-col',
-          collapsed ? 'w-16' : 'w-64',
+          collapsed ? 'w-[var(--sidebar-collapsed-width)]' : 'w-[var(--sidebar-width)]',
         )}
       >
         <SidebarNav
@@ -44,7 +44,7 @@ export function AppShell({
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent>
+        <SheetContent className="w-[var(--mobile-sheet-width)]">
           <VisuallyHidden>
             <SheetTitle>{terminology.app.title}</SheetTitle>
           </VisuallyHidden>

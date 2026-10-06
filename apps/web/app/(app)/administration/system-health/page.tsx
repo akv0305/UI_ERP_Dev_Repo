@@ -1,7 +1,7 @@
 import { HealthResponse } from '@uie/contracts';
 import { NotAuthorised, PageHeader } from '@/components/erp';
 import { terminology } from '@/config/terminology';
-import { getCurrentPermissions } from '@/lib/auth/permissions';
+import { requirePermission } from '@/lib/auth/require-permission';
 import { HealthClient } from './health-client';
 import { HealthFields } from './health-fields';
 
@@ -25,7 +25,7 @@ async function fetchServerHealth(): Promise<HealthResponse | null> {
 }
 
 export default async function SystemHealthPage() {
-  if (!getCurrentPermissions().includes('administration.systemHealth.view')) {
+  if (!requirePermission('administration.systemHealth.view')) {
     return <NotAuthorised />;
   }
 

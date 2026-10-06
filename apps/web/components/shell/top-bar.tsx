@@ -16,7 +16,7 @@ export interface TopBarProps {
 
 export function TopBar({ companies, projects, notificationCount, onOpenMenu }: TopBarProps) {
   return (
-    <header className="flex h-14 items-center gap-3 border-b border-border bg-surface px-4">
+    <header className="flex h-[var(--top-bar-height)] items-center gap-3 border-b border-border bg-surface px-4">
       <button
         type="button"
         onClick={onOpenMenu}

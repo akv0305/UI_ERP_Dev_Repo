@@ -41,6 +41,12 @@ export const theme = {
     radiusMd: '6px',
     radiusLg: '10px',
   },
+  layout: {
+    sidebarWidth: '16rem',
+    sidebarCollapsedWidth: '4rem',
+    topBarHeight: '3.5rem',
+    mobileSheetWidth: '18rem',
+  },
   density: {
     default: 'comfortable',
     comfortable: {

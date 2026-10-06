@@ -1,11 +1,11 @@
-import { PendingScreen } from '@/components/erp';
+import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
+import { requirePermission } from '@/lib/auth/require-permission';
 
 export default function RolesAndPermissionsPage() {
-  return (
-    <PendingScreen
-      title={terminology.nav.rolesAndPermissions}
-      permission="administration.rolesAndPermissions.view"
-    />
-  );
+  if (!requirePermission('administration.rolesAndPermissions.view')) {
+    return <NotAuthorised />;
+  }
+
+  return <PendingScreen title={terminology.nav.rolesAndPermissions} />;
 }

@@ -1,6 +1,11 @@
-import { PendingScreen } from '@/components/erp';
+import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
+import { requirePermission } from '@/lib/auth/require-permission';
 
 export default function IndentsPage() {
-  return <PendingScreen title={terminology.nav.indents} permission="purchase.indents.view" />;
+  if (!requirePermission('purchase.indents.view')) {
+    return <NotAuthorised />;
+  }
+
+  return <PendingScreen title={terminology.nav.indents} />;
 }

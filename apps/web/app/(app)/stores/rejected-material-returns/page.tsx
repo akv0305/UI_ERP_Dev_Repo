@@ -1,11 +1,11 @@
-import { PendingScreen } from '@/components/erp';
+import { NotAuthorised, PendingScreen } from '@/components/erp';
 import { terminology } from '@/config/terminology';
+import { requirePermission } from '@/lib/auth/require-permission';
 
 export default function RejectedMaterialReturnsPage() {
-  return (
-    <PendingScreen
-      title={terminology.nav.rejectedMaterialReturns}
-      permission="stores.rejectedMaterialReturns.view"
-    />
-  );
+  if (!requirePermission('stores.rejectedMaterialReturns.view')) {
+    return <NotAuthorised />;
+  }
+
+  return <PendingScreen title={terminology.nav.rejectedMaterialReturns} />;
 }
