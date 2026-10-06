@@ -159,10 +159,9 @@ export function formatDateTime(value: DateInput): string {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
+      hourCycle: 'h23',
     }).formatToParts(toDate(value)),
   );
 
-  return `${parts.day}-${parts.month}-${parts.year} ${parts.hour}:${parts.minute}:${parts.second}`;
+  return `${parts.day}-${parts.month}-${parts.year} ${parts.hour}:${parts.minute}`;
 }

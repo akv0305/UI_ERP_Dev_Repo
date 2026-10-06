@@ -78,11 +78,11 @@ describe('formatDate', () => {
 });
 
 describe('formatDateTime', () => {
-  it('formats as DD-MM-YYYY HH:mm:ss in Asia/Kolkata', () => {
-    expect(formatDateTime('2026-10-06T13:04:05Z')).toBe('06-10-2026 18:34:05');
+  it('formats as DD-MM-YYYY HH:mm (24-hour, no seconds) in Asia/Kolkata', () => {
+    expect(formatDateTime('2026-10-06T13:04:05Z')).toBe('06-10-2026 18:34');
   });
 
   it('keeps midnight in the Asia/Kolkata time zone', () => {
-    expect(formatDateTime(new Date('2026-01-09T00:00:00+05:30'))).toBe('09-01-2026 00:00:00');
+    expect(formatDateTime(new Date('2026-01-09T00:00:00+05:30'))).toBe('09-01-2026 00:00');
   });
 });
