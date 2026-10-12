@@ -11,15 +11,23 @@ import type {
 } from '@uie/contracts';
 import { ADMINISTRATOR_ROLE_CODE } from '../auth/auth.mapper';
 import { PasswordService } from '../auth/password.service';
+import { auditActionFor } from '../audit/audit-action';
+import { AuditService } from '../audit/audit.service';
 import { ApiError } from '../common/errors/api-error';
 import { PrismaService } from '../prisma/prisma.service';
-import { toUserResponse, userWithRolesInclude, type UserWithRoles } from './users.mapper';
+import {
+  toUserAuditSnapshot,
+  toUserResponse,
+  userWithRolesInclude,
+  type UserWithRoles,
+} from './users.mapper';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
+    private readonly audit: AuditService,
   ) {}
 
   async list(query: UserListQuery): Promise<PagedUsersResponse> {
@@ -82,19 +90,33 @@ export class UsersService {
     await this.assertUnique(request.username, request.email, undefined);
     await this.assertRolesExist(request.roleIds);
 
-    const created = await this.prisma.user.create({
-      data: {
-        username: request.username,
-        email: request.email,
-        displayName: request.displayName,
-        isActive: request.isActive,
-        passwordHash: await this.passwords.hash(request.temporaryPassword),
-        mustChangePassword: true,
-        createdById: actorId,
-        updatedById: actorId,
-        roles: { create: [...new Set(request.roleIds)].map((roleId) => ({ roleId })) },
-      },
-      include: userWithRolesInclude,
+    const passwordHash = await this.passwords.hash(request.temporaryPassword);
+    const created = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          username: request.username,
+          email: request.email,
+          displayName: request.displayName,
+          isActive: request.isActive,
+          passwordHash,
+          mustChangePassword: true,
+          createdById: actorId,
+          updatedById: actorId,
+          roles: { create: [...new Set(request.roleIds)].map((roleId) => ({ roleId })) },
+        },
+        include: userWithRolesInclude,
+      });
+
+      await this.audit.record(tx, {
+        actorUserId: actorId,
+        action: 'CREATE',
+        entityType: 'User',
+        entityId: user.id,
+        before: null,
+        after: toUserAuditSnapshot(user),
+      });
+
+      return user;
     });
 
     return toUserResponse(created);
@@ -126,7 +148,7 @@ export class UsersService {
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.userRole.deleteMany({ where: { userId: id } });
 
-      return tx.user.update({
+      const user = await tx.user.update({
         where: { id },
         data: {
           username: request.username,
@@ -138,14 +160,25 @@ export class UsersService {
         },
         include: userWithRolesInclude,
       });
-    });
 
-    if (!request.isActive && existing.isActive) {
-      await this.prisma.session.updateMany({
-        where: { userId: id, revokedAt: null },
-        data: { revokedAt: new Date() },
+      if (!request.isActive && existing.isActive) {
+        await tx.session.updateMany({
+          where: { userId: id, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+      }
+
+      await this.audit.record(tx, {
+        actorUserId: actorId,
+        action: auditActionFor(existing.isActive, user.isActive),
+        entityType: 'User',
+        entityId: id,
+        before: toUserAuditSnapshot(existing),
+        after: toUserAuditSnapshot(user),
       });
-    }
+
+      return user;
+    });
 
     return toUserResponse(updated);
   }
@@ -155,24 +188,49 @@ export class UsersService {
 
     const passwordHash = await this.passwords.hash(request.newPassword);
 
-    await this.prisma.$transaction([
-      this.prisma.user.update({
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
         where: { id },
         data: { passwordHash, mustChangePassword: true, updatedById: actorId },
-      }),
-      this.prisma.session.updateMany({
+      });
+      await tx.session.updateMany({
         where: { userId: id, revokedAt: null },
         data: { revokedAt: new Date() },
-      }),
-    ]);
+      });
+      await this.audit.record(tx, {
+        actorUserId: actorId,
+        action: 'UPDATE',
+        entityType: 'User',
+        entityId: id,
+        before: null,
+        after: { passwordReset: true },
+      });
+    });
   }
 
   async unlock(id: string, actorId: string): Promise<void> {
-    await this.assertExists(id);
-
-    await this.prisma.user.update({
+    const existing = await this.prisma.user.findUnique({
       where: { id },
-      data: { failedLoginCount: 0, lockedUntil: null, updatedById: actorId },
+      select: { id: true, failedLoginCount: true, lockedUntil: true },
+    });
+
+    if (existing === null) {
+      throw this.notFound();
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id },
+        data: { failedLoginCount: 0, lockedUntil: null, updatedById: actorId },
+      });
+      await this.audit.record(tx, {
+        actorUserId: actorId,
+        action: 'UPDATE',
+        entityType: 'User',
+        entityId: id,
+        before: { failedLoginCount: existing.failedLoginCount, lockedUntil: existing.lockedUntil },
+        after: { failedLoginCount: 0, lockedUntil: null },
+      });
     });
   }
 

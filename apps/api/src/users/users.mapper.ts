@@ -25,3 +25,15 @@ export function toUserResponse(user: UserWithRoles): UserResponse {
       .sort((a, b) => a.name.localeCompare(b.name)),
   };
 }
+
+/** Audit snapshot of a user. Never includes passwordHash or any session/token data. */
+export function toUserAuditSnapshot(user: UserWithRoles): Record<string, unknown> {
+  return {
+    username: user.username,
+    email: user.email,
+    displayName: user.displayName,
+    isActive: user.isActive,
+    mustChangePassword: user.mustChangePassword,
+    roles: user.roles.map((link) => link.role.code).sort(),
+  };
+}

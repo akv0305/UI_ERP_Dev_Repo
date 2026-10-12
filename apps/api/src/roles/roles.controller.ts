@@ -1,10 +1,12 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Req } from '@nestjs/common';
 import {
   CreateRoleRequest,
   UpdateRoleRequest,
   type RoleListResponse,
   type RoleResponse,
 } from '@uie/contracts';
+import type { Request } from 'express';
+import { actorIdOf } from '../auth/actor-id';
 import { RequirePermissions } from '../auth/auth.decorators';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { RolesService } from './roles.service';
@@ -29,8 +31,9 @@ export class RolesController {
   @RequirePermissions('administration.rolesAndPermissions.manage')
   create(
     @Body(new ZodValidationPipe(CreateRoleRequest)) body: CreateRoleRequest,
+    @Req() request: Request,
   ): Promise<RoleResponse> {
-    return this.roles.create(body);
+    return this.roles.create(body, actorIdOf(request));
   }
 
   @Patch(':id')
@@ -38,7 +41,8 @@ export class RolesController {
   update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body(new ZodValidationPipe(UpdateRoleRequest)) body: UpdateRoleRequest,
+    @Req() request: Request,
   ): Promise<RoleResponse> {
-    return this.roles.update(id, body);
+    return this.roles.update(id, body, actorIdOf(request));
   }
 }

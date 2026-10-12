@@ -28,6 +28,7 @@ model User {
   updatedUsers User[]     @relation("UserUpdatedBy")
   roles        UserRole[]
   sessions     Session[]
+  auditEvents  AuditEvent[]
 
   @@map("users")
 }
@@ -83,4 +84,31 @@ model Session {
 
   @@index([userId])
   @@map("sessions")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DEACTIVATE
+  REACTIVATE
+}
+
+model AuditEvent {
+  id          String      @id @default(uuid()) @db.Uuid
+  occurredAt  DateTime    @default(now()) @db.Timestamptz(3)
+  actorUserId String?     @db.Uuid
+  action      AuditAction
+  entityType  String
+  entityId    String      @db.Uuid
+  companyId   String?     @db.Uuid
+  before      Json?
+  after       Json?
+  requestId   String?
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([entityType, entityId])
+  @@index([occurredAt])
+  @@index([actorUserId])
+  @@map("audit_events")
 }

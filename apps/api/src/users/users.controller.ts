@@ -21,17 +21,10 @@ import {
   type UserResponse,
 } from '@uie/contracts';
 import type { Request } from 'express';
+import { actorIdOf as actorId } from '../auth/actor-id';
 import { RequirePermissions } from '../auth/auth.decorators';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { UsersService } from './users.service';
-
-function actorId(request: Request): string {
-  if (request.auth === undefined) {
-    throw new Error('AuthGuard did not attach the session');
-  }
-
-  return request.auth.user.id;
-}
 
 @Controller('users')
 export class UsersController {

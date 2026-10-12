@@ -1,10 +1,12 @@
 import { jest } from '@jest/globals';
 import { ALL_PERMISSIONS } from '@uie/contracts';
+import { AuditService } from '../audit/audit.service';
 import { ApiError } from '../common/errors/api-error';
 import type { PrismaService } from '../prisma/prisma.service';
 import { RolesService } from './roles.service';
 
 const ROLE_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const ACTOR_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
 function roleRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -36,14 +38,14 @@ function setup() {
       deleteMany: jest.fn(),
       createMany: jest.fn(),
     },
-    role: { update: jest.fn() },
+    role: { update: jest.fn(), create: jest.fn() },
+    auditEvent: { create: jest.fn() },
   };
   const prisma = {
     role: {
       findUnique: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
-      create: jest.fn(),
     },
     $transaction: jest.fn(),
   };
@@ -52,8 +54,13 @@ function setup() {
     (arg as (client: typeof tx) => Promise<unknown>)(tx),
   );
   tx.role.update.mockImplementation(async () => roleRow());
+  tx.role.create.mockImplementation(async () => roleRow());
 
-  return { prisma, tx, service: new RolesService(prisma as unknown as PrismaService) };
+  return {
+    prisma,
+    tx,
+    service: new RolesService(prisma as unknown as PrismaService, new AuditService()),
+  };
 }
 
 async function codeOf(promise: Promise<unknown>): Promise<string | undefined> {
@@ -79,9 +86,9 @@ describe('RolesService system role protection', () => {
     const { prisma, service } = setup();
     prisma.role.findUnique.mockResolvedValue(adminRow());
 
-    await expect(codeOf(service.update(ROLE_ID, { ...adminRequest, name: 'Boss' }))).resolves.toBe(
-      'SYSTEM_ROLE_PROTECTED',
-    );
+    await expect(
+      codeOf(service.update(ROLE_ID, { ...adminRequest, name: 'Boss' }, ACTOR_ID)),
+    ).resolves.toBe('SYSTEM_ROLE_PROTECTED');
   });
 
   it('rejects deactivating a system role', async () => {
@@ -89,7 +96,7 @@ describe('RolesService system role protection', () => {
     prisma.role.findUnique.mockResolvedValue(adminRow());
 
     await expect(
-      codeOf(service.update(ROLE_ID, { ...adminRequest, isActive: false })),
+      codeOf(service.update(ROLE_ID, { ...adminRequest, isActive: false }, ACTOR_ID)),
     ).resolves.toBe('SYSTEM_ROLE_PROTECTED');
   });
 
@@ -98,7 +105,13 @@ describe('RolesService system role protection', () => {
     prisma.role.findUnique.mockResolvedValue(adminRow());
 
     await expect(
-      codeOf(service.update(ROLE_ID, { ...adminRequest, permissionCodes: ['stores.stock.view'] })),
+      codeOf(
+        service.update(
+          ROLE_ID,
+          { ...adminRequest, permissionCodes: ['stores.stock.view'] },
+          ACTOR_ID,
+        ),
+      ),
     ).resolves.toBe('SYSTEM_ROLE_PROTECTED');
   });
 
@@ -106,7 +119,7 @@ describe('RolesService system role protection', () => {
     const { prisma, tx, service } = setup();
     prisma.role.findUnique.mockResolvedValue(adminRow());
 
-    const result = await service.update(ROLE_ID, adminRequest);
+    const result = await service.update(ROLE_ID, adminRequest, ACTOR_ID);
 
     expect(result.permissionCodes).toEqual([...ALL_PERMISSIONS]);
     expect(prisma.$transaction).not.toHaveBeenCalled();
@@ -128,12 +141,16 @@ describe('RolesService custom roles', () => {
     const { prisma, tx, service } = setup();
     prisma.role.findUnique.mockResolvedValue(roleRow());
 
-    await service.update(ROLE_ID, {
-      code: 'CLERK',
-      name: 'Clerk',
-      isActive: false,
-      permissionCodes: ['stores.stock.view', 'stores.goodsReceipts.view'],
-    });
+    await service.update(
+      ROLE_ID,
+      {
+        code: 'CLERK',
+        name: 'Clerk',
+        isActive: false,
+        permissionCodes: ['stores.stock.view', 'stores.goodsReceipts.view'],
+      },
+      ACTOR_ID,
+    );
 
     expect(tx.rolePermission.deleteMany).toHaveBeenCalledWith({ where: { roleId: ROLE_ID } });
     expect(tx.rolePermission.createMany).toHaveBeenCalledWith({
@@ -155,12 +172,16 @@ describe('RolesService custom roles', () => {
 
     await expect(
       codeOf(
-        service.update(ROLE_ID, {
-          code: 'CLERK',
-          name: 'Clerk',
-          isActive: true,
-          permissionCodes: ['made.up.permission'] as never,
-        }),
+        service.update(
+          ROLE_ID,
+          {
+            code: 'CLERK',
+            name: 'Clerk',
+            isActive: true,
+            permissionCodes: ['made.up.permission'] as never,
+          },
+          ACTOR_ID,
+        ),
       ),
     ).resolves.toBe('VALIDATION_ERROR');
   });
@@ -170,22 +191,24 @@ describe('RolesService custom roles', () => {
     prisma.role.findFirst.mockResolvedValue({ id: 'other' });
 
     await expect(
-      codeOf(service.create({ code: 'CLERK', name: 'Clerk', isActive: true, permissionCodes: [] })),
+      codeOf(
+        service.create(
+          { code: 'CLERK', name: 'Clerk', isActive: true, permissionCodes: [] },
+          ACTOR_ID,
+        ),
+      ),
     ).resolves.toBe('DUPLICATE_ROLE_CODE');
   });
 
   it('creates custom roles as non-system', async () => {
-    const { prisma, service } = setup();
-    prisma.role.create.mockResolvedValue(roleRow());
+    const { tx, service } = setup();
 
-    await service.create({
-      code: 'CLERK',
-      name: 'Clerk',
-      isActive: true,
-      permissionCodes: ['stores.stock.view'],
-    });
+    await service.create(
+      { code: 'CLERK', name: 'Clerk', isActive: true, permissionCodes: ['stores.stock.view'] },
+      ACTOR_ID,
+    );
 
-    expect(prisma.role.create).toHaveBeenCalledWith(
+    expect(tx.role.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ isSystem: false }) as unknown,
       }),

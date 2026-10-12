@@ -9,6 +9,8 @@ import {
   type UpdateRoleRequest,
 } from '@uie/contracts';
 import { ADMINISTRATOR_ROLE_CODE } from '../auth/auth.mapper';
+import { auditActionFor } from '../audit/audit-action';
+import { AuditService } from '../audit/audit.service';
 import { ApiError } from '../common/errors/api-error';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -20,6 +22,13 @@ const roleInclude = {
 type RoleWithCounts = Prisma.RoleGetPayload<{ include: typeof roleInclude }>;
 
 const KNOWN_PERMISSIONS = new Set<string>(ALL_PERMISSIONS);
+
+/** Audit snapshot of a role: its own fields plus the permission codes it holds. */
+export function toRoleAuditSnapshot(role: RoleWithCounts): Record<string, unknown> {
+  const { code, name, isSystem, isActive, permissionCodes } = toRoleResponse(role);
+
+  return { code, name, isSystem, isActive, permissionCodes };
+}
 
 export function toRoleResponse(role: RoleWithCounts): RoleResponse {
   const held = new Set(role.permissions.map((permission) => permission.permissionCode));
@@ -44,7 +53,10 @@ export function toRoleResponse(role: RoleWithCounts): RoleResponse {
 
 @Injectable()
 export class RolesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async list(): Promise<RoleListResponse> {
     const roles = await this.prisma.role.findMany({
@@ -65,29 +77,42 @@ export class RolesService {
     return toRoleResponse(role);
   }
 
-  async create(request: CreateRoleRequest): Promise<RoleResponse> {
+  async create(request: CreateRoleRequest, actorId: string): Promise<RoleResponse> {
     this.assertKnownPermissions(request.permissionCodes);
     await this.assertCodeFree(request.code, undefined);
 
-    const created = await this.prisma.role.create({
-      data: {
-        code: request.code,
-        name: request.name,
-        isActive: request.isActive,
-        isSystem: false,
-        permissions: {
-          create: [...new Set(request.permissionCodes)].map((permissionCode) => ({
-            permissionCode,
-          })),
+    const created = await this.prisma.$transaction(async (tx) => {
+      const role = await tx.role.create({
+        data: {
+          code: request.code,
+          name: request.name,
+          isActive: request.isActive,
+          isSystem: false,
+          permissions: {
+            create: [...new Set(request.permissionCodes)].map((permissionCode) => ({
+              permissionCode,
+            })),
+          },
         },
-      },
-      include: roleInclude,
+        include: roleInclude,
+      });
+
+      await this.audit.record(tx, {
+        actorUserId: actorId,
+        action: 'CREATE',
+        entityType: 'Role',
+        entityId: role.id,
+        before: null,
+        after: toRoleAuditSnapshot(role),
+      });
+
+      return role;
     });
 
     return toRoleResponse(created);
   }
 
-  async update(id: string, request: UpdateRoleRequest): Promise<RoleResponse> {
+  async update(id: string, request: UpdateRoleRequest, actorId: string): Promise<RoleResponse> {
     const existing = await this.prisma.role.findUnique({ where: { id }, include: roleInclude });
 
     if (existing === null) {
@@ -111,11 +136,22 @@ export class RolesService {
         data: permissionCodes.map((permissionCode) => ({ roleId: id, permissionCode })),
       });
 
-      return tx.role.update({
+      const role = await tx.role.update({
         where: { id },
         data: { code: request.code, name: request.name, isActive: request.isActive },
         include: roleInclude,
       });
+
+      await this.audit.record(tx, {
+        actorUserId: actorId,
+        action: auditActionFor(existing.isActive, role.isActive),
+        entityType: 'Role',
+        entityId: id,
+        before: toRoleAuditSnapshot(existing),
+        after: toRoleAuditSnapshot(role),
+      });
+
+      return role;
     });
 
     return toRoleResponse(updated);

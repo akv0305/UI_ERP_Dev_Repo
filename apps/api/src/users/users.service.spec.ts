@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import { ApiError } from '../common/errors/api-error';
+import { AuditService } from '../audit/audit.service';
 import type { PasswordService } from '../auth/password.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from './users.service';
@@ -32,9 +33,12 @@ function userRow(overrides: Record<string, unknown> = {}) {
 }
 
 function setup() {
+  // Audit rows may only be written through tx: the top-level prisma mock has no auditEvent.
   const tx = {
     userRole: { deleteMany: jest.fn() },
-    user: { update: jest.fn() },
+    user: { update: jest.fn(), create: jest.fn() },
+    session: { updateMany: jest.fn() },
+    auditEvent: { create: jest.fn() },
   };
   const prisma = {
     user: {
@@ -42,29 +46,24 @@ function setup() {
       findFirst: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
     },
     role: { count: jest.fn() },
-    session: { updateMany: jest.fn() },
     $transaction: jest.fn(),
   };
   const passwords = { hash: jest.fn() };
   passwords.hash.mockResolvedValue('hashed');
   prisma.user.findFirst.mockResolvedValue(null);
   prisma.role.count.mockResolvedValue(1);
-  prisma.$transaction.mockImplementation(async (arg: unknown) => {
-    if (typeof arg === 'function') {
-      return (arg as (client: typeof tx) => Promise<unknown>)(tx);
-    }
-
-    return arg;
-  });
+  prisma.$transaction.mockImplementation(async (arg: unknown) =>
+    (arg as (client: typeof tx) => Promise<unknown>)(tx),
+  );
   tx.user.update.mockImplementation(async () => userRow());
+  tx.user.create.mockImplementation(async () => userRow({ mustChangePassword: true }));
 
   const service = new UsersService(
     prisma as unknown as PrismaService,
     passwords as unknown as PasswordService,
+    new AuditService(),
   );
 
   return { prisma, tx, service, passwords };
@@ -128,14 +127,14 @@ describe('UsersService.update rules', () => {
   });
 
   it('allows deactivating an administrator when another active administrator exists', async () => {
-    const { prisma, service } = setup();
+    const { prisma, tx, service } = setup();
     prisma.user.findUnique.mockResolvedValue(userRow());
     prisma.user.count.mockResolvedValue(1);
 
     await expect(
       service.update(TARGET_ID, { ...baseUpdate, isActive: false }, ACTOR_ID),
     ).resolves.toBeDefined();
-    expect(prisma.session.updateMany).toHaveBeenCalledWith({
+    expect(tx.session.updateMany).toHaveBeenCalledWith({
       where: { userId: TARGET_ID, revokedAt: null },
       data: { revokedAt: expect.any(Date) as unknown },
     });
@@ -183,8 +182,7 @@ describe('UsersService.update rules', () => {
 
 describe('UsersService create, reset password and unlock', () => {
   it('creates the user with mustChangePassword and a hashed temporary password', async () => {
-    const { prisma, service, passwords } = setup();
-    prisma.user.create.mockResolvedValue(userRow({ mustChangePassword: true }));
+    const { tx, service, passwords } = setup();
 
     await service.create(
       {
@@ -199,7 +197,7 @@ describe('UsersService create, reset password and unlock', () => {
     );
 
     expect(passwords.hash).toHaveBeenCalledWith('Temp12345');
-    expect(prisma.user.create).toHaveBeenCalledWith(
+    expect(tx.user.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           passwordHash: 'hashed',
@@ -232,28 +230,32 @@ describe('UsersService create, reset password and unlock', () => {
   });
 
   it('reset-password sets mustChangePassword and revokes all sessions of that user', async () => {
-    const { prisma, service } = setup();
+    const { prisma, tx, service } = setup();
     prisma.user.findUnique.mockResolvedValue({ id: TARGET_ID });
 
     await service.resetPassword(TARGET_ID, { newPassword: 'Temp12345' }, ACTOR_ID);
 
-    expect(prisma.user.update).toHaveBeenCalledWith({
+    expect(tx.user.update).toHaveBeenCalledWith({
       where: { id: TARGET_ID },
       data: { passwordHash: 'hashed', mustChangePassword: true, updatedById: ACTOR_ID },
     });
-    expect(prisma.session.updateMany).toHaveBeenCalledWith({
+    expect(tx.session.updateMany).toHaveBeenCalledWith({
       where: { userId: TARGET_ID, revokedAt: null },
       data: { revokedAt: expect.any(Date) as unknown },
     });
   });
 
   it('unlock clears the failed count and the lock', async () => {
-    const { prisma, service } = setup();
-    prisma.user.findUnique.mockResolvedValue({ id: TARGET_ID });
+    const { prisma, tx, service } = setup();
+    prisma.user.findUnique.mockResolvedValue({
+      id: TARGET_ID,
+      failedLoginCount: 3,
+      lockedUntil: null,
+    });
 
     await service.unlock(TARGET_ID, ACTOR_ID);
 
-    expect(prisma.user.update).toHaveBeenCalledWith({
+    expect(tx.user.update).toHaveBeenCalledWith({
       where: { id: TARGET_ID },
       data: { failedLoginCount: 0, lockedUntil: null, updatedById: ACTOR_ID },
     });
