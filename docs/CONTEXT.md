@@ -17,14 +17,15 @@ statement > client samples > CQ answers > PD/OQ decisions. Register: docs/REGIST
 ## Stack
 
 apps/web Next.js + TypeScript strict + Tailwind + shadcn/ui — frontend only, no DB access (PD-012).
-apps/api NestJS + TypeScript strict — long-running server (PD-012).
-packages/contracts Zod schemas shared by web and api.
-PostgreSQL via Prisma — added when schema work starts (Neon in dev).
+apps/api NestJS + TypeScript strict + Prisma 7 (PostgreSQL on Neon) — long-running server.
+packages/contracts Zod schemas + permission codes shared by web and api.
+Auth: username/email + password, argon2id, sessions in PostgreSQL, httpOnly cookie (PD-028/029).
 Not in dev: Redis, worker, Docker, Nginx, file storage, email (PD-018, PD-020).
 
 ## Environments (PD-016, PD-019, PD-021)
 
-Local: Windows 10, VS Code, Node 22 LTS, pnpm. web :3000, api :3001. No Docker.
+Local: Windows 10, Node (22 target; laptop 20.20, PDEF-008), pnpm 12. web :3000, api :3001. No Docker.
+Secrets only in apps/api/.env (git-ignored). Never commit or paste connection strings.
 Dev: web → Netlify · api → Hostinger Node.js app · DB → Neon.
 Prod: one VM (private repo).
 Browser always calls /api/* on the web origin; Next.js rewrites forward to API_BASE_URL.
@@ -38,12 +39,14 @@ capture, Tally export, site returns/transfers/adjustments, dashboards, DPR.
 Out (Phase 2 per proposal): tender, finance & accounting, client RA billing, real estate,
 customer portal, live statutory integrations, advanced analytics.
 
-## Menu (proposed — confirm at G-02)
+## Menu (PD-023, PD-025)
 
-Dashboard · Purchase · Stores · Planning · Masters · Approvals · Administration
+Home · Purchase · Stores · Planning · Masters · Administration.
+No Approvals menu: approvals via notification bell + "Pending for my approval" on Home.
+Every item, screen and action is shown only with its permission code.
 
 ## Working loop
 
-Genspark pushes to branch gen/G-xx → owner sends branch + commit SHA → Claude reviews
-files at raw.githubusercontent.com/akv0305/UI_ERP_Dev_Repo/<sha>/<path> → merge.
+Genspark (new chat per run, parts committed separately) pushes to gen/G-xx → owner sends
+SHA + credits → Claude reviews files at raw.githubusercontent.com/akv0305/UI_ERP_Dev_Repo/<sha>/<path> → fast-forward main.
 Keep source files under ~300 lines (review tooling truncates long files).
