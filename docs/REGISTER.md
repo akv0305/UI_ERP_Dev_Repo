@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-037 · CQ-98 · OQ-27 · PDEF-023 · CR-002
+# REGISTER — next free: PD-038 · CQ-98 · OQ-27 · PDEF-023 · CR-002
 
 ## Decisions
 
@@ -36,10 +36,11 @@
 | PD-030 | G-03 Genspark choices (27) incl. Prisma 7 config, case-insensitive unique indexes | APPROVED |
 | PD-031 | G-04 masters + statutory fields (all optional, validated when entered): Company (PAN, TAN, CIN, LLPIN, entity type Company/SPV/JV, address, state, PIN); GST registrations per state (GSTIN check digit, state + PAN match); State master (GST codes, seeded, read-only); Project (billing GST registration); Site (address, contact); Store | APPROVED (built G-04a) |
 | PD-032 | Item master + Excel import from client Material List | APPROVED — G-05 |
-| PD-033 | Scoped access: admin grants users one or more companies / projects / sites and roles; API refuses outside access; top-bar switcher | APPROVED — G-04b |
+| PD-033 | Scoped access: admin grants users one or more companies / projects / sites and roles; API refuses outside access; top-bar switcher | APPROVED — detailed in PD-037 |
 | PD-034 | G-04a rules: codes immutable, no deactivate with active children, no create under inactive parent, no hard deletes (deactivate only), append-only audit, GST billing addresses, site contact | APPROVED (built G-04a) |
 | PD-035 | G-04a Genspark choices (20) incl. audit FK ON DELETE RESTRICT, request id via AsyncLocalStorage, secrets dropped from audit snapshots, audit date filters whole days IST, CODE_IMMUTABLE / GSTIN_PAN_MISMATCH errors | APPROVED |
 | PD-036 | Brand logo as Demo-uie: full logo 48 px above login card, app name below card; sidebar header full logo 32 px / mark 30 px when collapsed, links to Home; files in apps/web/public/brand; paths + sizes in theme.ts; initials fallback | APPROVED (built G-04a2) |
+| PD-037 | Scoped roles (OQ-25 Option 1): each user_roles row = role + scope (GLOBAL / COMPANY / PROJECT / SITE); access derived from assignments down the hierarchy; menu = union of permissions; API checks permission against the record's scope; administration.* and ADMINISTRATOR only GLOBAL; out-of-scope record = 404; canManage per row; option endpoints for form pick lists; switcher context stored on session, auto-select when only one; existing links migrated to GLOBAL; findUsersWithRoleCovering helper for PD-008 | PROPOSED — G-04b |
 
 ## Owner questions
 
@@ -62,7 +63,7 @@
 | OQ-22 | Can users have no email? | OPEN (assumed yes) |
 | OQ-23 | `trust proxy` value per deployment | OPEN — at deploy |
 | OQ-24 | User access model (company-wide vs per project) | CLOSED → PD-033 |
-| OQ-25 | (G-04a option question) | CLOSED — Option 1 |
+| OQ-25 | Roles per scope (Option 1) or global (Option 2)? | CLOSED — Option 1 → PD-037 |
 | OQ-26 | Tagline under the logo? Text? | OPEN — default none |
 
 ## Client questions
@@ -95,7 +96,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-019 | Login + users/roles not tested in a browser | CLOSED — browser test passed |
 | PDEF-020 | REGISTER/CONTEXT not updated after G-01 | CLOSED |
 | PDEF-021 | Hard-coded aria-labels in sidebar, top bar, breadcrumbs | CLOSED (G-04a2, 7e36ffa) |
-| PDEF-022 | G-04a masters + audit log screens not tested in a browser | OPEN |
+| PDEF-022 | G-04a masters + audit log screens not tested in a browser | CLOSED — browser test passed |
 
 ## Change requests
 
@@ -114,4 +115,4 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | G-02d | DeepSeek V4 Pro | 380 | gen/G-02 | 71e00f6 |
 | G-03 | Claude Sonnet 5 | 3,074 | gen/G-03 | 343af17 |
 | G-04a | Claude Sonnet 5 | 3,805 | gen/G-04a | dd0d383 |
-| G-04a2 | DeepSeek V4 Pro | TBC | gen/G-04a2 | 7e36ffa |
+| G-04a2 | DeepSeek V4 Pro | 80 | gen/G-04a2 | 7e36ffa |
