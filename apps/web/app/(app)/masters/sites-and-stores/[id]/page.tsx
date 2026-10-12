@@ -20,7 +20,6 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
   }
 
   const { id } = await params;
-  const canManage = permissions.includes('masters.sitesAndStores.manage');
   const [siteResult, storesResult] = await Promise.all([
     apiGet(`/api/sites/${encodeURIComponent(id)}`, SiteResponse),
     apiGet(`/api/sites/${encodeURIComponent(id)}/stores`, StoreListResponse),
@@ -35,6 +34,8 @@ export default async function SiteDetailPage({ params }: { params: Promise<{ id:
   }
 
   const site = siteResult.data;
+  // The API says whether this particular site is within the user's scope to change.
+  const canManage = site.canManage;
   const history = permissions.includes('administration.auditLog.view') ? (
     <Button asChild variant="outline">
       <Link href={`/administration/audit-log?entityId=${site.id}`}>

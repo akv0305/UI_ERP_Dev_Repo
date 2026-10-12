@@ -1,15 +1,18 @@
 'use client';
 
+import type { ContextOptionsResponse, SessionContext } from '@uie/contracts';
 import { Menu } from 'lucide-react';
 import { terminology } from '@/config/terminology';
+import type { ContextChange } from '@/lib/context';
 import { Breadcrumbs } from './breadcrumbs';
+import { ContextSwitchers } from './context-switchers';
 import { NotificationBell } from './notification-bell';
-import { Switcher, type SwitcherOption } from './switcher';
 import { UserMenu } from './user-menu';
 
 export interface TopBarProps {
-  companies: SwitcherOption[];
-  projects: SwitcherOption[];
+  contextOptions: ContextOptionsResponse;
+  context: SessionContext;
+  onChangeContext: (change: ContextChange) => Promise<boolean>;
   notificationCount: number;
   displayName: string;
   onSignOut: () => void | Promise<void>;
@@ -17,8 +20,9 @@ export interface TopBarProps {
 }
 
 export function TopBar({
-  companies,
-  projects,
+  contextOptions,
+  context,
+  onChangeContext,
   notificationCount,
   displayName,
   onSignOut,
@@ -39,8 +43,11 @@ export function TopBar({
 
       <div className="ml-auto flex items-center gap-2">
         <div className="hidden items-center gap-2 md:flex">
-          <Switcher options={companies} placeholder={terminology.shell.selectCompany} />
-          <Switcher options={projects} placeholder={terminology.shell.selectProject} />
+          <ContextSwitchers
+            options={contextOptions}
+            context={context}
+            onChangeContext={onChangeContext}
+          />
         </div>
         <NotificationBell count={notificationCount} />
         <UserMenu displayName={displayName} onSignOut={onSignOut} />

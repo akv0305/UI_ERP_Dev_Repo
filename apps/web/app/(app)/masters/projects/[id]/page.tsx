@@ -1,4 +1,4 @@
-import { CompanyDetailResponse, ProjectResponse, StateListResponse } from '@uie/contracts';
+import { GstRegistrationOptionsResponse, ProjectResponse, StateListResponse } from '@uie/contracts';
 import Link from 'next/link';
 import { ErrorState, KeyValueGrid, NotAuthorised, PageHeader } from '@/components/erp';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,6 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   }
 
   const { id } = await params;
-  const canManage = permissions.includes('masters.projects.manage');
   const result = await apiGet(`/api/projects/${encodeURIComponent(id)}`, ProjectResponse);
 
   if (result.kind === 'notFound') {
@@ -31,6 +30,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   }
 
   const project = result.data;
+  // The API says whether this particular project is within the user's scope to change.
+  const canManage = project.canManage;
   const history = permissions.includes('administration.auditLog.view') ? (
     <Button asChild variant="outline">
       <Link href={`/administration/audit-log?entityId=${project.id}`}>
@@ -86,28 +87,28 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     );
   }
 
-  // The company is fixed, so its active registrations are the only billing choices.
-  const [states, company] = await Promise.all([
+  // The company is fixed, so its active registrations are the only billing choices. The list needs
+  // only masters.projects.manage, not companies.view.
+  const [states, registrations] = await Promise.all([
     apiGet('/api/states', StateListResponse),
-    permissions.includes('masters.companies.view')
-      ? apiGet(`/api/companies/${project.company.id}`, CompanyDetailResponse)
-      : Promise.resolve(null),
+    apiGet(
+      `/api/gst-registrations/options?companyId=${encodeURIComponent(project.company.id)}`,
+      GstRegistrationOptionsResponse,
+    ),
   ]);
 
   if (states.kind !== 'ok') {
     return <ErrorState description={terminology.projects.optionsUnavailable} />;
   }
 
-  if (company !== null && company.kind !== 'ok') {
+  if (registrations.kind !== 'ok') {
     return <ErrorState description={terminology.projects.registrationsUnavailable} />;
   }
 
-  const billingOptions =
-    company === null || company.kind !== 'ok'
-      ? []
-      : company.data.gstRegistrations
-          .filter((registration) => registration.isActive)
-          .map((registration) => ({ value: registration.id, label: registration.gstin }));
+  const billingOptions = registrations.data.items.map((item) => ({
+    value: item.id,
+    label: item.label,
+  }));
 
   return (
     <div className="flex flex-col gap-4">

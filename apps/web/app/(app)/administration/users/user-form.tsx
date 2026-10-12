@@ -4,17 +4,24 @@ import {
   CreateUserRequest,
   UpdateUserRequest,
   type RoleOption,
+  type ScopeOptionsResponse,
   type UserResponse,
 } from '@uie/contracts';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { z } from 'zod';
 import { FormLayout, FormSection, SwitchField, TextField } from '@/components/erp';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { terminology } from '@/config/terminology';
 import { apiRequest, messageForApiError } from '@/lib/api/client';
+import {
+  allRowsComplete,
+  inactiveTargetOptions,
+  toAssignmentInputs,
+  toAssignmentRows,
+  type AssignmentRow,
+} from '@/lib/assignments';
 import * as toast from '@/lib/toast';
+import { AssignmentsEditor } from './assignments-editor';
 
 // Form-level schemas: same rules as the API contracts, with on-screen messages from terminology.
 const baseShape = {
@@ -22,7 +29,6 @@ const baseShape = {
   email: z.union([z.literal(''), z.email(terminology.validation.invalidEmail)]),
   displayName: z.string().trim().min(1, terminology.validation.required).max(120),
   isActive: z.boolean(),
-  roleIds: z.array(z.string()),
 };
 
 // Same value shape in both modes so one FormLayout type fits; edit mode ignores temporaryPassword.
@@ -41,50 +47,19 @@ type UserFormValues = z.infer<typeof createSchema>;
 export interface UserFormProps {
   user?: UserResponse;
   roleOptions: RoleOption[];
+  scopeOptions: ScopeOptionsResponse;
 }
 
-function RolePicker({
-  options,
-  value,
-  onChange,
-}: {
-  options: RoleOption[];
-  value: string[];
-  onChange: (next: string[]) => void;
-}) {
-  return (
-    <div className="space-y-2 sm:col-span-2">
-      <p className="text-sm font-medium text-foreground">{terminology.users.fieldRoles}</p>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {options.map((role) => {
-          const id = `role-${role.id}`;
-          const checked = value.includes(role.id);
-
-          return (
-            <div key={role.id} className="flex items-center gap-2">
-              <Checkbox
-                id={id}
-                checked={checked}
-                onCheckedChange={(next) =>
-                  onChange(next === true ? [...value, role.id] : value.filter((v) => v !== role.id))
-                }
-              />
-              <Label htmlFor={id} className="font-normal">
-                {role.name}
-                {role.isActive ? '' : ` (${terminology.labels.inactive})`}
-              </Label>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-export function UserForm({ user, roleOptions }: UserFormProps) {
+export function UserForm({ user, roleOptions, scopeOptions }: UserFormProps) {
   const router = useRouter();
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(
-    user?.roles.map((role) => role.id) ?? [],
+  const keyCounter = useRef(0);
+  const nextKey = () => {
+    keyCounter.current += 1;
+
+    return `new-${keyCounter.current}`;
+  };
+  const [assignmentRows, setAssignmentRows] = useState<AssignmentRow[]>(() =>
+    toAssignmentRows(user?.assignments ?? []),
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isEdit = user !== undefined;
@@ -95,17 +70,22 @@ export function UserForm({ user, roleOptions }: UserFormProps) {
     email: user?.email ?? '',
     displayName: user?.displayName ?? '',
     isActive: user?.isActive ?? true,
-    roleIds: user?.roles.map((role) => role.id) ?? [],
     temporaryPassword: '',
   }));
 
   async function handleSubmit(values: UserFormValues): Promise<void> {
     setErrorMessage(null);
 
+    if (!allRowsComplete(assignmentRows)) {
+      setErrorMessage(terminology.users.assignmentIncomplete);
+      return;
+    }
+
     const { temporaryPassword, ...account } = values;
+    const assignments = toAssignmentInputs(assignmentRows);
     const payload = isEdit
-      ? { ...account, roleIds: selectedRoles }
-      : { ...account, temporaryPassword, roleIds: selectedRoles };
+      ? { ...account, assignments }
+      : { ...account, temporaryPassword, assignments };
     // Validate once more against the real API contract before sending.
     const checked = isEdit
       ? UpdateUserRequest.safeParse(payload)
@@ -172,7 +152,14 @@ export function UserForm({ user, roleOptions }: UserFormProps) {
         </FormSection>
         <FormSection title={terminology.users.sectionAccess}>
           <SwitchField<UserFormValues> name="isActive" label={terminology.users.fieldActive} />
-          <RolePicker options={roleOptions} value={selectedRoles} onChange={setSelectedRoles} />
+          <AssignmentsEditor
+            rows={assignmentRows}
+            onChange={setAssignmentRows}
+            roles={roleOptions}
+            scopeOptions={scopeOptions}
+            inactiveTargets={inactiveTargetOptions(user?.assignments ?? [])}
+            nextKey={nextKey}
+          />
         </FormSection>
       </FormLayout>
     </div>

@@ -20,7 +20,6 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
   }
 
   const { id } = await params;
-  const canManage = permissions.includes('masters.companies.manage');
   const result = await apiGet(`/api/companies/${encodeURIComponent(id)}`, CompanyDetailResponse);
 
   if (result.kind === 'notFound') {
@@ -32,6 +31,8 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
   }
 
   const company = result.data;
+  // The API says whether this particular company is within the user's scope to change.
+  const canManage = company.canManage;
   const states = await apiGet('/api/states', StateListResponse);
 
   if (states.kind !== 'ok') {

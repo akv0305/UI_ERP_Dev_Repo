@@ -119,3 +119,22 @@ export const SetContextRequest = z.object({
 });
 
 export type SetContextRequest = z.infer<typeof SetContextRequest>;
+
+// ---------- Pick lists for the user form's assignment editor ----------
+
+export const ScopeSiteOption = z.object({
+  id: z.uuid(),
+  label: z.string(),
+  projectId: z.uuid(),
+});
+
+export type ScopeSiteOption = z.infer<typeof ScopeSiteOption>;
+
+/** Active companies, projects and sites a role can be assigned to ("CODE — Name" labels). */
+export const ScopeOptionsResponse = z.object({
+  companies: z.array(ContextCompanyOption),
+  projects: z.array(ContextProjectOption),
+  sites: z.array(ScopeSiteOption),
+});
+
+export type ScopeOptionsResponse = z.infer<typeof ScopeOptionsResponse>;

@@ -127,14 +127,15 @@ export function ProjectsListClient({
         onRowClick={(project) => list.router.push(`/masters/projects/${project.id}`)}
         rowActions={
           canManage
-            ? (project) => (
-                <StatusToggle
-                  isActive={project.isActive}
-                  path={`/api/projects/${project.id}`}
-                  labels={terminology.projects}
-                  onChanged={list.router.refresh}
-                />
-              )
+            ? (project) =>
+                project.canManage ? (
+                  <StatusToggle
+                    isActive={project.isActive}
+                    path={`/api/projects/${project.id}`}
+                    labels={terminology.projects}
+                    onChanged={list.router.refresh}
+                  />
+                ) : null
             : undefined
         }
       />

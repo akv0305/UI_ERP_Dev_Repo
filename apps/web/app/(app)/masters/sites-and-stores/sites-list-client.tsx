@@ -122,14 +122,15 @@ export function SitesListClient({ data, query, canManage, projectOptions }: Site
         onRowClick={(site) => list.router.push(`/masters/sites-and-stores/${site.id}`)}
         rowActions={
           canManage
-            ? (site) => (
-                <StatusToggle
-                  isActive={site.isActive}
-                  path={`/api/sites/${site.id}`}
-                  labels={terminology.sites}
-                  onChanged={list.router.refresh}
-                />
-              )
+            ? (site) =>
+                site.canManage ? (
+                  <StatusToggle
+                    isActive={site.isActive}
+                    path={`/api/sites/${site.id}`}
+                    labels={terminology.sites}
+                    onChanged={list.router.refresh}
+                  />
+                ) : null
             : undefined
         }
       />

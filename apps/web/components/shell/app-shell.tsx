@@ -3,20 +3,21 @@
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { useState, type ReactNode } from 'react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import type { Permission } from '@uie/contracts';
+import type { ContextOptionsResponse, Permission, SessionContext } from '@uie/contracts';
 import { terminology } from '@/config/terminology';
+import type { ContextChange } from '@/lib/context';
 import { cn } from '@/lib/utils';
 import { SidebarNav } from './sidebar-nav';
 import { TopBar } from './top-bar';
-import type { SwitcherOption } from './switcher';
 
 export interface AppShellProps {
   children: ReactNode;
   permissions: Permission[];
   displayName: string;
   onSignOut: () => void | Promise<void>;
-  companies: SwitcherOption[];
-  projects: SwitcherOption[];
+  contextOptions: ContextOptionsResponse;
+  context: SessionContext;
+  onChangeContext: (change: ContextChange) => Promise<boolean>;
   notificationCount: number;
 }
 
@@ -25,8 +26,9 @@ export function AppShell({
   permissions,
   displayName,
   onSignOut,
-  companies,
-  projects,
+  contextOptions,
+  context,
+  onChangeContext,
   notificationCount,
 }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
@@ -62,10 +64,11 @@ export function AppShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar
-          companies={companies}
+          contextOptions={contextOptions}
+          context={context}
+          onChangeContext={onChangeContext}
           displayName={displayName}
           onSignOut={onSignOut}
-          projects={projects}
           notificationCount={notificationCount}
           onOpenMenu={() => setMobileOpen(true)}
         />

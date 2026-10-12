@@ -8,7 +8,14 @@ import { ErrorState, NotAuthorised } from '@/components/erp';
 import { terminology } from '@/config/terminology';
 import { apiGet } from '@/lib/api/server';
 import { getCurrentPermissions } from '@/lib/auth/permissions';
-import { buildQueryString, firstValue, type SearchParams } from '@/lib/list-params';
+import { getCurrentUser } from '@/lib/auth/session';
+import {
+  buildQueryString,
+  filterFromContext,
+  firstValue,
+  withSelectedOption,
+  type SearchParams,
+} from '@/lib/list-params';
 import { SitesListClient } from './sites-list-client';
 
 const PROJECT_FILTER_LIMIT = 100;
@@ -25,12 +32,14 @@ export default async function SitesAndStoresPage({
   }
 
   const raw = await searchParams;
+  const user = await getCurrentUser();
+  const context = user?.context;
   const parsed = SiteListQuery.safeParse({
     page: firstValue(raw.page),
     pageSize: firstValue(raw.pageSize),
     search: firstValue(raw.search) || undefined,
     isActive: firstValue(raw.isActive) || undefined,
-    projectId: firstValue(raw.projectId) || undefined,
+    projectId: filterFromContext(raw, 'projectId', context?.projectId ?? null),
     sortBy: firstValue(raw.sortBy),
     sortDir: firstValue(raw.sortDir),
   });
@@ -53,19 +62,24 @@ export default async function SitesAndStoresPage({
       )
     : null;
 
+  const projectOptions = withSelectedOption(
+    projects?.kind === 'ok'
+      ? projects.data.items.map((project) => ({
+          value: project.id,
+          label: `${project.code} ${project.name}`,
+        }))
+      : [],
+    query.projectId,
+    context?.projectId === query.projectId ? (context?.projectLabel ?? null) : null,
+  );
+
   return (
     <SitesListClient
+      key={query.projectId ?? 'all'}
       data={result.data}
       query={query}
       canManage={permissions.includes('masters.sitesAndStores.manage')}
-      projectOptions={
-        projects?.kind === 'ok'
-          ? projects.data.items.map((project) => ({
-              value: project.id,
-              label: `${project.code} ${project.name}`,
-            }))
-          : []
-      }
+      projectOptions={projectOptions}
     />
   );
 }

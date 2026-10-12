@@ -8,11 +8,12 @@ import {
   type ResetPasswordRequest,
   type RoleAssignmentInput,
   type RoleOptionsResponse,
+  type ScopeOptionsResponse,
   type UpdateUserRequest,
   type UserListQuery,
   type UserResponse,
 } from '@uie/contracts';
-import { ADMINISTRATOR_ROLE_CODE } from '../auth/auth.mapper';
+import { ADMINISTRATOR_ROLE_CODE, codeLabel } from '../auth/auth.mapper';
 import { PasswordService } from '../auth/password.service';
 import { auditActionFor } from '../audit/audit-action';
 import { AuditService } from '../audit/audit.service';
@@ -115,6 +116,44 @@ export class UsersService {
         name: role.name,
         isActive: role.isActive,
         requiresGlobalScope: requiresGlobalScope(role),
+      })),
+    };
+  }
+
+  /** Active companies, projects and sites a role can be assigned to (for the user form). */
+  async scopeOptions(): Promise<ScopeOptionsResponse> {
+    const [companies, projects, sites] = await Promise.all([
+      this.prisma.company.findMany({
+        where: { isActive: true },
+        orderBy: [{ code: 'asc' }, { id: 'asc' }],
+        select: { id: true, code: true, legalName: true },
+      }),
+      this.prisma.project.findMany({
+        where: { isActive: true },
+        orderBy: [{ code: 'asc' }, { id: 'asc' }],
+        select: { id: true, code: true, name: true, companyId: true },
+      }),
+      this.prisma.site.findMany({
+        where: { isActive: true },
+        orderBy: [{ code: 'asc' }, { id: 'asc' }],
+        select: { id: true, code: true, name: true, projectId: true },
+      }),
+    ]);
+
+    return {
+      companies: companies.map((row) => ({
+        id: row.id,
+        label: codeLabel(row.code, row.legalName),
+      })),
+      projects: projects.map((row) => ({
+        id: row.id,
+        label: codeLabel(row.code, row.name),
+        companyId: row.companyId,
+      })),
+      sites: sites.map((row) => ({
+        id: row.id,
+        label: codeLabel(row.code, row.name),
+        projectId: row.projectId,
       })),
     };
   }

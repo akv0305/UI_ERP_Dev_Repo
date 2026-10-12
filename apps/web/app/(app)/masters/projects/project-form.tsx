@@ -1,8 +1,8 @@
 'use client';
 
 import {
-  CompanyDetailResponse,
   CreateProjectRequest,
+  GstRegistrationOptionsResponse,
   UpdateProjectRequest,
   isValidMasterCode,
   type ProjectResponse,
@@ -80,7 +80,10 @@ function BillingField({
       return;
     }
 
-    void apiRead(`/api/companies/${companyId}`, CompanyDetailResponse).then((result) => {
+    void apiRead(
+      `/api/gst-registrations/options?companyId=${encodeURIComponent(companyId)}`,
+      GstRegistrationOptionsResponse,
+    ).then((result) => {
       if (!active) {
         return;
       }
@@ -90,11 +93,7 @@ function BillingField({
         return;
       }
 
-      setLoaded(
-        result.data.gstRegistrations
-          .filter((registration) => registration.isActive)
-          .map((registration) => ({ value: registration.id, label: registration.gstin })),
-      );
+      setLoaded(result.data.items.map((item) => ({ value: item.id, label: item.label })));
     });
 
     return () => {

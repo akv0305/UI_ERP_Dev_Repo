@@ -156,8 +156,9 @@ export class GstRegistrationsService {
       select: { id: true },
     });
 
-    // Out of the user's project-manage scope reads the same as a missing company.
-    if (company === null || !access.canOn(PROJECT_PERMISSIONS.manage, { companyId })) {
+    // Allowed for a manager over the company OR over any project of it (a project-scoped manager
+    // edits the billing registration of their own project). Anything else reads as a missing company.
+    if (company === null || !(await this.managesProjectIn(companyId, access))) {
       throw notFound('Company');
     }
 
@@ -168,6 +169,23 @@ export class GstRegistrationsService {
     });
 
     return { items: registrations.map((row) => ({ id: row.id, label: row.gstin })) };
+  }
+
+  private async managesProjectIn(companyId: string, access: AccessContext): Promise<boolean> {
+    if (access.canOn(PROJECT_PERMISSIONS.manage, { companyId })) {
+      return true;
+    }
+
+    const projectIds = await access.accessibleProjectIds(PROJECT_PERMISSIONS.manage);
+
+    if (projectIds === null) {
+      return true;
+    }
+
+    return (
+      projectIds.length > 0 &&
+      (await this.prisma.project.count({ where: { companyId, id: { in: projectIds } } })) > 0
+    );
   }
 
   private async setActive(

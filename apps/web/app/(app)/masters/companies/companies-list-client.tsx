@@ -127,14 +127,15 @@ export function CompaniesListClient({ data, query, canManage }: CompaniesListCli
         onRowClick={(company) => list.router.push(`/masters/companies/${company.id}`)}
         rowActions={
           canManage
-            ? (company) => (
-                <StatusToggle
-                  isActive={company.isActive}
-                  path={`/api/companies/${company.id}`}
-                  labels={terminology.companies}
-                  onChanged={list.router.refresh}
-                />
-              )
+            ? (company) =>
+                company.canManage ? (
+                  <StatusToggle
+                    isActive={company.isActive}
+                    path={`/api/companies/${company.id}`}
+                    labels={terminology.companies}
+                    onChanged={list.router.refresh}
+                  />
+                ) : null
             : undefined
         }
       />

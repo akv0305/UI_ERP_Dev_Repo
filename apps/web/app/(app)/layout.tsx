@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { AppShell } from '@/components/shell/app-shell';
-import { signOut } from '@/lib/auth/actions';
+import { changeContext, signOut } from '@/lib/auth/actions';
+import { getContextOptions } from '@/lib/auth/context-options';
 import { getCurrentUser } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
@@ -17,13 +18,16 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     redirect('/account/change-password');
   }
 
+  const contextOptions = await getContextOptions();
+
   return (
     <AppShell
       permissions={user.permissions}
       displayName={user.displayName}
       onSignOut={signOut}
-      companies={[]}
-      projects={[]}
+      contextOptions={contextOptions}
+      context={user.context}
+      onChangeContext={changeContext}
       notificationCount={0}
     >
       {children}

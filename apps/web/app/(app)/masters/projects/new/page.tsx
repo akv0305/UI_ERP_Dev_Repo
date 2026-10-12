@@ -1,24 +1,18 @@
-import { CompanyListQuery, PagedCompaniesResponse, StateListResponse } from '@uie/contracts';
+import { CompanyOptionsResponse, StateListResponse } from '@uie/contracts';
 import { EmptyState, ErrorState, NotAuthorised, PageHeader } from '@/components/erp';
 import { terminology } from '@/config/terminology';
 import { apiGet } from '@/lib/api/server';
 import { requirePermission } from '@/lib/auth/require-permission';
-import { buildQueryString } from '@/lib/list-params';
 import { ProjectForm } from '../project-form';
-
-const COMPANY_OPTIONS_LIMIT = 100;
 
 export default async function NewProjectPage() {
   if (!(await requirePermission('masters.projects.manage'))) {
     return <NotAuthorised />;
   }
 
-  // Companies need masters.companies.view; a manager of projects without it cannot pick one.
+  // Needs only masters.projects.manage: the API lists the companies this user may create under.
   const [companies, states] = await Promise.all([
-    apiGet(
-      `/api/companies?${buildQueryString({ ...CompanyListQuery.parse({}), pageSize: COMPANY_OPTIONS_LIMIT, isActive: 'true' })}`,
-      PagedCompaniesResponse,
-    ),
+    apiGet('/api/companies/options', CompanyOptionsResponse),
     apiGet('/api/states', StateListResponse),
   ]);
 
@@ -37,7 +31,7 @@ export default async function NewProjectPage() {
         states={states.data.items}
         companyOptions={companies.data.items.map((company) => ({
           value: company.id,
-          label: `${company.code} ${company.legalName}`,
+          label: company.label,
         }))}
       />
     </div>

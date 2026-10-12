@@ -1,8 +1,9 @@
-import { RoleOptionsResponse, UserResponse } from '@uie/contracts';
+import { RoleOptionsResponse, ScopeOptionsResponse, UserResponse } from '@uie/contracts';
 import { ErrorState, KeyValueGrid, NotAuthorised, PageHeader } from '@/components/erp';
 import { terminology } from '@/config/terminology';
 import { apiGet } from '@/lib/api/server';
 import { getCurrentPermissions } from '@/lib/auth/permissions';
+import { describeAssignmentText } from '@/lib/assignments';
 import { formatDateTime } from '@/lib/format';
 import { UserForm } from '../user-form';
 
@@ -69,11 +70,17 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
               value: user.isActive ? terminology.labels.active : terminology.labels.inactive,
             },
             {
-              label: terminology.users.fieldRoles,
+              label: terminology.users.fieldAssignments,
               value:
-                user.roles.length === 0
-                  ? terminology.users.noRoles
-                  : user.roles.map((role) => role.name).join(', '),
+                user.assignments.length === 0 ? (
+                  terminology.users.noAssignments
+                ) : (
+                  <ul className="flex flex-col gap-1">
+                    {user.assignments.map((assignment) => (
+                      <li key={assignment.id}>{describeAssignmentText(assignment)}</li>
+                    ))}
+                  </ul>
+                ),
             },
           ]}
         />
@@ -82,10 +89,17 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  const roles = await apiGet('/api/users/role-options', RoleOptionsResponse);
+  const [roles, scopes] = await Promise.all([
+    apiGet('/api/users/role-options', RoleOptionsResponse),
+    apiGet('/api/users/scope-options', ScopeOptionsResponse),
+  ]);
 
   if (roles.kind !== 'ok') {
     return <ErrorState description={terminology.users.rolesUnavailable} />;
+  }
+
+  if (scopes.kind !== 'ok') {
+    return <ErrorState description={terminology.users.scopeOptionsUnavailable} />;
   }
 
   return (
@@ -97,7 +111,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
         </h2>
         {info}
       </section>
-      <UserForm user={user} roleOptions={roles.data.items} />
+      <UserForm user={user} roleOptions={roles.data.items} scopeOptions={scopes.data} />
     </div>
   );
 }

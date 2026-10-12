@@ -18,6 +18,7 @@ import {
   UserListQuery,
   type PagedUsersResponse,
   type RoleOptionsResponse,
+  type ScopeOptionsResponse,
   type UserResponse,
 } from '@uie/contracts';
 import type { Request } from 'express';
@@ -43,6 +44,13 @@ export class UsersController {
   @RequirePermissions('administration.users.manage')
   roleOptions(): Promise<RoleOptionsResponse> {
     return this.users.roleOptions();
+  }
+
+  /** Companies, projects and sites a role can be assigned to (needs only users.manage). */
+  @Get('scope-options')
+  @RequirePermissions('administration.users.manage')
+  scopeOptions(): Promise<ScopeOptionsResponse> {
+    return this.users.scopeOptions();
   }
 
   @Get(':id')

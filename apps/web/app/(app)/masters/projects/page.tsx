@@ -8,7 +8,14 @@ import { ErrorState, NotAuthorised } from '@/components/erp';
 import { terminology } from '@/config/terminology';
 import { apiGet } from '@/lib/api/server';
 import { getCurrentPermissions } from '@/lib/auth/permissions';
-import { buildQueryString, firstValue, type SearchParams } from '@/lib/list-params';
+import { getCurrentUser } from '@/lib/auth/session';
+import {
+  buildQueryString,
+  filterFromContext,
+  firstValue,
+  withSelectedOption,
+  type SearchParams,
+} from '@/lib/list-params';
 import { ProjectsListClient } from './projects-list-client';
 
 const COMPANY_FILTER_LIMIT = 100;
@@ -25,12 +32,14 @@ export default async function ProjectsPage({
   }
 
   const raw = await searchParams;
+  const user = await getCurrentUser();
+  const context = user?.context;
   const parsed = ProjectListQuery.safeParse({
     page: firstValue(raw.page),
     pageSize: firstValue(raw.pageSize),
     search: firstValue(raw.search) || undefined,
     isActive: firstValue(raw.isActive) || undefined,
-    companyId: firstValue(raw.companyId) || undefined,
+    companyId: filterFromContext(raw, 'companyId', context?.companyId ?? null),
     sortBy: firstValue(raw.sortBy),
     sortDir: firstValue(raw.sortDir),
   });
@@ -53,19 +62,24 @@ export default async function ProjectsPage({
       )
     : null;
 
+  const companyOptions = withSelectedOption(
+    companies?.kind === 'ok'
+      ? companies.data.items.map((company) => ({
+          value: company.id,
+          label: `${company.code} ${company.legalName}`,
+        }))
+      : [],
+    query.companyId,
+    context?.companyId === query.companyId ? (context?.companyLabel ?? null) : null,
+  );
+
   return (
     <ProjectsListClient
+      key={query.companyId ?? 'all'}
       data={result.data}
       query={query}
       canManage={permissions.includes('masters.projects.manage')}
-      companyOptions={
-        companies?.kind === 'ok'
-          ? companies.data.items.map((company) => ({
-              value: company.id,
-              label: `${company.code} ${company.legalName}`,
-            }))
-          : []
-      }
+      companyOptions={companyOptions}
     />
   );
 }
