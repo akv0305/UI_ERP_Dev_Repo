@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getVisibleGroups, HOME_ITEM, type NavigationItem } from '@/config/navigation';
 import { terminology } from '@/config/terminology';
+import { theme } from '@/config/theme';
 import { cn } from '@/lib/utils';
+import { BrandLogo } from './brand-logo';
 
 export interface SidebarNavProps {
   permissions: Permission[];
@@ -54,29 +56,22 @@ export function SidebarNav({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-[var(--top-bar-height)] items-center gap-2 border-b border-border px-4">
-        {collapsed ? null : (
-          <span className="truncate text-sm font-semibold text-foreground">
-            {terminology.app.title}
-          </span>
-        )}
-        {onToggleCollapsed ? (
-          <button
-            type="button"
-            onClick={onToggleCollapsed}
-            className={cn(
-              'rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-              collapsed ? 'mx-auto' : 'ml-auto',
-            )}
-            aria-label="Toggle navigation"
-          >
-            {collapsed ? (
-              <ChevronsRight className="size-4" aria-hidden />
-            ) : (
-              <ChevronsLeft className="size-4" aria-hidden />
-            )}
-          </button>
-        ) : null}
+      <div className="flex h-[var(--top-bar-height)] items-center border-b border-border px-4">
+        <Link
+          href={HOME_ITEM.href}
+          onClick={onNavigate}
+          aria-label={terminology.nav.home}
+          className={cn('flex min-w-0 items-center', collapsed && 'mx-auto')}
+        >
+          <BrandLogo
+            variant={collapsed ? 'mark' : 'full'}
+            height={
+              collapsed
+                ? theme.layout.brandLogoHeightCollapsed
+                : theme.layout.brandLogoHeightSidebar
+            }
+          />
+        </Link>
       </div>
 
       <nav className="flex-1 space-y-4 overflow-y-auto p-3">
@@ -106,6 +101,26 @@ export function SidebarNav({
           </div>
         ))}
       </nav>
+
+      {onToggleCollapsed ? (
+        <div className="flex items-center border-t border-border p-3">
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            className={cn(
+              'rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              collapsed ? 'mx-auto' : 'ml-auto',
+            )}
+            aria-label={collapsed ? terminology.shell.expandMenu : terminology.shell.collapseMenu}
+          >
+            {collapsed ? (
+              <ChevronsRight className="size-4" aria-hidden />
+            ) : (
+              <ChevronsLeft className="size-4" aria-hidden />
+            )}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

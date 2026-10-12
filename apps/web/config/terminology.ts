@@ -533,6 +533,10 @@ export const terminology = {
     selectCompany: 'Select company',
     selectProject: 'Select project',
     notifications: 'Notifications',
+    breadcrumb: 'Breadcrumb',
+    expandMenu: 'Expand menu',
+    collapseMenu: 'Collapse menu',
+    openMenu: 'Open menu',
   },
   messages: {
     screenPendingSpecification: 'Screen pending specification',

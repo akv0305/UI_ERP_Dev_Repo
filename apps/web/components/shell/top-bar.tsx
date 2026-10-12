@@ -30,7 +30,7 @@ export function TopBar({
         type="button"
         onClick={onOpenMenu}
         className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:hidden"
-        aria-label="Open navigation"
+        aria-label={terminology.shell.openMenu}
       >
         <Menu className="size-4" aria-hidden />
       </button>
