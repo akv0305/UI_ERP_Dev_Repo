@@ -2,10 +2,12 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { CompaniesModule } from './companies/companies.module';
 import { validateEnv } from './config/env.validation';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RolesModule } from './roles/roles.module';
+import { StatesModule } from './states/states.module';
 import { UsersModule } from './users/users.module';
 
 @Module({
@@ -22,6 +24,8 @@ import { UsersModule } from './users/users.module';
     HealthModule,
     UsersModule,
     RolesModule,
+    StatesModule,
+    CompaniesModule,
   ],
 })
 export class AppModule {}

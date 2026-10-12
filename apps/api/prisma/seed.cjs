@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-// Idempotent seed: ADMINISTRATOR role (all permissions) and one admin user.
+// Idempotent seed: ADMINISTRATOR role (all permissions), one admin user and the GST state master.
 // Reads DIRECT_URL (or DATABASE_URL) and SEED_ADMIN_* from apps/api/.env. Never prints their values.
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { hash } = require('@node-rs/argon2');
 const { ALL_PERMISSIONS } = require('@uie/contracts');
 const { resolveDirectUrl } = require('./connection.cjs');
+const { STATES } = require('./states-data.cjs');
 
 try {
   process.loadEnvFile('.env');
@@ -23,6 +24,35 @@ function required(name) {
   }
 
   return value.trim();
+}
+
+/** Creates missing states and corrects name/isActive of existing ones; never deletes. */
+async function seedStates(prisma) {
+  let inserted = 0;
+  let alreadyExisted = 0;
+  let corrected = 0;
+
+  for (const state of STATES) {
+    const existing = await prisma.state.findUnique({ where: { gstCode: state.gstCode } });
+
+    if (existing === null) {
+      await prisma.state.create({ data: state });
+      inserted += 1;
+      continue;
+    }
+
+    alreadyExisted += 1;
+
+    if (existing.name !== state.name || existing.isActive !== state.isActive) {
+      await prisma.state.update({
+        where: { id: existing.id },
+        data: { name: state.name, isActive: state.isActive },
+      });
+      corrected += 1;
+    }
+  }
+
+  return { inserted, alreadyExisted, corrected };
 }
 
 async function main() {
@@ -82,8 +112,11 @@ async function main() {
       skipDuplicates: true,
     });
 
+    const states = await seedStates(prisma);
+
     console.log(
       JSON.stringify({
+        states,
         role: existingRole === null ? 'created' : 'already existed',
         permissions: ALL_PERMISSIONS.length,
         adminUser: userCreated ? 'created' : 'already existed',

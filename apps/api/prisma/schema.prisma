@@ -22,13 +22,18 @@ model User {
   createdById        String?   @db.Uuid
   updatedById        String?   @db.Uuid
 
-  createdBy    User?      @relation("UserCreatedBy", fields: [createdById], references: [id])
-  updatedBy    User?      @relation("UserUpdatedBy", fields: [updatedById], references: [id])
-  createdUsers User[]     @relation("UserCreatedBy")
-  updatedUsers User[]     @relation("UserUpdatedBy")
+  createdBy    User?        @relation("UserCreatedBy", fields: [createdById], references: [id])
+  updatedBy    User?        @relation("UserUpdatedBy", fields: [updatedById], references: [id])
+  createdUsers User[]       @relation("UserCreatedBy")
+  updatedUsers User[]       @relation("UserUpdatedBy")
   roles        UserRole[]
   sessions     Session[]
   auditEvents  AuditEvent[]
+
+  createdCompanies        Company[]                @relation("CompanyCreatedBy")
+  updatedCompanies        Company[]                @relation("CompanyUpdatedBy")
+  createdGstRegistrations CompanyGstRegistration[] @relation("GstRegistrationCreatedBy")
+  updatedGstRegistrations CompanyGstRegistration[] @relation("GstRegistrationUpdatedBy")
 
   @@map("users")
 }
@@ -111,4 +116,84 @@ model AuditEvent {
   @@index([occurredAt])
   @@index([actorUserId])
   @@map("audit_events")
+}
+
+enum CompanyEntityType {
+  COMPANY
+  SPV
+  JV
+}
+
+enum GstRegistrationType {
+  REGULAR
+  COMPOSITION
+  SEZ_UNIT
+  CASUAL
+  ISD
+}
+
+model State {
+  id       String  @id @default(uuid()) @db.Uuid
+  gstCode  String  @unique @db.Char(2)
+  name     String
+  isActive Boolean @default(true)
+
+  companies        Company[]
+  gstRegistrations CompanyGstRegistration[]
+
+  @@map("states")
+}
+
+model Company {
+  id           String            @id @default(uuid()) @db.Uuid
+  code         String            @unique
+  legalName    String
+  entityType   CompanyEntityType
+  pan          String?
+  tan          String?
+  cin          String?
+  llpin        String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  stateId      String?           @db.Uuid
+  pinCode      String?
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @db.Timestamptz(3)
+  createdById  String            @db.Uuid
+  updatedById  String            @db.Uuid
+
+  state            State?                   @relation(fields: [stateId], references: [id])
+  createdBy        User                     @relation("CompanyCreatedBy", fields: [createdById], references: [id])
+  updatedBy        User                     @relation("CompanyUpdatedBy", fields: [updatedById], references: [id])
+  gstRegistrations CompanyGstRegistration[]
+
+  @@map("companies")
+}
+
+model CompanyGstRegistration {
+  id               String              @id @default(uuid()) @db.Uuid
+  companyId        String              @db.Uuid
+  stateId          String              @db.Uuid
+  gstin            String              @unique
+  registrationType GstRegistrationType
+  effectiveFrom    DateTime?           @db.Date
+  addressLine1     String
+  addressLine2     String?
+  city             String
+  pinCode          String
+  isActive         Boolean             @default(true)
+  createdAt        DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime            @updatedAt @db.Timestamptz(3)
+  createdById      String              @db.Uuid
+  updatedById      String              @db.Uuid
+
+  company   Company @relation(fields: [companyId], references: [id])
+  state     State   @relation(fields: [stateId], references: [id])
+  createdBy User    @relation("GstRegistrationCreatedBy", fields: [createdById], references: [id])
+  updatedBy User    @relation("GstRegistrationUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([companyId])
+  @@map("company_gst_registrations")
 }
