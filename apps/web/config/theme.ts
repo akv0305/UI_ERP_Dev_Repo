@@ -46,6 +46,9 @@ export const theme = {
     sidebarCollapsedWidth: '4rem',
     topBarHeight: '3.5rem',
     mobileSheetWidth: '18rem',
+    brandLogoHeightLogin: 48,
+    brandLogoHeightSidebar: 32,
+    brandLogoHeightCollapsed: 30,
   },
   density: {
     default: 'comfortable',
@@ -65,6 +68,8 @@ export const theme = {
   brand: {
     appName: 'Unique Infra Engineers',
     shortName: 'UIE',
+    logoFull: '/brand/logo.png',
+    logoMark: '/brand/logo-mark.png',
   },
 } as const;
 
