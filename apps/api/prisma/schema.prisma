@@ -34,6 +34,12 @@ model User {
   updatedCompanies        Company[]                @relation("CompanyUpdatedBy")
   createdGstRegistrations CompanyGstRegistration[] @relation("GstRegistrationCreatedBy")
   updatedGstRegistrations CompanyGstRegistration[] @relation("GstRegistrationUpdatedBy")
+  createdProjects         Project[]                @relation("ProjectCreatedBy")
+  updatedProjects         Project[]                @relation("ProjectUpdatedBy")
+  createdSites            Site[]                   @relation("SiteCreatedBy")
+  updatedSites            Site[]                   @relation("SiteUpdatedBy")
+  createdStores           Store[]                  @relation("StoreCreatedBy")
+  updatedStores           Store[]                  @relation("StoreUpdatedBy")
 
   @@map("users")
 }
@@ -140,6 +146,8 @@ model State {
 
   companies        Company[]
   gstRegistrations CompanyGstRegistration[]
+  projects         Project[]
+  sites            Site[]
 
   @@map("states")
 }
@@ -168,6 +176,7 @@ model Company {
   createdBy        User                     @relation("CompanyCreatedBy", fields: [createdById], references: [id])
   updatedBy        User                     @relation("CompanyUpdatedBy", fields: [updatedById], references: [id])
   gstRegistrations CompanyGstRegistration[]
+  projects         Project[]
 
   @@map("companies")
 }
@@ -189,11 +198,83 @@ model CompanyGstRegistration {
   createdById      String              @db.Uuid
   updatedById      String              @db.Uuid
 
-  company   Company @relation(fields: [companyId], references: [id])
-  state     State   @relation(fields: [stateId], references: [id])
-  createdBy User    @relation("GstRegistrationCreatedBy", fields: [createdById], references: [id])
-  updatedBy User    @relation("GstRegistrationUpdatedBy", fields: [updatedById], references: [id])
+  company         Company   @relation(fields: [companyId], references: [id])
+  state           State     @relation(fields: [stateId], references: [id])
+  createdBy       User      @relation("GstRegistrationCreatedBy", fields: [createdById], references: [id])
+  updatedBy       User      @relation("GstRegistrationUpdatedBy", fields: [updatedById], references: [id])
+  billingProjects Project[]
 
   @@index([companyId])
   @@map("company_gst_registrations")
+}
+
+model Project {
+  id                       String   @id @default(uuid()) @db.Uuid
+  companyId                String   @db.Uuid
+  code                     String
+  name                     String
+  stateId                  String?  @db.Uuid
+  billingGstRegistrationId String?  @db.Uuid
+  isActive                 Boolean  @default(true)
+  createdAt                DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime @updatedAt @db.Timestamptz(3)
+  createdById              String   @db.Uuid
+  updatedById              String   @db.Uuid
+
+  company    Company                 @relation(fields: [companyId], references: [id])
+  state      State?                  @relation(fields: [stateId], references: [id])
+  billingGst CompanyGstRegistration? @relation(fields: [billingGstRegistrationId], references: [id])
+  createdBy  User                    @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+  updatedBy  User                    @relation("ProjectUpdatedBy", fields: [updatedById], references: [id])
+  sites      Site[]
+
+  @@index([companyId])
+  @@map("projects")
+}
+
+model Site {
+  id            String   @id @default(uuid()) @db.Uuid
+  projectId     String   @db.Uuid
+  code          String
+  name          String
+  addressLine1  String?
+  addressLine2  String?
+  city          String?
+  stateId       String?  @db.Uuid
+  pinCode       String?
+  contactPerson String?
+  contactPhone  String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+  createdById   String   @db.Uuid
+  updatedById   String   @db.Uuid
+
+  project   Project @relation(fields: [projectId], references: [id])
+  state     State?  @relation(fields: [stateId], references: [id])
+  createdBy User    @relation("SiteCreatedBy", fields: [createdById], references: [id])
+  updatedBy User    @relation("SiteUpdatedBy", fields: [updatedById], references: [id])
+  stores    Store[]
+
+  @@index([projectId])
+  @@map("sites")
+}
+
+model Store {
+  id          String   @id @default(uuid()) @db.Uuid
+  siteId      String   @db.Uuid
+  code        String
+  name        String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  createdById String   @db.Uuid
+  updatedById String   @db.Uuid
+
+  site      Site @relation(fields: [siteId], references: [id])
+  createdBy User @relation("StoreCreatedBy", fields: [createdById], references: [id])
+  updatedBy User @relation("StoreUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([siteId])
+  @@map("stores")
 }

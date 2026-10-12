@@ -1,3 +1,4 @@
+import type { ZodType } from 'zod';
 import { terminology } from '@/config/terminology';
 
 export type ApiCallResult<T> =
@@ -27,6 +28,25 @@ export async function apiRequest<T = undefined>(
     } | null;
 
     return { ok: false, status: response.status, code: payload?.error?.code };
+  } catch {
+    return { ok: false, status: 0, code: undefined };
+  }
+}
+
+/** Browser-side GET through the Next rewrite; the body must match the schema. */
+export async function apiRead<T>(path: string, schema: ZodType<T>): Promise<ApiCallResult<T>> {
+  try {
+    const response = await fetch(path, { cache: 'no-store' });
+
+    if (!response.ok) {
+      return { ok: false, status: response.status, code: undefined };
+    }
+
+    const parsed = schema.safeParse(await response.json());
+
+    return parsed.success
+      ? { ok: true, data: parsed.data }
+      : { ok: false, status: response.status, code: undefined };
   } catch {
     return { ok: false, status: 0, code: undefined };
   }

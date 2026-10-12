@@ -12,6 +12,7 @@ import {
 import { auditActionFor } from '../audit/audit-action';
 import { AuditService } from '../audit/audit.service';
 import { ApiError } from '../common/errors/api-error';
+import { hasActiveChildren } from '../masters/hierarchy-errors';
 import {
   assertCodeUnchanged,
   duplicateCode,
@@ -169,6 +170,16 @@ export class CompaniesService {
 
     if (existing.isActive === isActive) {
       return toCompanyResponse(existing);
+    }
+
+    if (!isActive) {
+      const activeProjects = await this.prisma.project.count({
+        where: { companyId: id, isActive: true },
+      });
+
+      if (activeProjects > 0) {
+        throw hasActiveChildren('projects');
+      }
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {

@@ -6,7 +6,9 @@ import { CompaniesModule } from './companies/companies.module';
 import { validateEnv } from './config/env.validation';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ProjectsModule } from './projects/projects.module';
 import { RolesModule } from './roles/roles.module';
+import { SitesModule } from './sites/sites.module';
 import { StatesModule } from './states/states.module';
 import { UsersModule } from './users/users.module';
 
@@ -26,6 +28,8 @@ import { UsersModule } from './users/users.module';
     RolesModule,
     StatesModule,
     CompaniesModule,
+    ProjectsModule,
+    SitesModule,
   ],
 })
 export class AppModule {}

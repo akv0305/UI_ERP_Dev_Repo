@@ -53,6 +53,7 @@ function setup() {
       count: jest.fn(),
     },
     companyGstRegistration: { findMany: jest.fn() },
+    project: { count: jest.fn() },
     state: { findUnique: jest.fn() },
     $transaction: jest.fn(recorder.run(tx)),
   };
@@ -60,6 +61,7 @@ function setup() {
   prisma.company.count.mockResolvedValue(0);
   prisma.company.findMany.mockResolvedValue([]);
   prisma.companyGstRegistration.findMany.mockResolvedValue([]);
+  prisma.project.count.mockResolvedValue(0);
   prisma.state.findUnique.mockResolvedValue(STATE);
 
   const client = prisma as unknown as PrismaService;
@@ -262,6 +264,20 @@ describe('CompaniesService deactivate and reactivate', () => {
     expect(recorder.audit()).toEqual([
       expect.objectContaining({ action: 'DEACTIVATE', companyId: COMPANY_ID }),
     ]);
+  });
+
+  it('blocks deactivation while active projects exist with HAS_ACTIVE_CHILDREN', async () => {
+    const { prisma, recorder, service } = setup();
+    prisma.company.findUnique.mockResolvedValue(companyRow());
+    prisma.project.count.mockResolvedValue(2);
+
+    await expect(codeOf(service.deactivate(COMPANY_ID, ACTOR))).resolves.toBe(
+      'HAS_ACTIVE_CHILDREN',
+    );
+    expect(prisma.project.count).toHaveBeenCalledWith({
+      where: { companyId: COMPANY_ID, isActive: true },
+    });
+    expect(recorder.committed).toEqual([]);
   });
 
   it('reactivates and audits REACTIVATE', async () => {
