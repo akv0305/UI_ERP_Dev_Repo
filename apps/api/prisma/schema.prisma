@@ -30,6 +30,8 @@ model User {
   sessions     Session[]
   auditEvents  AuditEvent[]
 
+  createdUserRoles UserRole[] @relation("UserRoleCreatedBy")
+
   createdCompanies        Company[]                @relation("CompanyCreatedBy")
   updatedCompanies        Company[]                @relation("CompanyUpdatedBy")
   createdGstRegistrations CompanyGstRegistration[] @relation("GstRegistrationCreatedBy")
@@ -59,14 +61,39 @@ model Role {
   @@map("roles")
 }
 
+enum RoleScopeType {
+  GLOBAL
+  COMPANY
+  PROJECT
+  SITE
+}
+
+/// A role granted to a user at one scope. GLOBAL rows carry no target; COMPANY / PROJECT / SITE rows
+/// carry exactly the matching target id (enforced by a CHECK constraint added in the migration).
 model UserRole {
-  userId String @db.Uuid
-  roleId String @db.Uuid
+  id          String        @id @default(uuid()) @db.Uuid
+  userId      String        @db.Uuid
+  roleId      String        @db.Uuid
+  scopeType   RoleScopeType @default(GLOBAL)
+  companyId   String?       @db.Uuid
+  projectId   String?       @db.Uuid
+  siteId      String?       @db.Uuid
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+  createdById String?       @db.Uuid
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  site      Site?    @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  createdBy User?    @relation("UserRoleCreatedBy", fields: [createdById], references: [id])
 
-  @@id([userId, roleId])
+  /// The migration creates this as UNIQUE NULLS NOT DISTINCT so GLOBAL duplicates are rejected too.
+  @@unique([userId, roleId, scopeType, companyId, projectId, siteId], map: "user_roles_assignment_key")
+  @@index([userId])
+  @@index([companyId])
+  @@index([projectId])
+  @@index([siteId])
   @@map("user_roles")
 }
 
@@ -91,7 +118,12 @@ model Session {
   ipAddress  String?
   userAgent  String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentCompanyId String? @db.Uuid
+  currentProjectId String? @db.Uuid
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentCompany Company? @relation("SessionCurrentCompany", fields: [currentCompanyId], references: [id], onDelete: SetNull)
+  currentProject Project? @relation("SessionCurrentProject", fields: [currentProjectId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@map("sessions")
@@ -177,6 +209,8 @@ model Company {
   updatedBy        User                     @relation("CompanyUpdatedBy", fields: [updatedById], references: [id])
   gstRegistrations CompanyGstRegistration[]
   projects         Project[]
+  userRoles        UserRole[]
+  sessionContexts  Session[]                @relation("SessionCurrentCompany")
 
   @@map("companies")
 }
@@ -227,6 +261,9 @@ model Project {
   createdBy  User                    @relation("ProjectCreatedBy", fields: [createdById], references: [id])
   updatedBy  User                    @relation("ProjectUpdatedBy", fields: [updatedById], references: [id])
   sites      Site[]
+  userRoles  UserRole[]
+
+  sessionContexts Session[] @relation("SessionCurrentProject")
 
   @@index([companyId])
   @@map("projects")
@@ -250,11 +287,12 @@ model Site {
   createdById   String   @db.Uuid
   updatedById   String   @db.Uuid
 
-  project   Project @relation(fields: [projectId], references: [id])
-  state     State?  @relation(fields: [stateId], references: [id])
-  createdBy User    @relation("SiteCreatedBy", fields: [createdById], references: [id])
-  updatedBy User    @relation("SiteUpdatedBy", fields: [updatedById], references: [id])
+  project   Project    @relation(fields: [projectId], references: [id])
+  state     State?     @relation(fields: [stateId], references: [id])
+  createdBy User       @relation("SiteCreatedBy", fields: [createdById], references: [id])
+  updatedBy User       @relation("SiteUpdatedBy", fields: [updatedById], references: [id])
   stores    Store[]
+  userRoles UserRole[]
 
   @@index([projectId])
   @@map("sites")

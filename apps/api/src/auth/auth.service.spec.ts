@@ -20,6 +20,10 @@ interface FakeUser {
   failedLoginCount: number;
   lockedUntil: Date | null;
   roles: Array<{
+    scopeType: 'GLOBAL' | 'COMPANY' | 'PROJECT' | 'SITE';
+    companyId: string | null;
+    projectId: string | null;
+    siteId: string | null;
     role: {
       code: string;
       name: string;
@@ -66,6 +70,10 @@ async function setup() {
     lockedUntil: null,
     roles: [
       {
+        scopeType: 'GLOBAL',
+        companyId: null,
+        projectId: null,
+        siteId: null,
         role: {
           code: 'STORE_KEEPER',
           name: 'Store keeper',
@@ -315,7 +323,13 @@ describe('AuthService.resolveSession', () => {
     const admin: FakeUser = {
       ...user,
       roles: [
-        { role: { code: 'ADMINISTRATOR', name: 'Administrator', isActive: true, permissions: [] } },
+        {
+          scopeType: 'GLOBAL',
+          companyId: null,
+          projectId: null,
+          siteId: null,
+          role: { code: 'ADMINISTRATOR', name: 'Administrator', isActive: true, permissions: [] },
+        },
       ],
     };
     prisma.session.findUnique.mockResolvedValue(sessionFor(admin));

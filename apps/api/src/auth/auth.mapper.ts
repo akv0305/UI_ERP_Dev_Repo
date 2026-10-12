@@ -1,7 +1,13 @@
 import type { Prisma } from '@prisma/client';
-import { ALL_PERMISSIONS, type MeResponse, type Permission } from '@uie/contracts';
+import {
+  ADMINISTRATOR_ROLE_CODE,
+  ALL_PERMISSIONS,
+  type MeResponse,
+  type Permission,
+} from '@uie/contracts';
+import { permissionsOf } from '../access/access-context';
 
-export const ADMINISTRATOR_ROLE_CODE = 'ADMINISTRATOR';
+export { ADMINISTRATOR_ROLE_CODE };
 
 export const userWithAccessInclude = {
   roles: { include: { role: { include: { permissions: true } } } },
@@ -9,23 +15,26 @@ export const userWithAccessInclude = {
 
 export type UserWithAccess = Prisma.UserGetPayload<{ include: typeof userWithAccessInclude }>;
 
-const KNOWN_PERMISSIONS = new Set<string>(ALL_PERMISSIONS);
-
-/** Effective permissions: union of active roles; ADMINISTRATOR always gets everything. */
+/**
+ * Effective permissions: union over the user's assignments. ADMINISTRATOR grants everything and
+ * administration.* permissions count only from GLOBAL assignments (see access-context.ts).
+ */
 export function resolvePermissions(user: UserWithAccess): Permission[] {
-  const activeRoles = user.roles.map((link) => link.role).filter((role) => role.isActive);
-
-  if (activeRoles.some((role) => role.code === ADMINISTRATOR_ROLE_CODE)) {
-    return [...ALL_PERMISSIONS];
-  }
-
   const granted = new Set<string>();
 
-  for (const role of activeRoles) {
-    for (const permission of role.permissions) {
-      if (KNOWN_PERMISSIONS.has(permission.permissionCode)) {
-        granted.add(permission.permissionCode);
-      }
+  for (const link of user.roles) {
+    for (const code of permissionsOf({
+      scopeType: link.scopeType,
+      companyId: link.companyId,
+      projectId: link.projectId,
+      siteId: link.siteId,
+      role: {
+        code: link.role.code,
+        isActive: link.role.isActive,
+        permissions: link.role.permissions.map((permission) => permission.permissionCode),
+      },
+    })) {
+      granted.add(code);
     }
   }
 
