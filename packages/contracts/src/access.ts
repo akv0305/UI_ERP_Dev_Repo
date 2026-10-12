@@ -65,6 +65,7 @@ export const ScopeTargetSummary = z.object({
   id: z.uuid(),
   code: z.string(),
   name: z.string(),
+  isActive: z.boolean(),
 });
 
 export type ScopeTargetSummary = z.infer<typeof ScopeTargetSummary>;
@@ -80,3 +81,41 @@ export const RoleAssignmentResponse = z.object({
 });
 
 export type RoleAssignmentResponse = z.infer<typeof RoleAssignmentResponse>;
+
+// ---------- Working context (current company / project of a session) ----------
+
+export const SessionContext = z.object({
+  companyId: z.uuid().nullable(),
+  companyLabel: z.string().nullable(),
+  projectId: z.uuid().nullable(),
+  projectLabel: z.string().nullable(),
+});
+
+export type SessionContext = z.infer<typeof SessionContext>;
+
+export const ContextCompanyOption = z.object({ id: z.uuid(), label: z.string() });
+
+export type ContextCompanyOption = z.infer<typeof ContextCompanyOption>;
+
+export const ContextProjectOption = z.object({
+  id: z.uuid(),
+  label: z.string(),
+  companyId: z.uuid(),
+});
+
+export type ContextProjectOption = z.infer<typeof ContextProjectOption>;
+
+export const ContextOptionsResponse = z.object({
+  companies: z.array(ContextCompanyOption),
+  projects: z.array(ContextProjectOption),
+});
+
+export type ContextOptionsResponse = z.infer<typeof ContextOptionsResponse>;
+
+/** projectId omitted = keep the current project unless the company changes (then it is cleared). */
+export const SetContextRequest = z.object({
+  companyId: z.uuid().nullable(),
+  projectId: z.uuid().nullable().optional(),
+});
+
+export type SetContextRequest = z.infer<typeof SetContextRequest>;

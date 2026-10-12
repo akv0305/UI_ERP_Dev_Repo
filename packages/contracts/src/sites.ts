@@ -56,6 +56,7 @@ export const ProjectResponse = z.object({
   isActive: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  canManage: z.boolean(),
 });
 
 export type ProjectResponse = z.infer<typeof ProjectResponse>;
@@ -126,6 +127,7 @@ export const SiteResponse = z.object({
   isActive: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  canManage: z.boolean(),
 });
 
 export type SiteResponse = z.infer<typeof SiteResponse>;
@@ -162,6 +164,7 @@ export const StoreResponse = z.object({
   isActive: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  canManage: z.boolean(),
 });
 
 export type StoreResponse = z.infer<typeof StoreResponse>;
@@ -169,3 +172,53 @@ export type StoreResponse = z.infer<typeof StoreResponse>;
 export const StoreListResponse = z.object({ items: z.array(StoreResponse) });
 
 export type StoreListResponse = z.infer<typeof StoreListResponse>;
+
+// ---------- Option lists for form pick lists ----------
+// Each is gated by the manage permission of the record being created and holds only parents the
+// signed-in user may create under (active records inside their scope).
+
+export const CompanyOption = z.object({ id: z.uuid(), label: z.string() });
+
+export type CompanyOption = z.infer<typeof CompanyOption>;
+
+export const CompanyOptionsResponse = z.object({ items: z.array(CompanyOption) });
+
+export type CompanyOptionsResponse = z.infer<typeof CompanyOptionsResponse>;
+
+export const ProjectOption = z.object({
+  id: z.uuid(),
+  label: z.string(),
+  companyId: z.uuid(),
+});
+
+export type ProjectOption = z.infer<typeof ProjectOption>;
+
+export const ProjectOptionsResponse = z.object({ items: z.array(ProjectOption) });
+
+export type ProjectOptionsResponse = z.infer<typeof ProjectOptionsResponse>;
+
+export const SiteOption = z.object({
+  id: z.uuid(),
+  label: z.string(),
+  projectId: z.uuid(),
+});
+
+export type SiteOption = z.infer<typeof SiteOption>;
+
+export const SiteOptionsResponse = z.object({ items: z.array(SiteOption) });
+
+export type SiteOptionsResponse = z.infer<typeof SiteOptionsResponse>;
+
+export const GstRegistrationOption = z.object({ id: z.uuid(), label: z.string() });
+
+export type GstRegistrationOption = z.infer<typeof GstRegistrationOption>;
+
+export const GstRegistrationOptionsResponse = z.object({
+  items: z.array(GstRegistrationOption),
+});
+
+export type GstRegistrationOptionsResponse = z.infer<typeof GstRegistrationOptionsResponse>;
+
+export const GstRegistrationOptionsQuery = z.object({ companyId: z.uuid() });
+
+export type GstRegistrationOptionsQuery = z.infer<typeof GstRegistrationOptionsQuery>;

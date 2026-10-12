@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { AuditService } from '../audit/audit.service';
-import { codeOf, TransactionRecorder } from '../masters/test-harness';
+import { codeOf, globalAccess, TransactionRecorder } from '../masters/test-harness';
 import type { PrismaService } from '../prisma/prisma.service';
 import { StatesService } from '../states/states.service';
 import { ProjectsService } from './projects.service';
@@ -85,7 +85,7 @@ describe('ProjectsService.create', () => {
   it('creates the project and audits it with the company id, in one transaction', async () => {
     const { prisma, tx, recorder, service } = setup();
 
-    await service.create(createRequest, ACTOR);
+    await service.create(createRequest, ACTOR, globalAccess());
 
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
     expect(tx.project.create).toHaveBeenCalledWith(
@@ -107,7 +107,9 @@ describe('ProjectsService.create', () => {
     const { prisma, recorder, service } = setup();
     prisma.company.findUnique.mockResolvedValue({ id: COMPANY_ID, isActive: false });
 
-    await expect(codeOf(service.create(createRequest, ACTOR))).resolves.toBe('PARENT_INACTIVE');
+    await expect(codeOf(service.create(createRequest, ACTOR, globalAccess()))).resolves.toBe(
+      'PARENT_INACTIVE',
+    );
     expect(recorder.committed).toEqual([]);
   });
 
@@ -115,14 +117,18 @@ describe('ProjectsService.create', () => {
     const { prisma, service } = setup();
     prisma.company.findUnique.mockResolvedValue(null);
 
-    await expect(codeOf(service.create(createRequest, ACTOR))).resolves.toBe('NOT_FOUND');
+    await expect(codeOf(service.create(createRequest, ACTOR, globalAccess()))).resolves.toBe(
+      'NOT_FOUND',
+    );
   });
 
   it('rejects a duplicate code within the company, case-insensitively', async () => {
     const { prisma, service } = setup();
     prisma.project.findFirst.mockResolvedValue({ id: 'other' });
 
-    await expect(codeOf(service.create(createRequest, ACTOR))).resolves.toBe('DUPLICATE_CODE');
+    await expect(codeOf(service.create(createRequest, ACTOR, globalAccess()))).resolves.toBe(
+      'DUPLICATE_CODE',
+    );
     expect(prisma.project.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { companyId: COMPANY_ID, code: { equals: 'P1', mode: 'insensitive' } },
@@ -134,14 +140,18 @@ describe('ProjectsService.create', () => {
     const { tx, service } = setup();
     tx.project.create.mockRejectedValue(Object.assign(new Error('unique'), { code: 'P2002' }));
 
-    await expect(codeOf(service.create(createRequest, ACTOR))).resolves.toBe('DUPLICATE_CODE');
+    await expect(codeOf(service.create(createRequest, ACTOR, globalAccess()))).resolves.toBe(
+      'DUPLICATE_CODE',
+    );
   });
 
   it('writes no audit row when the insert fails', async () => {
     const { tx, recorder, service } = setup();
     tx.project.create.mockRejectedValue(new Error('database down'));
 
-    await expect(service.create(createRequest, ACTOR)).rejects.toThrow('database down');
+    await expect(service.create(createRequest, ACTOR, globalAccess())).rejects.toThrow(
+      'database down',
+    );
 
     expect(tx.auditEvent.create).not.toHaveBeenCalled();
     expect(recorder.committed).toEqual([]);
@@ -158,7 +168,7 @@ describe('ProjectsService billing GST registration', () => {
       isActive: true,
     });
 
-    await expect(service.create(withBilling, ACTOR)).resolves.toBeDefined();
+    await expect(service.create(withBilling, ACTOR, globalAccess())).resolves.toBeDefined();
   });
 
   it('rejects a registration of another company with INVALID_GST_REGISTRATION', async () => {
@@ -168,7 +178,7 @@ describe('ProjectsService billing GST registration', () => {
       isActive: true,
     });
 
-    await expect(codeOf(service.create(withBilling, ACTOR))).resolves.toBe(
+    await expect(codeOf(service.create(withBilling, ACTOR, globalAccess()))).resolves.toBe(
       'INVALID_GST_REGISTRATION',
     );
     expect(recorder.committed).toEqual([]);
@@ -181,12 +191,12 @@ describe('ProjectsService billing GST registration', () => {
       companyId: COMPANY_ID,
       isActive: false,
     });
-    await expect(codeOf(service.create(withBilling, ACTOR))).resolves.toBe(
+    await expect(codeOf(service.create(withBilling, ACTOR, globalAccess()))).resolves.toBe(
       'INVALID_GST_REGISTRATION',
     );
 
     prisma.companyGstRegistration.findUnique.mockResolvedValue(null);
-    await expect(codeOf(service.create(withBilling, ACTOR))).resolves.toBe(
+    await expect(codeOf(service.create(withBilling, ACTOR, globalAccess()))).resolves.toBe(
       'INVALID_GST_REGISTRATION',
     );
   });
@@ -200,7 +210,12 @@ describe('ProjectsService billing GST registration', () => {
     });
 
     await expect(
-      service.update(PROJECT_ID, { ...updateRequest, billingGstRegistrationId: GST_ID }, ACTOR),
+      service.update(
+        PROJECT_ID,
+        { ...updateRequest, billingGstRegistrationId: GST_ID },
+        ACTOR,
+        globalAccess(),
+      ),
     ).resolves.toBeDefined();
   });
 
@@ -214,7 +229,12 @@ describe('ProjectsService billing GST registration', () => {
 
     await expect(
       codeOf(
-        service.update(PROJECT_ID, { ...updateRequest, billingGstRegistrationId: GST_ID }, ACTOR),
+        service.update(
+          PROJECT_ID,
+          { ...updateRequest, billingGstRegistrationId: GST_ID },
+          ACTOR,
+          globalAccess(),
+        ),
       ),
     ).resolves.toBe('INVALID_GST_REGISTRATION');
   });
@@ -226,7 +246,7 @@ describe('ProjectsService.update', () => {
     prisma.project.findUnique.mockResolvedValue(projectRow());
 
     await expect(
-      codeOf(service.update(PROJECT_ID, { ...updateRequest, code: 'P2' }, ACTOR)),
+      codeOf(service.update(PROJECT_ID, { ...updateRequest, code: 'P2' }, ACTOR, globalAccess())),
     ).resolves.toBe('CODE_IMMUTABLE');
     expect(recorder.committed).toEqual([]);
   });
@@ -235,7 +255,7 @@ describe('ProjectsService.update', () => {
     const { prisma, tx, recorder, service } = setup();
     prisma.project.findUnique.mockResolvedValue(projectRow());
 
-    await service.update(PROJECT_ID, { ...updateRequest, code: 'p1' }, ACTOR);
+    await service.update(PROJECT_ID, { ...updateRequest, code: 'p1' }, ACTOR, globalAccess());
 
     const data = (tx.project.update.mock.calls[0] as [{ data: Record<string, unknown> }])[0].data;
 
@@ -251,9 +271,9 @@ describe('ProjectsService.update', () => {
     const { prisma, service } = setup();
     prisma.project.findUnique.mockResolvedValue(null);
 
-    await expect(codeOf(service.update(PROJECT_ID, updateRequest, ACTOR))).resolves.toBe(
-      'NOT_FOUND',
-    );
+    await expect(
+      codeOf(service.update(PROJECT_ID, updateRequest, ACTOR, globalAccess())),
+    ).resolves.toBe('NOT_FOUND');
   });
 });
 
@@ -263,7 +283,7 @@ describe('ProjectsService deactivate and reactivate', () => {
     prisma.project.findUnique.mockResolvedValue(projectRow());
     prisma.site.count.mockResolvedValue(1);
 
-    await expect(codeOf(service.deactivate(PROJECT_ID, ACTOR))).resolves.toBe(
+    await expect(codeOf(service.deactivate(PROJECT_ID, ACTOR, globalAccess()))).resolves.toBe(
       'HAS_ACTIVE_CHILDREN',
     );
     expect(prisma.site.count).toHaveBeenCalledWith({
@@ -277,7 +297,7 @@ describe('ProjectsService deactivate and reactivate', () => {
     prisma.project.findUnique.mockResolvedValue(projectRow());
     tx.project.update.mockImplementation(async () => projectRow({ isActive: false }));
 
-    const result = await service.deactivate(PROJECT_ID, ACTOR);
+    const result = await service.deactivate(PROJECT_ID, ACTOR, globalAccess());
 
     expect(result.isActive).toBe(false);
     expect(recorder.audit()).toEqual([
@@ -291,7 +311,9 @@ describe('ProjectsService deactivate and reactivate', () => {
       projectRow({ isActive: false, company: { ...COMPANY, isActive: false } }),
     );
 
-    await expect(codeOf(service.reactivate(PROJECT_ID, ACTOR))).resolves.toBe('PARENT_INACTIVE');
+    await expect(codeOf(service.reactivate(PROJECT_ID, ACTOR, globalAccess()))).resolves.toBe(
+      'PARENT_INACTIVE',
+    );
     expect(recorder.committed).toEqual([]);
   });
 
@@ -299,7 +321,7 @@ describe('ProjectsService deactivate and reactivate', () => {
     const { prisma, recorder, service } = setup();
     prisma.project.findUnique.mockResolvedValue(projectRow({ isActive: false }));
 
-    await service.reactivate(PROJECT_ID, ACTOR);
+    await service.reactivate(PROJECT_ID, ACTOR, globalAccess());
 
     expect(recorder.audit()).toEqual([expect.objectContaining({ action: 'REACTIVATE' })]);
   });
@@ -309,15 +331,18 @@ describe('ProjectsService.list', () => {
   it('filters by company, status and search', async () => {
     const { prisma, service } = setup();
 
-    await service.list({
-      page: 1,
-      pageSize: 20,
-      search: 'metro',
-      isActive: 'true',
-      companyId: COMPANY_ID,
-      sortBy: 'name',
-      sortDir: 'asc',
-    });
+    await service.list(
+      {
+        page: 1,
+        pageSize: 20,
+        search: 'metro',
+        isActive: 'true',
+        companyId: COMPANY_ID,
+        sortBy: 'name',
+        sortDir: 'asc',
+      },
+      globalAccess(),
+    );
 
     expect(prisma.project.findMany).toHaveBeenCalledWith(
       expect.objectContaining({

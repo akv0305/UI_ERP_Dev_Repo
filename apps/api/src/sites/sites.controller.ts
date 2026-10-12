@@ -18,12 +18,13 @@ import {
   UpdateSiteRequest,
   UpdateStoreRequest,
   type PagedSitesResponse,
+  type SiteOptionsResponse,
   type SiteResponse,
   type StoreListResponse,
   type StoreResponse,
 } from '@uie/contracts';
 import type { Request } from 'express';
-import { actorIdOf } from '../auth/actor-id';
+import { accessOf, actorIdOf } from '../auth/actor-id';
 import { RequirePermissions } from '../auth/auth.decorators';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { SitesService } from './sites.service';
@@ -40,14 +41,25 @@ export class SitesController {
   @RequirePermissions('masters.sitesAndStores.view')
   list(
     @Query(new ZodValidationPipe(SiteListQuery)) query: SiteListQuery,
+    @Req() request: Request,
   ): Promise<PagedSitesResponse> {
-    return this.sites.list(query);
+    return this.sites.list(query, accessOf(request));
+  }
+
+  /** Pick list for the store form: sites the user may create a store under. */
+  @Get('sites/options')
+  @RequirePermissions('masters.sitesAndStores.manage')
+  options(@Req() request: Request): Promise<SiteOptionsResponse> {
+    return this.sites.optionsForStores(accessOf(request));
   }
 
   @Get('sites/:id')
   @RequirePermissions('masters.sitesAndStores.view')
-  get(@Param('id', new ParseUUIDPipe()) id: string): Promise<SiteResponse> {
-    return this.sites.get(id);
+  get(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() request: Request,
+  ): Promise<SiteResponse> {
+    return this.sites.get(id, accessOf(request));
   }
 
   @Post('sites')
@@ -56,7 +68,7 @@ export class SitesController {
     @Body(new ZodValidationPipe(CreateSiteRequest)) body: CreateSiteRequest,
     @Req() request: Request,
   ): Promise<SiteResponse> {
-    return this.sites.create(body, actorIdOf(request));
+    return this.sites.create(body, actorIdOf(request), accessOf(request));
   }
 
   @Patch('sites/:id')
@@ -66,7 +78,7 @@ export class SitesController {
     @Body(new ZodValidationPipe(UpdateSiteRequest)) body: UpdateSiteRequest,
     @Req() request: Request,
   ): Promise<SiteResponse> {
-    return this.sites.update(id, body, actorIdOf(request));
+    return this.sites.update(id, body, actorIdOf(request), accessOf(request));
   }
 
   @Post('sites/:id/deactivate')
@@ -76,7 +88,7 @@ export class SitesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() request: Request,
   ): Promise<SiteResponse> {
-    return this.sites.deactivate(id, actorIdOf(request));
+    return this.sites.deactivate(id, actorIdOf(request), accessOf(request));
   }
 
   @Post('sites/:id/reactivate')
@@ -86,13 +98,16 @@ export class SitesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() request: Request,
   ): Promise<SiteResponse> {
-    return this.sites.reactivate(id, actorIdOf(request));
+    return this.sites.reactivate(id, actorIdOf(request), accessOf(request));
   }
 
   @Get('sites/:id/stores')
   @RequirePermissions('masters.sitesAndStores.view')
-  listStores(@Param('id', new ParseUUIDPipe()) id: string): Promise<StoreListResponse> {
-    return this.stores.listForSite(id);
+  listStores(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() request: Request,
+  ): Promise<StoreListResponse> {
+    return this.stores.listForSite(id, accessOf(request));
   }
 
   @Post('sites/:id/stores')
@@ -102,7 +117,7 @@ export class SitesController {
     @Body(new ZodValidationPipe(CreateStoreRequest)) body: CreateStoreRequest,
     @Req() request: Request,
   ): Promise<StoreResponse> {
-    return this.stores.create(id, body, actorIdOf(request));
+    return this.stores.create(id, body, actorIdOf(request), accessOf(request));
   }
 
   @Patch('stores/:id')
@@ -112,7 +127,7 @@ export class SitesController {
     @Body(new ZodValidationPipe(UpdateStoreRequest)) body: UpdateStoreRequest,
     @Req() request: Request,
   ): Promise<StoreResponse> {
-    return this.stores.update(id, body, actorIdOf(request));
+    return this.stores.update(id, body, actorIdOf(request), accessOf(request));
   }
 
   @Post('stores/:id/deactivate')
@@ -122,7 +137,7 @@ export class SitesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() request: Request,
   ): Promise<StoreResponse> {
-    return this.stores.deactivate(id, actorIdOf(request));
+    return this.stores.deactivate(id, actorIdOf(request), accessOf(request));
   }
 
   @Post('stores/:id/reactivate')
@@ -132,6 +147,6 @@ export class SitesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() request: Request,
   ): Promise<StoreResponse> {
-    return this.stores.reactivate(id, actorIdOf(request));
+    return this.stores.reactivate(id, actorIdOf(request), accessOf(request));
   }
 }

@@ -17,6 +17,17 @@ export interface AccessAssignment {
   role: { code: string; isActive: boolean; permissions: readonly string[] };
 }
 
+/** One permission or several: with several, an assignment counts when its role grants ANY of them. */
+export type PermissionSet = Permission | readonly Permission[];
+
+function permissionList(permission: PermissionSet | undefined): readonly Permission[] | undefined {
+  if (permission === undefined) {
+    return undefined;
+  }
+
+  return typeof permission === 'string' ? [permission] : permission;
+}
+
 /** What a permission is checked against. Exactly one field is expected; `global` means "not tied to a record". */
 export type AccessTarget =
   | { global: true }
@@ -139,18 +150,39 @@ export class AccessContext {
       return false;
     }
 
+    // A GLOBAL holder decides the answer without any hierarchy lookup.
+    if (holders.some((assignment) => assignment.scopeType === 'GLOBAL')) {
+      return true;
+    }
+
+    return this.canOn(permission, await this.resolve(target));
+  }
+
+  /**
+   * Synchronous form of can() for a target whose ancestors are already known (for example a project
+   * row that carries its companyId), so list rows need no extra lookups.
+   */
+  canOn(permission: Permission, target: Partial<ResolvedTarget>): boolean {
+    const holders = this.holdersOf(permission);
+
     // administration.* permissions are global-only, whatever the target.
     if (permission.startsWith(ADMIN_PERMISSION_PREFIX)) {
       return holders.some((assignment) => assignment.scopeType === 'GLOBAL');
     }
 
-    const resolved = await this.resolve(target);
+    const resolved: ResolvedTarget = {
+      global: target.global ?? false,
+      companyId: target.companyId ?? null,
+      projectId: target.projectId ?? null,
+      siteId: target.siteId ?? null,
+      storeId: target.storeId ?? null,
+    };
 
     return holders.some((assignment) => covers(assignment, resolved));
   }
 
   /** Company ids the user's assignments cover (for list filtering); null = unrestricted. */
-  async accessibleCompanyIds(permission?: Permission): Promise<string[] | null> {
+  async accessibleCompanyIds(permission?: PermissionSet): Promise<string[] | null> {
     const relevant = this.relevant(permission);
 
     if (relevant.some((assignment) => assignment.scopeType === 'GLOBAL')) {
@@ -167,8 +199,8 @@ export class AccessContext {
   }
 
   /** Project ids the user's assignments cover; null = unrestricted. */
-  accessibleProjectIds(permission?: Permission): Promise<string[] | null> {
-    return this.memo(`projects:${permission ?? '*'}`, async () => {
+  accessibleProjectIds(permission?: PermissionSet): Promise<string[] | null> {
+    return this.memo(`projects:${permissionList(permission)?.join(',') ?? '*'}`, async () => {
       const relevant = this.relevant(permission);
 
       if (relevant.some((assignment) => assignment.scopeType === 'GLOBAL')) {
@@ -189,8 +221,8 @@ export class AccessContext {
   }
 
   /** Site ids the user's assignments cover; null = unrestricted. */
-  accessibleSiteIds(permission?: Permission): Promise<string[] | null> {
-    return this.memo(`sites:${permission ?? '*'}`, async () => {
+  accessibleSiteIds(permission?: PermissionSet): Promise<string[] | null> {
+    return this.memo(`sites:${permissionList(permission)?.join(',') ?? '*'}`, async () => {
       const relevant = this.relevant(permission);
 
       if (relevant.some((assignment) => assignment.scopeType === 'GLOBAL')) {
@@ -251,10 +283,18 @@ export class AccessContext {
     return this.assignments.filter((assignment) => permissionsOf(assignment).includes(permission));
   }
 
-  private relevant(permission?: Permission): AccessAssignment[] {
-    return permission === undefined
-      ? this.assignments.filter(isEffective)
-      : this.holdersOf(permission);
+  private relevant(permission?: PermissionSet): AccessAssignment[] {
+    const list = permissionList(permission);
+
+    if (list === undefined) {
+      return this.assignments.filter(isEffective);
+    }
+
+    return this.assignments.filter((assignment) => {
+      const granted = permissionsOf(assignment);
+
+      return list.some((code) => granted.includes(code));
+    });
   }
 
   private resolve(target: AccessTarget): Promise<ResolvedTarget> {

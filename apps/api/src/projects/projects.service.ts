@@ -4,11 +4,14 @@ import type {
   CreateProjectRequest,
   PagedProjectsResponse,
   ProjectListQuery,
+  ProjectOptionsResponse,
   ProjectResponse,
   UpdateProjectRequest,
 } from '@uie/contracts';
+import type { AccessContext } from '../access/access-context';
 import { auditActionFor } from '../audit/audit-action';
 import { AuditService } from '../audit/audit.service';
+import { codeLabel } from '../auth/auth.mapper';
 import {
   hasActiveChildren,
   invalidGstRegistration,
@@ -21,6 +24,15 @@ import {
   notFound,
   pageOf,
 } from '../masters/master-helpers';
+import {
+  PROJECT_PERMISSIONS,
+  SITE_PERMISSIONS,
+  assertManageable,
+  assertVisible,
+  canManage,
+  forbidden,
+  idFilter,
+} from '../masters/scope';
 import { PrismaService } from '../prisma/prisma.service';
 import { StatesService } from '../states/states.service';
 import {
@@ -30,6 +42,13 @@ import {
   type ProjectWithRelations,
 } from './projects.mapper';
 
+const ENTITY = 'Project';
+
+/** A project row carries its company, so its scope target needs no extra lookup. */
+function targetOf(project: { id: string; companyId: string }) {
+  return { companyId: project.companyId, projectId: project.id };
+}
+
 @Injectable()
 export class ProjectsService {
   constructor(
@@ -38,8 +57,12 @@ export class ProjectsService {
     private readonly audit: AuditService,
   ) {}
 
-  async list(query: ProjectListQuery): Promise<PagedProjectsResponse> {
-    const where: Prisma.ProjectWhereInput = {};
+  async list(query: ProjectListQuery, access: AccessContext): Promise<PagedProjectsResponse> {
+    const visible = await access.accessibleProjectIds([
+      PROJECT_PERMISSIONS.view,
+      PROJECT_PERMISSIONS.manage,
+    ]);
+    const where: Prisma.ProjectWhereInput = { id: idFilter(visible) };
 
     if (query.search !== undefined && query.search.length > 0) {
       where.OR = [
@@ -67,14 +90,55 @@ export class ProjectsService {
       }),
     ]);
 
-    return pageOf(projects.map(toProjectResponse), total, query);
+    return pageOf(
+      projects.map((project) =>
+        toProjectResponse(project, canManage(access, PROJECT_PERMISSIONS, targetOf(project))),
+      ),
+      total,
+      query,
+    );
   }
 
-  async get(id: string): Promise<ProjectResponse> {
-    return toProjectResponse(await this.require(id));
+  /**
+   * Active projects the user may create a site under (masters.sitesAndStores.manage over the
+   * project). Needs only that permission, not projects.view.
+   */
+  async optionsForSites(access: AccessContext): Promise<ProjectOptionsResponse> {
+    const covered = await access.accessibleProjectIds(SITE_PERMISSIONS.manage);
+    const projects = await this.prisma.project.findMany({
+      where: { isActive: true, id: idFilter(covered) },
+      orderBy: [{ code: 'asc' }, { id: 'asc' }],
+      select: { id: true, code: true, name: true, companyId: true },
+    });
+
+    return {
+      items: projects.map((project) => ({
+        id: project.id,
+        label: codeLabel(project.code, project.name),
+        companyId: project.companyId,
+      })),
+    };
   }
 
-  async create(request: CreateProjectRequest, actorId: string): Promise<ProjectResponse> {
+  async get(id: string, access: AccessContext): Promise<ProjectResponse> {
+    const project = await this.require(id);
+
+    assertVisible(access, PROJECT_PERMISSIONS, targetOf(project), ENTITY);
+
+    return toProjectResponse(project, canManage(access, PROJECT_PERMISSIONS, targetOf(project)));
+  }
+
+  async create(
+    request: CreateProjectRequest,
+    actorId: string,
+    access: AccessContext,
+  ): Promise<ProjectResponse> {
+    // Scope is checked before the company is looked up, so an out-of-scope or unknown company
+    // gives the same answer and existence is not revealed.
+    if (!(await access.can(PROJECT_PERMISSIONS.manage, { companyId: request.companyId }))) {
+      throw forbidden();
+    }
+
     const company = await this.prisma.company.findUnique({
       where: { id: request.companyId },
       select: { id: true, isActive: true },
@@ -117,15 +181,16 @@ export class ProjectsService {
       }),
     );
 
-    return toProjectResponse(created);
+    return toProjectResponse(created, true);
   }
 
   async update(
     id: string,
     request: UpdateProjectRequest,
     actorId: string,
+    access: AccessContext,
   ): Promise<ProjectResponse> {
-    const existing = await this.require(id);
+    const existing = await this.requireManageable(id, access);
 
     assertCodeUnchanged(request.code, existing.code);
 
@@ -166,26 +231,27 @@ export class ProjectsService {
       return project;
     });
 
-    return toProjectResponse(updated);
+    return toProjectResponse(updated, true);
   }
 
-  deactivate(id: string, actorId: string): Promise<ProjectResponse> {
-    return this.setActive(id, false, actorId);
+  deactivate(id: string, actorId: string, access: AccessContext): Promise<ProjectResponse> {
+    return this.setActive(id, false, actorId, access);
   }
 
-  reactivate(id: string, actorId: string): Promise<ProjectResponse> {
-    return this.setActive(id, true, actorId);
+  reactivate(id: string, actorId: string, access: AccessContext): Promise<ProjectResponse> {
+    return this.setActive(id, true, actorId, access);
   }
 
   private async setActive(
     id: string,
     isActive: boolean,
     actorId: string,
+    access: AccessContext,
   ): Promise<ProjectResponse> {
-    const existing = await this.require(id);
+    const existing = await this.requireManageable(id, access);
 
     if (existing.isActive === isActive) {
-      return toProjectResponse(existing);
+      return toProjectResponse(existing, true);
     }
 
     if (isActive && !existing.company.isActive) {
@@ -222,7 +288,7 @@ export class ProjectsService {
       return project;
     });
 
-    return toProjectResponse(updated);
+    return toProjectResponse(updated, true);
   }
 
   private async require(id: string): Promise<ProjectWithRelations> {
@@ -232,8 +298,20 @@ export class ProjectsService {
     });
 
     if (project === null) {
-      throw notFound('Project');
+      throw notFound(ENTITY);
     }
+
+    return project;
+  }
+
+  /** The record, once the user is known to be allowed to change it (404 out of scope, 403 view-only). */
+  private async requireManageable(
+    id: string,
+    access: AccessContext,
+  ): Promise<ProjectWithRelations> {
+    const project = await this.require(id);
+
+    assertManageable(access, PROJECT_PERMISSIONS, targetOf(project), ENTITY);
 
     return project;
   }

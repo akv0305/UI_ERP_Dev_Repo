@@ -4,13 +4,16 @@ import {
   panOfGstin,
   type CompanyDetailResponse,
   type CompanyListQuery,
+  type CompanyOptionsResponse,
   type CompanyResponse,
   type CreateCompanyRequest,
   type PagedCompaniesResponse,
   type UpdateCompanyRequest,
 } from '@uie/contracts';
+import type { AccessContext } from '../access/access-context';
 import { auditActionFor } from '../audit/audit-action';
 import { AuditService } from '../audit/audit.service';
+import { codeLabel } from '../auth/auth.mapper';
 import { ApiError } from '../common/errors/api-error';
 import { hasActiveChildren } from '../masters/hierarchy-errors';
 import {
@@ -20,6 +23,14 @@ import {
   notFound,
   pageOf,
 } from '../masters/master-helpers';
+import {
+  COMPANY_PERMISSIONS,
+  assertManageable,
+  assertVisible,
+  canManage,
+  forbidden,
+  idFilter,
+} from '../masters/scope';
 import { PrismaService } from '../prisma/prisma.service';
 import { StatesService } from '../states/states.service';
 import {
@@ -30,6 +41,8 @@ import {
   toCompanyResponse,
 } from './companies.mapper';
 
+const ENTITY = 'Company';
+
 @Injectable()
 export class CompaniesService {
   constructor(
@@ -38,8 +51,14 @@ export class CompaniesService {
     private readonly audit: AuditService,
   ) {}
 
-  async list(query: CompanyListQuery): Promise<PagedCompaniesResponse> {
-    const where: Prisma.CompanyWhereInput = {};
+  async list(query: CompanyListQuery, access: AccessContext): Promise<PagedCompaniesResponse> {
+    // Companies the user can see: a GLOBAL holder sees all, otherwise the companies they cover.
+    // A project/site-scoped user does not see the parent company row through this list.
+    const visible = await access.accessibleCompanyIds([
+      COMPANY_PERMISSIONS.view,
+      COMPANY_PERMISSIONS.manage,
+    ]);
+    const where: Prisma.CompanyWhereInput = { id: idFilter(visible) };
 
     if (query.search !== undefined && query.search.length > 0) {
       where.OR = [
@@ -67,23 +86,66 @@ export class CompaniesService {
       }),
     ]);
 
-    return pageOf(companies.map(toCompanyResponse), total, query);
+    return pageOf(
+      companies.map((company) =>
+        toCompanyResponse(
+          company,
+          canManage(access, COMPANY_PERMISSIONS, { companyId: company.id }),
+        ),
+      ),
+      total,
+      query,
+    );
   }
 
-  async get(id: string): Promise<CompanyDetailResponse> {
+  /**
+   * Active companies the user may create a project under: those covered by a
+   * masters.projects.manage assignment. Needs only that permission, not companies.view.
+   */
+  async optionsForProjects(access: AccessContext): Promise<CompanyOptionsResponse> {
+    const covered = await access.accessibleCompanyIds('masters.projects.manage');
+    const companies = await this.prisma.company.findMany({
+      where: { isActive: true, id: idFilter(covered) },
+      orderBy: [{ code: 'asc' }, { id: 'asc' }],
+      select: { id: true, code: true, legalName: true },
+    });
+
+    return {
+      items: companies.map((company) => ({
+        id: company.id,
+        label: codeLabel(company.code, company.legalName),
+      })),
+    };
+  }
+
+  async get(id: string, access: AccessContext): Promise<CompanyDetailResponse> {
     const company = await this.prisma.company.findUnique({
       where: { id },
       include: companyDetailInclude,
     });
 
     if (company === null) {
-      throw notFound('Company');
+      throw notFound(ENTITY);
     }
 
-    return toCompanyDetailResponse(company);
+    assertVisible(access, COMPANY_PERMISSIONS, { companyId: id }, ENTITY);
+
+    return toCompanyDetailResponse(
+      company,
+      canManage(access, COMPANY_PERMISSIONS, { companyId: id }),
+    );
   }
 
-  async create(request: CreateCompanyRequest, actorId: string): Promise<CompanyResponse> {
+  async create(
+    request: CreateCompanyRequest,
+    actorId: string,
+    access: AccessContext,
+  ): Promise<CompanyResponse> {
+    // A new company has no parent: only a GLOBAL holder of masters.companies.manage may create one.
+    if (!(await access.can(COMPANY_PERMISSIONS.manage, { global: true }))) {
+      throw forbidden();
+    }
+
     await this.assertCodeFree(request.code);
 
     if (request.stateId !== null) {
@@ -111,15 +173,16 @@ export class CompaniesService {
       }),
     );
 
-    return toCompanyResponse(created);
+    return toCompanyResponse(created, true);
   }
 
   async update(
     id: string,
     request: UpdateCompanyRequest,
     actorId: string,
+    access: AccessContext,
   ): Promise<CompanyResponse> {
-    const existing = await this.requireCompany(id);
+    const existing = await this.requireManageable(id, access);
 
     assertCodeUnchanged(request.code, existing.code);
 
@@ -150,26 +213,27 @@ export class CompaniesService {
       return company;
     });
 
-    return toCompanyResponse(updated);
+    return toCompanyResponse(updated, true);
   }
 
-  async deactivate(id: string, actorId: string): Promise<CompanyResponse> {
-    return this.setActive(id, false, actorId);
+  async deactivate(id: string, actorId: string, access: AccessContext): Promise<CompanyResponse> {
+    return this.setActive(id, false, actorId, access);
   }
 
-  async reactivate(id: string, actorId: string): Promise<CompanyResponse> {
-    return this.setActive(id, true, actorId);
+  async reactivate(id: string, actorId: string, access: AccessContext): Promise<CompanyResponse> {
+    return this.setActive(id, true, actorId, access);
   }
 
   private async setActive(
     id: string,
     isActive: boolean,
     actorId: string,
+    access: AccessContext,
   ): Promise<CompanyResponse> {
-    const existing = await this.requireCompany(id);
+    const existing = await this.requireManageable(id, access);
 
     if (existing.isActive === isActive) {
-      return toCompanyResponse(existing);
+      return toCompanyResponse(existing, true);
     }
 
     if (!isActive) {
@@ -202,18 +266,21 @@ export class CompaniesService {
       return company;
     });
 
-    return toCompanyResponse(updated);
+    return toCompanyResponse(updated, true);
   }
 
-  private async requireCompany(id: string) {
+  /** The record, once the user is known to be allowed to change it (404 out of scope, 403 view-only). */
+  private async requireManageable(id: string, access: AccessContext) {
     const company = await this.prisma.company.findUnique({
       where: { id },
       include: companyInclude,
     });
 
     if (company === null) {
-      throw notFound('Company');
+      throw notFound(ENTITY);
     }
+
+    assertManageable(access, COMPANY_PERMISSIONS, { companyId: id }, ENTITY);
 
     return company;
   }

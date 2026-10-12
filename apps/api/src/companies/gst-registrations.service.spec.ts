@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { AuditService } from '../audit/audit.service';
-import { codeOf, TransactionRecorder } from '../masters/test-harness';
+import { codeOf, globalAccess, TransactionRecorder } from '../masters/test-harness';
 import type { PrismaService } from '../prisma/prisma.service';
 import { StatesService } from '../states/states.service';
 import { GstRegistrationsService } from './gst-registrations.service';
@@ -88,7 +88,7 @@ describe('GstRegistrationsService.create', () => {
   it('creates a registration and audits it with the company id, in one transaction', async () => {
     const { prisma, tx, recorder, service } = setup();
 
-    const result = await service.create(COMPANY_ID, request, ACTOR);
+    const result = await service.create(COMPANY_ID, request, ACTOR, globalAccess());
 
     expect(result).toMatchObject({ gstin: GSTIN_TS, effectiveFrom: '2026-04-01' });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
@@ -115,17 +115,23 @@ describe('GstRegistrationsService.create', () => {
     const { prisma, service } = setup();
     prisma.company.findUnique.mockResolvedValue(null);
 
-    await expect(codeOf(service.create(COMPANY_ID, request, ACTOR))).resolves.toBe('NOT_FOUND');
+    await expect(codeOf(service.create(COMPANY_ID, request, ACTOR, globalAccess()))).resolves.toBe(
+      'NOT_FOUND',
+    );
   });
 
   it('rejects a bad format or check digit with INVALID_GSTIN', async () => {
     const { recorder, service } = setup();
 
     await expect(
-      codeOf(service.create(COMPANY_ID, { ...request, gstin: '36AABCU3675K1ZX' }, ACTOR)),
+      codeOf(
+        service.create(COMPANY_ID, { ...request, gstin: '36AABCU3675K1ZX' }, ACTOR, globalAccess()),
+      ),
     ).resolves.toBe('INVALID_GSTIN');
     await expect(
-      codeOf(service.create(COMPANY_ID, { ...request, gstin: 'NOT-A-GSTIN' }, ACTOR)),
+      codeOf(
+        service.create(COMPANY_ID, { ...request, gstin: 'NOT-A-GSTIN' }, ACTOR, globalAccess()),
+      ),
     ).resolves.toBe('INVALID_GSTIN');
     expect(recorder.committed).toEqual([]);
   });
@@ -134,7 +140,7 @@ describe('GstRegistrationsService.create', () => {
     const { recorder, service } = setup();
 
     await expect(
-      codeOf(service.create(COMPANY_ID, { ...request, stateId: ANDHRA_ID }, ACTOR)),
+      codeOf(service.create(COMPANY_ID, { ...request, stateId: ANDHRA_ID }, ACTOR, globalAccess())),
     ).resolves.toBe('GSTIN_STATE_MISMATCH');
     expect(recorder.committed).toEqual([]);
   });
@@ -143,7 +149,12 @@ describe('GstRegistrationsService.create', () => {
     const { service } = setup();
 
     await expect(
-      service.create(COMPANY_ID, { ...request, stateId: ANDHRA_ID, gstin: GSTIN_AP }, ACTOR),
+      service.create(
+        COMPANY_ID,
+        { ...request, stateId: ANDHRA_ID, gstin: GSTIN_AP },
+        ACTOR,
+        globalAccess(),
+      ),
     ).resolves.toBeDefined();
   });
 
@@ -151,7 +162,9 @@ describe('GstRegistrationsService.create', () => {
     const { service } = setup();
 
     await expect(
-      codeOf(service.create(COMPANY_ID, { ...request, stateId: REGISTRATION_ID }, ACTOR)),
+      codeOf(
+        service.create(COMPANY_ID, { ...request, stateId: REGISTRATION_ID }, ACTOR, globalAccess()),
+      ),
     ).resolves.toBe('INVALID_STATE');
   });
 
@@ -159,25 +172,25 @@ describe('GstRegistrationsService.create', () => {
     const { prisma, service } = setup();
 
     prisma.company.findUnique.mockResolvedValue({ id: COMPANY_ID, pan: 'ZZZZZ9999Z' });
-    await expect(codeOf(service.create(COMPANY_ID, request, ACTOR))).resolves.toBe(
+    await expect(codeOf(service.create(COMPANY_ID, request, ACTOR, globalAccess()))).resolves.toBe(
       'GSTIN_PAN_MISMATCH',
     );
 
     prisma.company.findUnique.mockResolvedValue({ id: COMPANY_ID, pan: 'AABCU3675K' });
-    await expect(service.create(COMPANY_ID, request, ACTOR)).resolves.toBeDefined();
+    await expect(service.create(COMPANY_ID, request, ACTOR, globalAccess())).resolves.toBeDefined();
   });
 
   it('skips the PAN check when the company has no PAN', async () => {
     const { service } = setup();
 
-    await expect(service.create(COMPANY_ID, request, ACTOR)).resolves.toBeDefined();
+    await expect(service.create(COMPANY_ID, request, ACTOR, globalAccess())).resolves.toBeDefined();
   });
 
   it('rejects an existing GSTIN with DUPLICATE_GSTIN', async () => {
     const { prisma, recorder, service } = setup();
     prisma.companyGstRegistration.findFirst.mockResolvedValue({ id: 'other' });
 
-    await expect(codeOf(service.create(COMPANY_ID, request, ACTOR))).resolves.toBe(
+    await expect(codeOf(service.create(COMPANY_ID, request, ACTOR, globalAccess()))).resolves.toBe(
       'DUPLICATE_GSTIN',
     );
     expect(recorder.committed).toEqual([]);
@@ -189,7 +202,7 @@ describe('GstRegistrationsService.create', () => {
       Object.assign(new Error('unique'), { code: 'P2002' }),
     );
 
-    await expect(codeOf(service.create(COMPANY_ID, request, ACTOR))).resolves.toBe(
+    await expect(codeOf(service.create(COMPANY_ID, request, ACTOR, globalAccess()))).resolves.toBe(
       'DUPLICATE_GSTIN',
     );
   });
@@ -198,7 +211,9 @@ describe('GstRegistrationsService.create', () => {
     const { tx, recorder, service } = setup();
     tx.companyGstRegistration.create.mockRejectedValue(new Error('database down'));
 
-    await expect(service.create(COMPANY_ID, request, ACTOR)).rejects.toThrow('database down');
+    await expect(service.create(COMPANY_ID, request, ACTOR, globalAccess())).rejects.toThrow(
+      'database down',
+    );
 
     expect(tx.auditEvent.create).not.toHaveBeenCalled();
     expect(recorder.committed).toEqual([]);
@@ -211,7 +226,12 @@ describe('GstRegistrationsService.update', () => {
     prisma.companyGstRegistration.findUnique.mockResolvedValue(registrationRow());
     prisma.company.findUnique.mockResolvedValue({ pan: 'AABCU3675K' });
 
-    await service.update(REGISTRATION_ID, { ...request, city: 'Secunderabad' }, ACTOR);
+    await service.update(
+      REGISTRATION_ID,
+      { ...request, city: 'Secunderabad' },
+      ACTOR,
+      globalAccess(),
+    );
 
     expect(prisma.companyGstRegistration.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -228,25 +248,34 @@ describe('GstRegistrationsService.update', () => {
     prisma.companyGstRegistration.findUnique.mockResolvedValue(registrationRow());
 
     await expect(
-      codeOf(service.update(REGISTRATION_ID, { ...request, stateId: ANDHRA_ID }, ACTOR)),
+      codeOf(
+        service.update(REGISTRATION_ID, { ...request, stateId: ANDHRA_ID }, ACTOR, globalAccess()),
+      ),
     ).resolves.toBe('GSTIN_STATE_MISMATCH');
     await expect(
-      codeOf(service.update(REGISTRATION_ID, { ...request, gstin: '36AABCU3675K1ZX' }, ACTOR)),
+      codeOf(
+        service.update(
+          REGISTRATION_ID,
+          { ...request, gstin: '36AABCU3675K1ZX' },
+          ACTOR,
+          globalAccess(),
+        ),
+      ),
     ).resolves.toBe('INVALID_GSTIN');
 
     prisma.companyGstRegistration.findFirst.mockResolvedValue({ id: 'other' });
-    await expect(codeOf(service.update(REGISTRATION_ID, request, ACTOR))).resolves.toBe(
-      'DUPLICATE_GSTIN',
-    );
+    await expect(
+      codeOf(service.update(REGISTRATION_ID, request, ACTOR, globalAccess())),
+    ).resolves.toBe('DUPLICATE_GSTIN');
   });
 
   it('returns NOT_FOUND for an unknown registration', async () => {
     const { prisma, service } = setup();
     prisma.companyGstRegistration.findUnique.mockResolvedValue(null);
 
-    await expect(codeOf(service.update(REGISTRATION_ID, request, ACTOR))).resolves.toBe(
-      'NOT_FOUND',
-    );
+    await expect(
+      codeOf(service.update(REGISTRATION_ID, request, ACTOR, globalAccess())),
+    ).resolves.toBe('NOT_FOUND');
   });
 });
 
@@ -258,7 +287,7 @@ describe('GstRegistrationsService deactivate and reactivate', () => {
       registrationRow({ isActive: false }),
     );
 
-    const result = await service.deactivate(REGISTRATION_ID, ACTOR);
+    const result = await service.deactivate(REGISTRATION_ID, ACTOR, globalAccess());
 
     expect(result.isActive).toBe(false);
     expect(recorder.audit()).toEqual([
@@ -272,7 +301,7 @@ describe('GstRegistrationsService deactivate and reactivate', () => {
       registrationRow({ isActive: false }),
     );
 
-    await service.reactivate(REGISTRATION_ID, ACTOR);
+    await service.reactivate(REGISTRATION_ID, ACTOR, globalAccess());
 
     expect(recorder.audit()).toEqual([expect.objectContaining({ action: 'REACTIVATE' })]);
   });

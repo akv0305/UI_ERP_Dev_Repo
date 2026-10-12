@@ -16,6 +16,26 @@ interface Write {
   data: unknown;
 }
 
+/** One role assignment row as the access query returns it (GLOBAL unless overridden). */
+function link(role: { id: string; code: string; name: string }, overrides = {}) {
+  return {
+    id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+    userId: USER_ID,
+    roleId: role.id,
+    scopeType: 'GLOBAL',
+    companyId: null,
+    projectId: null,
+    siteId: null,
+    createdAt: new Date('2026-01-01T00:00:00Z'),
+    createdById: null,
+    role,
+    company: null,
+    project: null,
+    site: null,
+    ...overrides,
+  };
+}
+
 function userRow(overrides: Record<string, unknown> = {}) {
   return {
     id: USER_ID,
@@ -30,7 +50,7 @@ function userRow(overrides: Record<string, unknown> = {}) {
     lastLoginAt: null,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
-    roles: [{ role: CLERK }],
+    roles: [link(CLERK)],
     ...overrides,
   };
 }
@@ -66,8 +86,12 @@ function setup() {
     user: {
       create: recorder('user.create', () => userRow()),
       update: recorder('user.update', () => userRow()),
+      findUniqueOrThrow: jest.fn(async () => userRow()),
     },
-    userRole: { deleteMany: recorder('userRole.deleteMany') },
+    userRole: {
+      deleteMany: recorder('userRole.deleteMany'),
+      createMany: recorder('userRole.createMany'),
+    },
     session: { updateMany: recorder('session.updateMany') },
     role: {
       create: recorder('role.create', () => roleRow()),
@@ -81,7 +105,10 @@ function setup() {
   };
   const prisma = {
     user: { findUnique: jest.fn(), findFirst: jest.fn(), count: jest.fn() },
-    role: { findUnique: jest.fn(), findFirst: jest.fn(), count: jest.fn() },
+    role: { findUnique: jest.fn(), findFirst: jest.fn(), count: jest.fn(), findMany: jest.fn() },
+    company: { findMany: jest.fn() },
+    project: { findMany: jest.fn() },
+    site: { findMany: jest.fn() },
     // An audit write on the top-level client (outside the transaction) would throw.
     auditEvent: {
       create: jest.fn(() => {
@@ -98,6 +125,7 @@ function setup() {
   prisma.user.findFirst.mockResolvedValue(null);
   prisma.role.findFirst.mockResolvedValue(null);
   prisma.role.count.mockResolvedValue(1);
+  prisma.role.findMany.mockResolvedValue([{ ...CLERK, permissions: [] }]);
 
   const audit = new AuditService();
   const passwords = { hash: jest.fn(async () => 'NEW-SECRET-HASH') };
@@ -122,7 +150,15 @@ const userRequest = {
   email: null,
   displayName: 'Target',
   isActive: true,
-  roleIds: [ROLE_ID],
+  assignments: [
+    {
+      roleId: ROLE_ID,
+      scopeType: 'GLOBAL' as const,
+      companyId: null,
+      projectId: null,
+      siteId: null,
+    },
+  ],
 };
 
 describe('audit is written in the same transaction as the change', () => {
@@ -157,8 +193,8 @@ describe('audit is written in the same transaction as the change', () => {
 
   it('records DEACTIVATE when the active flag is switched off', async () => {
     const { prisma, tx, committed, users } = setup();
-    prisma.user.findUnique.mockResolvedValue(userRow({ roles: [{ role: CLERK }] }));
-    tx.user.update.mockImplementation(async () => userRow({ isActive: false }));
+    prisma.user.findUnique.mockResolvedValue(userRow({ roles: [link(CLERK)] }));
+    tx.user.findUniqueOrThrow.mockImplementation(async () => userRow({ isActive: false }));
 
     await users.update(USER_ID, { ...userRequest, isActive: false }, ACTOR);
 

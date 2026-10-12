@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Put,
   Req,
   Res,
   UsePipes,
@@ -14,7 +15,10 @@ import {
   ChangePasswordRequest,
   LoginRequest,
   SESSION_COOKIE_NAME,
+  SetContextRequest,
+  type ContextOptionsResponse,
   type MeResponse,
+  type SessionContext,
 } from '@uie/contracts';
 import type { CookieOptions, Request, Response } from 'express';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
@@ -62,6 +66,20 @@ export class AuthController {
   @Get('me')
   me(@Req() request: Request): MeResponse {
     return this.requireAuth(request).user;
+  }
+
+  /** Active companies and projects the user may choose as working context. */
+  @Get('context/options')
+  contextOptions(@Req() request: Request): Promise<ContextOptionsResponse> {
+    return this.authService.contextOptions(this.requireAuth(request).access);
+  }
+
+  @Put('context')
+  setContext(
+    @Body(new ZodValidationPipe(SetContextRequest)) body: SetContextRequest,
+    @Req() request: Request,
+  ): Promise<SessionContext> {
+    return this.authService.setContext(this.requireAuth(request), body);
   }
 
   @AllowDuringPasswordChange()

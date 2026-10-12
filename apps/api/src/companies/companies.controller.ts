@@ -15,15 +15,18 @@ import {
   CompanyListQuery,
   CreateCompanyRequest,
   CreateGstRegistrationRequest,
+  GstRegistrationOptionsQuery,
   UpdateCompanyRequest,
   UpdateGstRegistrationRequest,
   type CompanyDetailResponse,
+  type CompanyOptionsResponse,
   type CompanyResponse,
+  type GstRegistrationOptionsResponse,
   type GstRegistrationResponse,
   type PagedCompaniesResponse,
 } from '@uie/contracts';
 import type { Request } from 'express';
-import { actorIdOf } from '../auth/actor-id';
+import { accessOf, actorIdOf } from '../auth/actor-id';
 import { RequirePermissions } from '../auth/auth.decorators';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { CompaniesService } from './companies.service';
@@ -40,14 +43,35 @@ export class CompaniesController {
   @RequirePermissions('masters.companies.view')
   list(
     @Query(new ZodValidationPipe(CompanyListQuery)) query: CompanyListQuery,
+    @Req() request: Request,
   ): Promise<PagedCompaniesResponse> {
-    return this.companies.list(query);
+    return this.companies.list(query, accessOf(request));
+  }
+
+  /** Pick list for the project form: needs masters.projects.manage, not companies.view. */
+  @Get('companies/options')
+  @RequirePermissions('masters.projects.manage')
+  options(@Req() request: Request): Promise<CompanyOptionsResponse> {
+    return this.companies.optionsForProjects(accessOf(request));
+  }
+
+  /** Billing GST pick list for the project form: needs masters.projects.manage. */
+  @Get('gst-registrations/options')
+  @RequirePermissions('masters.projects.manage')
+  registrationOptions(
+    @Query(new ZodValidationPipe(GstRegistrationOptionsQuery)) query: GstRegistrationOptionsQuery,
+    @Req() request: Request,
+  ): Promise<GstRegistrationOptionsResponse> {
+    return this.registrations.optionsForProject(query.companyId, accessOf(request));
   }
 
   @Get('companies/:id')
   @RequirePermissions('masters.companies.view')
-  get(@Param('id', new ParseUUIDPipe()) id: string): Promise<CompanyDetailResponse> {
-    return this.companies.get(id);
+  get(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() request: Request,
+  ): Promise<CompanyDetailResponse> {
+    return this.companies.get(id, accessOf(request));
   }
 
   @Post('companies')
@@ -56,7 +80,7 @@ export class CompaniesController {
     @Body(new ZodValidationPipe(CreateCompanyRequest)) body: CreateCompanyRequest,
     @Req() request: Request,
   ): Promise<CompanyResponse> {
-    return this.companies.create(body, actorIdOf(request));
+    return this.companies.create(body, actorIdOf(request), accessOf(request));
   }
 
   @Patch('companies/:id')
@@ -66,7 +90,7 @@ export class CompaniesController {
     @Body(new ZodValidationPipe(UpdateCompanyRequest)) body: UpdateCompanyRequest,
     @Req() request: Request,
   ): Promise<CompanyResponse> {
-    return this.companies.update(id, body, actorIdOf(request));
+    return this.companies.update(id, body, actorIdOf(request), accessOf(request));
   }
 
   @Post('companies/:id/deactivate')
@@ -76,7 +100,7 @@ export class CompaniesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() request: Request,
   ): Promise<CompanyResponse> {
-    return this.companies.deactivate(id, actorIdOf(request));
+    return this.companies.deactivate(id, actorIdOf(request), accessOf(request));
   }
 
   @Post('companies/:id/reactivate')
@@ -86,7 +110,7 @@ export class CompaniesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() request: Request,
   ): Promise<CompanyResponse> {
-    return this.companies.reactivate(id, actorIdOf(request));
+    return this.companies.reactivate(id, actorIdOf(request), accessOf(request));
   }
 
   @Post('companies/:id/gst-registrations')
@@ -96,7 +120,7 @@ export class CompaniesController {
     @Body(new ZodValidationPipe(CreateGstRegistrationRequest)) body: CreateGstRegistrationRequest,
     @Req() request: Request,
   ): Promise<GstRegistrationResponse> {
-    return this.registrations.create(id, body, actorIdOf(request));
+    return this.registrations.create(id, body, actorIdOf(request), accessOf(request));
   }
 
   @Patch('gst-registrations/:id')
@@ -106,7 +130,7 @@ export class CompaniesController {
     @Body(new ZodValidationPipe(UpdateGstRegistrationRequest)) body: UpdateGstRegistrationRequest,
     @Req() request: Request,
   ): Promise<GstRegistrationResponse> {
-    return this.registrations.update(id, body, actorIdOf(request));
+    return this.registrations.update(id, body, actorIdOf(request), accessOf(request));
   }
 
   @Post('gst-registrations/:id/deactivate')
@@ -116,7 +140,7 @@ export class CompaniesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() request: Request,
   ): Promise<GstRegistrationResponse> {
-    return this.registrations.deactivate(id, actorIdOf(request));
+    return this.registrations.deactivate(id, actorIdOf(request), accessOf(request));
   }
 
   @Post('gst-registrations/:id/reactivate')
@@ -126,6 +150,6 @@ export class CompaniesController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() request: Request,
   ): Promise<GstRegistrationResponse> {
-    return this.registrations.reactivate(id, actorIdOf(request));
+    return this.registrations.reactivate(id, actorIdOf(request), accessOf(request));
   }
 }

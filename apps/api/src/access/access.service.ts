@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import type { RoleAssignmentResponse, ScopeTargetSummary } from '@uie/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   AccessContext,
@@ -31,6 +32,71 @@ export function toAccessAssignment(row: AssignmentRow): AccessAssignment {
       permissions: row.role.permissions.map((permission) => permission.permissionCode),
     },
   };
+}
+
+function toTarget(row: AssignmentRow): ScopeTargetSummary | null {
+  switch (row.scopeType) {
+    case 'COMPANY':
+      return row.company === null
+        ? null
+        : {
+            id: row.company.id,
+            code: row.company.code,
+            name: row.company.legalName,
+            isActive: row.company.isActive,
+          };
+    case 'PROJECT':
+      return row.project === null
+        ? null
+        : {
+            id: row.project.id,
+            code: row.project.code,
+            name: row.project.name,
+            isActive: row.project.isActive,
+          };
+    case 'SITE':
+      return row.site === null
+        ? null
+        : {
+            id: row.site.id,
+            code: row.site.code,
+            name: row.site.name,
+            isActive: row.site.isActive,
+          };
+    default:
+      return null;
+  }
+}
+
+/** Readable form of one assignment row (role and target names instead of bare ids). */
+export function toAssignmentResponse(row: AssignmentRow): RoleAssignmentResponse {
+  return {
+    id: row.id,
+    roleId: row.roleId,
+    roleCode: row.role.code,
+    roleName: row.role.name,
+    scopeType: row.scopeType,
+    target: toTarget(row),
+  };
+}
+
+const SCOPE_ORDER = { GLOBAL: 0, COMPANY: 1, PROJECT: 2, SITE: 3 } as const;
+
+/** Stable display order: by role name, then scope level, then target code. */
+export function sortAssignments(items: RoleAssignmentResponse[]): RoleAssignmentResponse[] {
+  return [...items].sort(
+    (a, b) =>
+      a.roleName.localeCompare(b.roleName) ||
+      SCOPE_ORDER[a.scopeType] - SCOPE_ORDER[b.scopeType] ||
+      (a.target?.code ?? '').localeCompare(b.target?.code ?? ''),
+  );
+}
+
+/** "PROJECT_MANAGER @ PROJECT P001", or "ADMINISTRATOR @ GLOBAL" for a global grant. */
+export function describeAssignment(item: RoleAssignmentResponse): string {
+  return item.target === null
+    ? `${item.roleCode} @ ${item.scopeType}`
+    : `${item.roleCode} @ ${item.scopeType} ${item.target.code}`;
 }
 
 export interface UserCoveringRole {

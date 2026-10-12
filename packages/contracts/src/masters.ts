@@ -158,6 +158,8 @@ export const CompanyResponse = z.object({
   isActive: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  /** True when the signed-in user may edit, deactivate or reactivate this record. */
+  canManage: z.boolean(),
 });
 
 export type CompanyResponse = z.infer<typeof CompanyResponse>;

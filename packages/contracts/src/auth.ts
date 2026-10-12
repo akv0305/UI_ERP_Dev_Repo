@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { RoleAssignmentResponse, SessionContext } from './access';
 import { ALL_PERMISSIONS } from './permissions';
 
 export const AUTH_ERROR_CODES = [
@@ -56,7 +57,10 @@ export const MeResponse = z.object({
   displayName: z.string(),
   mustChangePassword: z.boolean(),
   roles: z.array(MeRole),
+  /** Menu permissions: the union over all active-role assignments (administration.* from GLOBAL only). */
   permissions: z.array(PermissionCode),
+  assignments: z.array(RoleAssignmentResponse),
+  context: SessionContext,
 });
 
 export type MeResponse = z.infer<typeof MeResponse>;

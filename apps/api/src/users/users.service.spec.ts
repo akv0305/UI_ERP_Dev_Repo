@@ -11,8 +11,47 @@ const ADMIN_ROLE = {
   name: 'Administrator',
 };
 const OTHER_ROLE = { id: '22222222-2222-4222-8222-222222222222', code: 'CLERK', name: 'Clerk' };
+const PM_ROLE = {
+  id: '33333333-3333-4333-8333-333333333333',
+  code: 'PROJECT_MANAGER',
+  name: 'Project manager',
+};
+const USERS_ROLE = {
+  id: '44444444-4444-4444-8444-444444444444',
+  code: 'USER_CLERK',
+  name: 'User clerk',
+};
 const ACTOR_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const TARGET_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const COMPANY_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const PROJECT_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const SITE_ID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+
+type Role = { id: string; code: string; name: string };
+
+/** One role assignment row as the access query returns it. */
+function link(
+  role: Role,
+  overrides: Record<string, unknown> = {},
+  extra: { company?: unknown; project?: unknown; site?: unknown } = {},
+) {
+  return {
+    id: `link-${role.code}-${String(overrides.scopeType ?? 'GLOBAL')}`,
+    userId: TARGET_ID,
+    roleId: role.id,
+    scopeType: 'GLOBAL',
+    companyId: null,
+    projectId: null,
+    siteId: null,
+    createdAt: new Date('2026-01-01T00:00:00Z'),
+    createdById: null,
+    role,
+    company: extra.company ?? null,
+    project: extra.project ?? null,
+    site: extra.site ?? null,
+    ...overrides,
+  };
+}
 
 function userRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -27,16 +66,24 @@ function userRow(overrides: Record<string, unknown> = {}) {
     lastLoginAt: null,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
-    roles: [{ role: ADMIN_ROLE }],
+    roles: [link(ADMIN_ROLE)],
     ...overrides,
   };
+}
+
+function global(roleId: string) {
+  return { roleId, scopeType: 'GLOBAL' as const, companyId: null, projectId: null, siteId: null };
+}
+
+function roleRecord(role: Role, permissions: string[] = []) {
+  return { ...role, permissions: permissions.map((permissionCode) => ({ permissionCode })) };
 }
 
 function setup() {
   // Audit rows may only be written through tx: the top-level prisma mock has no auditEvent.
   const tx = {
-    userRole: { deleteMany: jest.fn() },
-    user: { update: jest.fn(), create: jest.fn() },
+    userRole: { deleteMany: jest.fn(), createMany: jest.fn() },
+    user: { update: jest.fn(), create: jest.fn(), findUniqueOrThrow: jest.fn() },
     session: { updateMany: jest.fn() },
     auditEvent: { create: jest.fn() },
   };
@@ -47,18 +94,32 @@ function setup() {
       findMany: jest.fn(),
       count: jest.fn(),
     },
-    role: { count: jest.fn() },
+    role: { findMany: jest.fn() },
+    company: { findMany: jest.fn() },
+    project: { findMany: jest.fn() },
+    site: { findMany: jest.fn() },
     $transaction: jest.fn(),
   };
   const passwords = { hash: jest.fn() };
   passwords.hash.mockResolvedValue('hashed');
   prisma.user.findFirst.mockResolvedValue(null);
-  prisma.role.count.mockResolvedValue(1);
+  // Default: every requested role exists and holds no administration permission.
+  prisma.role.findMany.mockImplementation(async (args: unknown) => {
+    const ids = (args as { where: { id: { in: string[] } } }).where.id.in;
+
+    return [ADMIN_ROLE, OTHER_ROLE, PM_ROLE]
+      .filter((role) => ids.includes(role.id))
+      .map((role) => roleRecord(role));
+  });
+  prisma.company.findMany.mockResolvedValue([{ id: COMPANY_ID, isActive: true }]);
+  prisma.project.findMany.mockResolvedValue([{ id: PROJECT_ID, isActive: true }]);
+  prisma.site.findMany.mockResolvedValue([{ id: SITE_ID, isActive: true }]);
   prisma.$transaction.mockImplementation(async (arg: unknown) =>
     (arg as (client: typeof tx) => Promise<unknown>)(tx),
   );
   tx.user.update.mockImplementation(async () => userRow());
-  tx.user.create.mockImplementation(async () => userRow({ mustChangePassword: true }));
+  tx.user.create.mockImplementation(async () => ({ id: TARGET_ID }));
+  tx.user.findUniqueOrThrow.mockImplementation(async () => userRow({ mustChangePassword: true }));
 
   const service = new UsersService(
     prisma as unknown as PrismaService,
@@ -85,21 +146,28 @@ const baseUpdate = {
   email: null,
   displayName: 'Target',
   isActive: true,
-  roleIds: [ADMIN_ROLE.id],
+  assignments: [global(ADMIN_ROLE.id)],
+};
+
+const baseCreate = {
+  username: 'new.user',
+  email: null,
+  displayName: 'New User',
+  isActive: true,
+  assignments: [global(OTHER_ROLE.id)],
+  temporaryPassword: 'Temp12345',
 };
 
 describe('UsersService.update rules', () => {
   it('rejects a user deactivating themself with CANNOT_DEACTIVATE_SELF', async () => {
     const { prisma, service } = setup();
-    prisma.user.findUnique.mockResolvedValue(
-      userRow({ id: ACTOR_ID, roles: [{ role: OTHER_ROLE }] }),
-    );
+    prisma.user.findUnique.mockResolvedValue(userRow({ id: ACTOR_ID, roles: [link(OTHER_ROLE)] }));
 
     await expect(
       codeOf(
         service.update(
           ACTOR_ID,
-          { ...baseUpdate, isActive: false, roleIds: [OTHER_ROLE.id] },
+          { ...baseUpdate, isActive: false, assignments: [global(OTHER_ROLE.id)] },
           ACTOR_ID,
         ),
       ),
@@ -116,14 +184,38 @@ describe('UsersService.update rules', () => {
     ).resolves.toBe('LAST_ADMINISTRATOR');
   });
 
-  it('rejects removing the ADMINISTRATOR role from the last active administrator', async () => {
+  it('rejects removing the GLOBAL ADMINISTRATOR assignment from the last active administrator', async () => {
     const { prisma, service } = setup();
     prisma.user.findUnique.mockResolvedValue(userRow());
     prisma.user.count.mockResolvedValue(0);
 
     await expect(
-      codeOf(service.update(TARGET_ID, { ...baseUpdate, roleIds: [OTHER_ROLE.id] }, ACTOR_ID)),
+      codeOf(
+        service.update(
+          TARGET_ID,
+          { ...baseUpdate, assignments: [global(OTHER_ROLE.id)] },
+          ACTOR_ID,
+        ),
+      ),
     ).resolves.toBe('LAST_ADMINISTRATOR');
+  });
+
+  it('counts only GLOBAL ADMINISTRATOR assignments of active users when looking for another admin', async () => {
+    const { prisma, service } = setup();
+    prisma.user.findUnique.mockResolvedValue(userRow());
+    prisma.user.count.mockResolvedValue(1);
+
+    await service.update(TARGET_ID, { ...baseUpdate, isActive: false }, ACTOR_ID);
+
+    expect(prisma.user.count).toHaveBeenCalledWith({
+      where: {
+        id: { not: TARGET_ID },
+        isActive: true,
+        roles: {
+          some: { scopeType: 'GLOBAL', role: { code: 'ADMINISTRATOR', isActive: true } },
+        },
+      },
+    });
   });
 
   it('allows deactivating an administrator when another active administrator exists', async () => {
@@ -140,7 +232,7 @@ describe('UsersService.update rules', () => {
     });
   });
 
-  it('does not check administrator count when the role is kept and the user stays active', async () => {
+  it('does not check administrator count when the assignment is kept and the user stays active', async () => {
     const { prisma, service } = setup();
     prisma.user.findUnique.mockResolvedValue(userRow());
 
@@ -149,13 +241,13 @@ describe('UsersService.update rules', () => {
     expect(prisma.user.count).not.toHaveBeenCalled();
   });
 
-  it('does not apply the administrator rule to non-administrators', async () => {
+  it('does not apply the administrator rule to a scoped ADMINISTRATOR-less user or non-administrators', async () => {
     const { prisma, service } = setup();
-    prisma.user.findUnique.mockResolvedValue(userRow({ roles: [{ role: OTHER_ROLE }] }));
+    prisma.user.findUnique.mockResolvedValue(userRow({ roles: [link(OTHER_ROLE)] }));
 
     await service.update(
       TARGET_ID,
-      { ...baseUpdate, isActive: false, roleIds: [OTHER_ROLE.id] },
+      { ...baseUpdate, isActive: false, assignments: [global(OTHER_ROLE.id)] },
       ACTOR_ID,
     );
 
@@ -178,23 +270,226 @@ describe('UsersService.update rules', () => {
       }),
     );
   });
+
+  it('writes only the assignment difference and keeps unchanged assignments', async () => {
+    const { prisma, tx, service } = setup();
+    const keptLink = link(OTHER_ROLE);
+    const droppedLink = link(PM_ROLE, { scopeType: 'COMPANY', companyId: COMPANY_ID });
+
+    prisma.user.findUnique.mockResolvedValue(userRow({ roles: [keptLink, droppedLink] }));
+
+    await service.update(
+      TARGET_ID,
+      {
+        ...baseUpdate,
+        assignments: [
+          global(OTHER_ROLE.id),
+          {
+            roleId: PM_ROLE.id,
+            scopeType: 'PROJECT',
+            companyId: null,
+            projectId: PROJECT_ID,
+            siteId: null,
+          },
+        ],
+      },
+      ACTOR_ID,
+    );
+
+    expect(tx.userRole.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: [droppedLink.id] } },
+    });
+    expect(tx.userRole.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          userId: TARGET_ID,
+          roleId: PM_ROLE.id,
+          scopeType: 'PROJECT',
+          companyId: null,
+          projectId: PROJECT_ID,
+          siteId: null,
+          createdById: ACTOR_ID,
+        },
+      ],
+    });
+  });
+});
+
+describe('assignment validation', () => {
+  const company = {
+    roleId: PM_ROLE.id,
+    scopeType: 'COMPANY' as const,
+    companyId: COMPANY_ID,
+    projectId: null,
+    siteId: null,
+  };
+
+  it.each([
+    ['GLOBAL with a company', { ...global(OTHER_ROLE.id), companyId: COMPANY_ID }],
+    ['COMPANY without a target', { ...company, companyId: null }],
+    ['COMPANY with a project too', { ...company, projectId: PROJECT_ID }],
+    [
+      'PROJECT with a site',
+      {
+        ...company,
+        scopeType: 'PROJECT' as const,
+        companyId: null,
+        projectId: PROJECT_ID,
+        siteId: SITE_ID,
+      },
+    ],
+    ['SITE with a company', { ...company, scopeType: 'SITE' as const, siteId: SITE_ID }],
+  ])('rejects %s with INVALID_SCOPE', async (_label, assignment) => {
+    const { service } = setup();
+
+    await expect(
+      codeOf(service.create({ ...baseCreate, assignments: [assignment] }, ACTOR_ID)),
+    ).resolves.toBe('INVALID_SCOPE');
+  });
+
+  it('rejects a target that does not exist with INVALID_SCOPE', async () => {
+    const { prisma, service } = setup();
+    prisma.company.findMany.mockResolvedValue([]);
+
+    await expect(
+      codeOf(service.create({ ...baseCreate, assignments: [company] }, ACTOR_ID)),
+    ).resolves.toBe('INVALID_SCOPE');
+  });
+
+  it.each([
+    ['company', 'company', company],
+    [
+      'project',
+      'project',
+      { ...company, scopeType: 'PROJECT' as const, companyId: null, projectId: PROJECT_ID },
+    ],
+    ['site', 'site', { ...company, scopeType: 'SITE' as const, companyId: null, siteId: SITE_ID }],
+  ])(
+    'rejects a NEW assignment to an inactive %s with SCOPE_TARGET_INACTIVE',
+    async (_label, table, assignment) => {
+      const { prisma, service } = setup();
+      const id = assignment.companyId ?? assignment.projectId ?? assignment.siteId;
+
+      (prisma as unknown as Record<string, { findMany: jest.Mock }>)[
+        table
+      ]?.findMany.mockResolvedValue([{ id, isActive: false }]);
+
+      await expect(
+        codeOf(service.create({ ...baseCreate, assignments: [assignment] }, ACTOR_ID)),
+      ).resolves.toBe('SCOPE_TARGET_INACTIVE');
+    },
+  );
+
+  it('lets an update KEEP an existing assignment whose target was deactivated since', async () => {
+    const { prisma, tx, service } = setup();
+    const existingLink = link(PM_ROLE, { scopeType: 'COMPANY', companyId: COMPANY_ID });
+
+    prisma.user.findUnique.mockResolvedValue(userRow({ roles: [existingLink] }));
+    prisma.company.findMany.mockResolvedValue([{ id: COMPANY_ID, isActive: false }]);
+
+    await expect(
+      service.update(TARGET_ID, { ...baseUpdate, assignments: [company] }, ACTOR_ID),
+    ).resolves.toBeDefined();
+    expect(tx.userRole.createMany).not.toHaveBeenCalled();
+    expect(tx.userRole.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects the ADMINISTRATOR role at a non-global scope with ADMIN_ROLE_MUST_BE_GLOBAL', async () => {
+    const { service } = setup();
+
+    await expect(
+      codeOf(
+        service.create(
+          { ...baseCreate, assignments: [{ ...company, roleId: ADMIN_ROLE.id }] },
+          ACTOR_ID,
+        ),
+      ),
+    ).resolves.toBe('ADMIN_ROLE_MUST_BE_GLOBAL');
+  });
+
+  it('rejects a role holding any administration.* permission at a non-global scope', async () => {
+    const { prisma, service } = setup();
+    prisma.role.findMany.mockResolvedValue([
+      roleRecord(USERS_ROLE, ['masters.items.view', 'administration.users.view']),
+    ]);
+
+    await expect(
+      codeOf(
+        service.create(
+          { ...baseCreate, assignments: [{ ...company, roleId: USERS_ROLE.id }] },
+          ACTOR_ID,
+        ),
+      ),
+    ).resolves.toBe('ROLE_HAS_ADMIN_PERMISSIONS_MUST_BE_GLOBAL');
+  });
+
+  it('accepts a role holding administration.* permissions at GLOBAL scope', async () => {
+    const { prisma, service } = setup();
+    prisma.role.findMany.mockResolvedValue([roleRecord(USERS_ROLE, ['administration.users.view'])]);
+
+    await expect(
+      service.create({ ...baseCreate, assignments: [global(USERS_ROLE.id)] }, ACTOR_ID),
+    ).resolves.toBeDefined();
+  });
+
+  it('rejects the same role at the same scope twice with DUPLICATE_ASSIGNMENT', async () => {
+    const { service } = setup();
+
+    await expect(
+      codeOf(service.create({ ...baseCreate, assignments: [company, { ...company }] }, ACTOR_ID)),
+    ).resolves.toBe('DUPLICATE_ASSIGNMENT');
+    await expect(
+      codeOf(
+        service.create(
+          { ...baseCreate, assignments: [global(OTHER_ROLE.id), global(OTHER_ROLE.id)] },
+          ACTOR_ID,
+        ),
+      ),
+    ).resolves.toBe('DUPLICATE_ASSIGNMENT');
+  });
+
+  it('allows the same role at different scopes', async () => {
+    const { service } = setup();
+
+    await expect(
+      service.create(
+        {
+          ...baseCreate,
+          assignments: [
+            company,
+            { ...company, scopeType: 'PROJECT', companyId: null, projectId: PROJECT_ID },
+          ],
+        },
+        ACTOR_ID,
+      ),
+    ).resolves.toBeDefined();
+  });
+
+  it('rejects an unknown role id with INVALID_ROLE', async () => {
+    const { prisma, service } = setup();
+    prisma.role.findMany.mockResolvedValue([]);
+
+    await expect(
+      codeOf(service.create({ ...baseCreate, assignments: [global(OTHER_ROLE.id)] }, ACTOR_ID)),
+    ).resolves.toBe('INVALID_ROLE');
+  });
+
+  it('rejects before writing anything', async () => {
+    const { prisma, service } = setup();
+
+    await codeOf(
+      service.create({ ...baseCreate, assignments: [{ ...company, companyId: null }] }, ACTOR_ID),
+    );
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
 });
 
 describe('UsersService create, reset password and unlock', () => {
   it('creates the user with mustChangePassword and a hashed temporary password', async () => {
     const { tx, service, passwords } = setup();
 
-    await service.create(
-      {
-        username: 'new.user',
-        email: null,
-        displayName: 'New User',
-        isActive: true,
-        roleIds: [OTHER_ROLE.id],
-        temporaryPassword: 'Temp12345',
-      },
-      ACTOR_ID,
-    );
+    await service.create(baseCreate, ACTOR_ID);
 
     expect(passwords.hash).toHaveBeenCalledWith('Temp12345');
     expect(tx.user.create).toHaveBeenCalledWith(
@@ -208,25 +503,43 @@ describe('UsersService create, reset password and unlock', () => {
     );
   });
 
-  it('rejects an unknown role id with INVALID_ROLE', async () => {
-    const { prisma, service } = setup();
-    prisma.role.count.mockResolvedValue(0);
+  it('writes the assignments in the same transaction, stamped with the creator', async () => {
+    const { tx, prisma, service } = setup();
 
-    await expect(
-      codeOf(
-        service.create(
+    await service.create(
+      {
+        ...baseCreate,
+        assignments: [
+          global(OTHER_ROLE.id),
           {
-            username: 'x',
-            email: null,
-            displayName: 'X',
-            isActive: true,
-            roleIds: [OTHER_ROLE.id],
-            temporaryPassword: 'Temp12345',
+            roleId: PM_ROLE.id,
+            scopeType: 'SITE',
+            companyId: null,
+            projectId: null,
+            siteId: SITE_ID,
           },
-          ACTOR_ID,
-        ),
-      ),
-    ).resolves.toBe('INVALID_ROLE');
+        ],
+      },
+      ACTOR_ID,
+    );
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(tx.userRole.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          roleId: OTHER_ROLE.id,
+          scopeType: 'GLOBAL',
+          createdById: ACTOR_ID,
+        }),
+        expect.objectContaining({
+          roleId: PM_ROLE.id,
+          scopeType: 'SITE',
+          siteId: SITE_ID,
+          createdById: ACTOR_ID,
+        }),
+      ],
+    });
+    expect(tx.auditEvent.create).toHaveBeenCalledTimes(1);
   });
 
   it('reset-password sets mustChangePassword and revokes all sessions of that user', async () => {
@@ -269,6 +582,50 @@ describe('UsersService create, reset password and unlock', () => {
   });
 });
 
+describe('audit snapshot of assignments', () => {
+  it('lists assignments readably, for example "PROJECT_MANAGER @ PROJECT P001"', async () => {
+    const { prisma, tx, service } = setup();
+    const project = { id: PROJECT_ID, code: 'P001', name: 'Metro', isActive: true };
+    const before = userRow({ roles: [link(OTHER_ROLE)] });
+    const after = userRow({
+      roles: [
+        link(OTHER_ROLE),
+        link(PM_ROLE, { scopeType: 'PROJECT', projectId: PROJECT_ID }, { project }),
+      ],
+    });
+
+    prisma.user.findUnique.mockResolvedValue(before);
+    tx.user.findUniqueOrThrow.mockImplementation(async () => after);
+
+    await service.update(
+      TARGET_ID,
+      {
+        ...baseUpdate,
+        assignments: [
+          global(OTHER_ROLE.id),
+          {
+            roleId: PM_ROLE.id,
+            scopeType: 'PROJECT',
+            companyId: null,
+            projectId: PROJECT_ID,
+            siteId: null,
+          },
+        ],
+      },
+      ACTOR_ID,
+    );
+
+    const event = (tx.auditEvent.create.mock.calls[0] as [{ data: Record<string, unknown> }])[0]
+      .data;
+
+    expect((event.before as { assignments: string[] }).assignments).toEqual(['CLERK @ GLOBAL']);
+    expect((event.after as { assignments: string[] }).assignments).toEqual([
+      'CLERK @ GLOBAL',
+      'PROJECT_MANAGER @ PROJECT P001',
+    ]);
+  });
+});
+
 describe('UsersService.list', () => {
   it('searches username, email and display name and filters by active', async () => {
     const { prisma, service } = setup();
@@ -298,5 +655,22 @@ describe('UsersService.list', () => {
         },
       }),
     );
+  });
+
+  it('role options flag the roles that can only be assigned globally', async () => {
+    const { prisma, service } = setup();
+    prisma.role.findMany.mockResolvedValue([
+      { ...roleRecord(ADMIN_ROLE), isActive: true },
+      { ...roleRecord(PM_ROLE, ['masters.projects.view']), isActive: true },
+      { ...roleRecord(USERS_ROLE, ['administration.users.view']), isActive: true },
+    ]);
+
+    const result = await service.roleOptions();
+
+    expect(result.items.map((item) => [item.code, item.requiresGlobalScope])).toEqual([
+      ['ADMINISTRATOR', true],
+      ['PROJECT_MANAGER', false],
+      ['USER_CLERK', true],
+    ]);
   });
 });

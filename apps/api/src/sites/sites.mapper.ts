@@ -16,7 +16,7 @@ export const storeInclude = {
 
 export type StoreWithRelations = Prisma.StoreGetPayload<{ include: typeof storeInclude }>;
 
-export function toSiteResponse(site: SiteWithRelations): SiteResponse {
+export function toSiteResponse(site: SiteWithRelations, canManage: boolean): SiteResponse {
   return {
     id: site.id,
     project: {
@@ -38,10 +38,11 @@ export function toSiteResponse(site: SiteWithRelations): SiteResponse {
     isActive: site.isActive,
     createdAt: site.createdAt.toISOString(),
     updatedAt: site.updatedAt.toISOString(),
+    canManage,
   };
 }
 
-export function toStoreResponse(store: Store): StoreResponse {
+export function toStoreResponse(store: Store, canManage: boolean): StoreResponse {
   return {
     id: store.id,
     siteId: store.siteId,
@@ -50,6 +51,7 @@ export function toStoreResponse(store: Store): StoreResponse {
     isActive: store.isActive,
     createdAt: store.createdAt.toISOString(),
     updatedAt: store.updatedAt.toISOString(),
+    canManage,
   };
 }
 

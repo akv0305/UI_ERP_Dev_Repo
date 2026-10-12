@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { RoleAssignmentInput, RoleAssignmentResponse } from './access';
 import { PasswordPolicy, PermissionCode } from './auth';
 
 export const ADMIN_ERROR_CODES = [
@@ -28,7 +29,7 @@ export const UserFields = z.object({
   email: UserEmail,
   displayName: z.string().trim().min(1).max(120),
   isActive: z.boolean(),
-  roleIds: z.array(z.uuid()),
+  assignments: z.array(RoleAssignmentInput),
 });
 
 export const CreateUserRequest = UserFields.extend({
@@ -67,7 +68,9 @@ export const UserResponse = z.object({
   lastLoginAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  /** Distinct roles held, for list display. */
   roles: z.array(UserRoleSummary),
+  assignments: z.array(RoleAssignmentResponse),
 });
 
 export type UserResponse = z.infer<typeof UserResponse>;
@@ -136,6 +139,8 @@ export const RoleOption = z.object({
   code: z.string(),
   name: z.string(),
   isActive: z.boolean(),
+  /** True for ADMINISTRATOR and any role holding an administration.* permission. */
+  requiresGlobalScope: z.boolean(),
 });
 
 export type RoleOption = z.infer<typeof RoleOption>;

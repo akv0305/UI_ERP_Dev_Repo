@@ -1,13 +1,16 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import type {
-  CreateUserRequest,
-  PagedUsersResponse,
-  RoleOptionsResponse,
-  ResetPasswordRequest,
-  UpdateUserRequest,
-  UserListQuery,
-  UserResponse,
+import {
+  ADMIN_PERMISSION_PREFIX,
+  hasValidScopeShape,
+  type CreateUserRequest,
+  type PagedUsersResponse,
+  type ResetPasswordRequest,
+  type RoleAssignmentInput,
+  type RoleOptionsResponse,
+  type UpdateUserRequest,
+  type UserListQuery,
+  type UserResponse,
 } from '@uie/contracts';
 import { ADMINISTRATOR_ROLE_CODE } from '../auth/auth.mapper';
 import { PasswordService } from '../auth/password.service';
@@ -21,6 +24,35 @@ import {
   userWithRolesInclude,
   type UserWithRoles,
 } from './users.mapper';
+
+/** Identity of an assignment: the same role at the same scope and target. */
+function assignmentKey(assignment: {
+  roleId: string;
+  scopeType: string;
+  companyId: string | null;
+  projectId: string | null;
+  siteId: string | null;
+}): string {
+  return [
+    assignment.roleId,
+    assignment.scopeType,
+    assignment.companyId ?? '',
+    assignment.projectId ?? '',
+    assignment.siteId ?? '',
+  ].join('|');
+}
+
+function assignmentRow(userId: string, assignment: RoleAssignmentInput, actorId: string) {
+  return {
+    userId,
+    roleId: assignment.roleId,
+    scopeType: assignment.scopeType,
+    companyId: assignment.companyId,
+    projectId: assignment.projectId,
+    siteId: assignment.siteId,
+    createdById: actorId,
+  };
+}
 
 @Injectable()
 export class UsersService {
@@ -66,11 +98,25 @@ export class UsersService {
 
   async roleOptions(): Promise<RoleOptionsResponse> {
     const roles = await this.prisma.role.findMany({
-      select: { id: true, code: true, name: true, isActive: true },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        isActive: true,
+        permissions: { select: { permissionCode: true } },
+      },
       orderBy: { name: 'asc' },
     });
 
-    return { items: roles };
+    return {
+      items: roles.map((role) => ({
+        id: role.id,
+        code: role.code,
+        name: role.name,
+        isActive: role.isActive,
+        requiresGlobalScope: requiresGlobalScope(role),
+      })),
+    };
   }
 
   async get(id: string): Promise<UserResponse> {
@@ -88,11 +134,11 @@ export class UsersService {
 
   async create(request: CreateUserRequest, actorId: string): Promise<UserResponse> {
     await this.assertUnique(request.username, request.email, undefined);
-    await this.assertRolesExist(request.roleIds);
+    await this.assertAssignmentsValid(request.assignments, new Set());
 
     const passwordHash = await this.passwords.hash(request.temporaryPassword);
     const created = await this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
+      const { id } = await tx.user.create({
         data: {
           username: request.username,
           email: request.email,
@@ -102,8 +148,18 @@ export class UsersService {
           mustChangePassword: true,
           createdById: actorId,
           updatedById: actorId,
-          roles: { create: [...new Set(request.roleIds)].map((roleId) => ({ roleId })) },
         },
+        select: { id: true },
+      });
+
+      if (request.assignments.length > 0) {
+        await tx.userRole.createMany({
+          data: request.assignments.map((assignment) => assignmentRow(id, assignment, actorId)),
+        });
+      }
+
+      const user = await tx.user.findUniqueOrThrow({
+        where: { id },
         include: userWithRolesInclude,
       });
 
@@ -141,14 +197,32 @@ export class UsersService {
     }
 
     await this.assertUnique(request.username, request.email, id);
-    await this.assertRolesExist(request.roleIds);
+
+    // Assignments the user already holds may point at targets that were deactivated since.
+    const held = new Set(existing.roles.map((link) => assignmentKey(link)));
+
+    await this.assertAssignmentsValid(request.assignments, held);
     await this.assertAdministratorRetained(existing, request);
 
-    const roleIds = [...new Set(request.roleIds)];
-    const updated = await this.prisma.$transaction(async (tx) => {
-      await tx.userRole.deleteMany({ where: { userId: id } });
+    // Only the difference is written: unchanged assignments keep their id and creation data.
+    const requested = new Set(request.assignments.map((assignment) => assignmentKey(assignment)));
+    const removedIds = existing.roles
+      .filter((link) => !requested.has(assignmentKey(link)))
+      .map((link) => link.id);
+    const added = request.assignments.filter((assignment) => !held.has(assignmentKey(assignment)));
 
-      const user = await tx.user.update({
+    const updated = await this.prisma.$transaction(async (tx) => {
+      if (removedIds.length > 0) {
+        await tx.userRole.deleteMany({ where: { id: { in: removedIds } } });
+      }
+
+      if (added.length > 0) {
+        await tx.userRole.createMany({
+          data: added.map((assignment) => assignmentRow(id, assignment, actorId)),
+        });
+      }
+
+      await tx.user.update({
         where: { id },
         data: {
           username: request.username,
@@ -156,8 +230,11 @@ export class UsersService {
           displayName: request.displayName,
           isActive: request.isActive,
           updatedById: actorId,
-          roles: { create: roleIds.map((roleId) => ({ roleId })) },
         },
+      });
+
+      const user = await tx.user.findUniqueOrThrow({
+        where: { id },
         include: userWithRolesInclude,
       });
 
@@ -269,32 +346,158 @@ export class UsersService {
     }
   }
 
-  private async assertRolesExist(roleIds: string[]): Promise<void> {
-    const unique = [...new Set(roleIds)];
-
-    if (unique.length === 0) {
-      return;
+  /**
+   * Validates a full assignment list, in this order: scope shape, duplicates, roles exist,
+   * global-only roles, targets. `held` holds the keys of assignments the user already has: those may
+   * keep pointing at an inactive target; a NEW assignment may not.
+   */
+  private async assertAssignmentsValid(
+    assignments: RoleAssignmentInput[],
+    held: ReadonlySet<string>,
+  ): Promise<void> {
+    if (assignments.some((assignment) => !hasValidScopeShape(assignment))) {
+      throw new ApiError(
+        HttpStatus.BAD_REQUEST,
+        'INVALID_SCOPE',
+        'Each assignment needs exactly the target that matches its scope',
+      );
     }
 
-    const count = await this.prisma.role.count({ where: { id: { in: unique } } });
+    const keys = assignments.map((assignment) => assignmentKey(assignment));
 
-    if (count !== unique.length) {
+    if (new Set(keys).size !== keys.length) {
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        'DUPLICATE_ASSIGNMENT',
+        'The same role is assigned twice for the same scope',
+      );
+    }
+
+    const roleIds = [...new Set(assignments.map((assignment) => assignment.roleId))];
+    const roles =
+      roleIds.length === 0
+        ? []
+        : await this.prisma.role.findMany({
+            where: { id: { in: roleIds } },
+            select: { id: true, code: true, permissions: { select: { permissionCode: true } } },
+          });
+
+    if (roles.length !== roleIds.length) {
       throw new ApiError(HttpStatus.BAD_REQUEST, 'INVALID_ROLE', 'One or more roles do not exist');
+    }
+
+    const roleById = new Map(roles.map((role) => [role.id, role]));
+
+    for (const assignment of assignments) {
+      const role = roleById.get(assignment.roleId);
+
+      if (role === undefined || assignment.scopeType === 'GLOBAL') {
+        continue;
+      }
+
+      if (role.code === ADMINISTRATOR_ROLE_CODE) {
+        throw new ApiError(
+          HttpStatus.BAD_REQUEST,
+          'ADMIN_ROLE_MUST_BE_GLOBAL',
+          'The Administrator role can only be assigned with global scope',
+        );
+      }
+
+      if (requiresGlobalScope(role)) {
+        throw new ApiError(
+          HttpStatus.BAD_REQUEST,
+          'ROLE_HAS_ADMIN_PERMISSIONS_MUST_BE_GLOBAL',
+          'A role with administration permissions can only be assigned with global scope',
+        );
+      }
+    }
+
+    await this.assertTargets(assignments, held);
+  }
+
+  /** Each target must exist (INVALID_SCOPE) and, if the assignment is new, be active. */
+  private async assertTargets(
+    assignments: RoleAssignmentInput[],
+    held: ReadonlySet<string>,
+  ): Promise<void> {
+    const idsOf = (pick: (assignment: RoleAssignmentInput) => string | null): string[] => [
+      ...new Set(assignments.flatMap((assignment) => pick(assignment) ?? [])),
+    ];
+    const companyIds = idsOf((assignment) => assignment.companyId);
+    const projectIds = idsOf((assignment) => assignment.projectId);
+    const siteIds = idsOf((assignment) => assignment.siteId);
+    const [companies, projects, sites] = await Promise.all([
+      companyIds.length === 0
+        ? []
+        : this.prisma.company.findMany({
+            where: { id: { in: companyIds } },
+            select: { id: true, isActive: true },
+          }),
+      projectIds.length === 0
+        ? []
+        : this.prisma.project.findMany({
+            where: { id: { in: projectIds } },
+            select: { id: true, isActive: true },
+          }),
+      siteIds.length === 0
+        ? []
+        : this.prisma.site.findMany({
+            where: { id: { in: siteIds } },
+            select: { id: true, isActive: true },
+          }),
+    ]);
+    const activeById = new Map<string, boolean>(
+      [...companies, ...projects, ...sites].map((row) => [row.id, row.isActive]),
+    );
+
+    for (const assignment of assignments) {
+      const targetId = assignment.companyId ?? assignment.projectId ?? assignment.siteId;
+
+      if (targetId === null) {
+        continue;
+      }
+
+      const isActive = activeById.get(targetId);
+
+      if (isActive === undefined) {
+        throw new ApiError(
+          HttpStatus.BAD_REQUEST,
+          'INVALID_SCOPE',
+          'The company, project or site does not exist',
+        );
+      }
+
+      if (!isActive && !held.has(assignmentKey(assignment))) {
+        throw new ApiError(
+          HttpStatus.CONFLICT,
+          'SCOPE_TARGET_INACTIVE',
+          'A new assignment cannot point at an inactive company, project or site',
+        );
+      }
     }
   }
 
-  /** The last active ADMINISTRATOR cannot be deactivated or lose the role. */
+  /**
+   * The last active administrator cannot be deactivated or lose the role. Only GLOBAL ADMINISTRATOR
+   * assignments of active users count, because a scoped one grants nothing.
+   */
   private async assertAdministratorRetained(
     existing: UserWithRoles,
     request: UpdateUserRequest,
   ): Promise<void> {
-    const adminLink = existing.roles.find((link) => link.role.code === ADMINISTRATOR_ROLE_CODE);
+    const adminLink = existing.roles.find(
+      (link) => link.scopeType === 'GLOBAL' && link.role.code === ADMINISTRATOR_ROLE_CODE,
+    );
 
     if (adminLink === undefined || !existing.isActive) {
       return;
     }
 
-    if (request.isActive && request.roleIds.includes(adminLink.role.id)) {
+    const keepsAdmin = request.assignments.some(
+      (assignment) => assignment.scopeType === 'GLOBAL' && assignment.roleId === adminLink.roleId,
+    );
+
+    if (request.isActive && keepsAdmin) {
       return;
     }
 
@@ -302,7 +505,9 @@ export class UsersService {
       where: {
         id: { not: existing.id },
         isActive: true,
-        roles: { some: { role: { code: ADMINISTRATOR_ROLE_CODE, isActive: true } } },
+        roles: {
+          some: { scopeType: 'GLOBAL', role: { code: ADMINISTRATOR_ROLE_CODE, isActive: true } },
+        },
       },
     });
 
@@ -318,4 +523,17 @@ export class UsersService {
   private notFound(): ApiError {
     return new ApiError(HttpStatus.NOT_FOUND, 'NOT_FOUND', 'User not found');
   }
+}
+
+/** ADMINISTRATOR, or any role holding an administration.* permission, can only be assigned globally. */
+function requiresGlobalScope(role: {
+  code: string;
+  permissions: Array<{ permissionCode: string }>;
+}): boolean {
+  return (
+    role.code === ADMINISTRATOR_ROLE_CODE ||
+    role.permissions.some((permission) =>
+      permission.permissionCode.startsWith(ADMIN_PERMISSION_PREFIX),
+    )
+  );
 }

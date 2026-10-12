@@ -19,7 +19,10 @@ export function toCompanySummary(company: Company): CompanySummary {
   };
 }
 
-export function toProjectResponse(project: ProjectWithRelations): ProjectResponse {
+export function toProjectResponse(
+  project: ProjectWithRelations,
+  canManage: boolean,
+): ProjectResponse {
   return {
     id: project.id,
     company: toCompanySummary(project.company),
@@ -37,6 +40,7 @@ export function toProjectResponse(project: ProjectWithRelations): ProjectRespons
     isActive: project.isActive,
     createdAt: project.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
+    canManage,
   };
 }
 

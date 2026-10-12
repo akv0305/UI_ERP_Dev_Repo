@@ -25,7 +25,7 @@ export type RegistrationWithState = Prisma.CompanyGstRegistrationGetPayload<{
   include: typeof registrationInclude;
 }>;
 
-export function toCompanyResponse(company: CompanyWithState): CompanyResponse {
+export function toCompanyResponse(company: CompanyWithState, canManage: boolean): CompanyResponse {
   return {
     id: company.id,
     code: company.code,
@@ -43,6 +43,7 @@ export function toCompanyResponse(company: CompanyWithState): CompanyResponse {
     isActive: company.isActive,
     createdAt: company.createdAt.toISOString(),
     updatedAt: company.updatedAt.toISOString(),
+    canManage,
   };
 }
 
@@ -66,9 +67,12 @@ export function toRegistrationResponse(
   };
 }
 
-export function toCompanyDetailResponse(company: CompanyWithRegistrations): CompanyDetailResponse {
+export function toCompanyDetailResponse(
+  company: CompanyWithRegistrations,
+  canManage: boolean,
+): CompanyDetailResponse {
   return {
-    ...toCompanyResponse(company),
+    ...toCompanyResponse(company, canManage),
     gstRegistrations: company.gstRegistrations.map(toRegistrationResponse),
   };
 }

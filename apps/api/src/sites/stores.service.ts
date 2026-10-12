@@ -5,6 +5,7 @@ import type {
   StoreResponse,
   UpdateStoreRequest,
 } from '@uie/contracts';
+import type { AccessContext } from '../access/access-context';
 import { auditActionFor } from '../audit/audit-action';
 import { AuditService } from '../audit/audit.service';
 import { parentInactive } from '../masters/hierarchy-errors';
@@ -14,6 +15,13 @@ import {
   isUniqueViolation,
   notFound,
 } from '../masters/master-helpers';
+import {
+  SITE_PERMISSIONS,
+  assertManageable,
+  assertVisible,
+  canManage,
+  forbidden,
+} from '../masters/scope';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   storeInclude,
@@ -22,6 +30,16 @@ import {
   type StoreWithRelations,
 } from './sites.mapper';
 
+/** A store row carries its site, project and company, so its scope target needs no extra lookup. */
+function targetOf(store: StoreWithRelations) {
+  return {
+    companyId: store.site.project.companyId,
+    projectId: store.site.projectId,
+    siteId: store.siteId,
+    storeId: store.id,
+  };
+}
+
 @Injectable()
 export class StoresService {
   constructor(
@@ -29,26 +47,44 @@ export class StoresService {
     private readonly audit: AuditService,
   ) {}
 
-  async listForSite(siteId: string): Promise<StoreListResponse> {
-    const site = await this.prisma.site.findUnique({ where: { id: siteId }, select: { id: true } });
+  async listForSite(siteId: string, access: AccessContext): Promise<StoreListResponse> {
+    const site = await this.prisma.site.findUnique({
+      where: { id: siteId },
+      select: { id: true, projectId: true, project: { select: { companyId: true } } },
+    });
 
     if (site === null) {
       throw notFound('Site');
     }
 
+    const siteTarget = {
+      companyId: site.project.companyId,
+      projectId: site.projectId,
+      siteId: site.id,
+    };
+
+    assertVisible(access, SITE_PERMISSIONS, siteTarget, 'Site');
+
     const stores = await this.prisma.store.findMany({
       where: { siteId },
       orderBy: [{ code: 'asc' }, { id: 'asc' }],
     });
+    const manageable = canManage(access, SITE_PERMISSIONS, siteTarget);
 
-    return { items: stores.map(toStoreResponse) };
+    return { items: stores.map((store) => toStoreResponse(store, manageable)) };
   }
 
   async create(
     siteId: string,
     request: CreateStoreRequest,
     actorId: string,
+    access: AccessContext,
   ): Promise<StoreResponse> {
+    // Scope is checked before the site is looked up, so existence is not revealed.
+    if (!(await access.can(SITE_PERMISSIONS.manage, { siteId }))) {
+      throw forbidden();
+    }
+
     const site = await this.prisma.site.findUnique({
       where: { id: siteId },
       select: { id: true, isActive: true, project: { select: { companyId: true } } },
@@ -92,11 +128,16 @@ export class StoresService {
       }),
     );
 
-    return toStoreResponse(created);
+    return toStoreResponse(created, true);
   }
 
-  async update(id: string, request: UpdateStoreRequest, actorId: string): Promise<StoreResponse> {
-    const existing = await this.require(id);
+  async update(
+    id: string,
+    request: UpdateStoreRequest,
+    actorId: string,
+    access: AccessContext,
+  ): Promise<StoreResponse> {
+    const existing = await this.requireManageable(id, access);
 
     assertCodeUnchanged(request.code, existing.code);
 
@@ -120,22 +161,27 @@ export class StoresService {
       return store;
     });
 
-    return toStoreResponse(updated);
+    return toStoreResponse(updated, true);
   }
 
-  deactivate(id: string, actorId: string): Promise<StoreResponse> {
-    return this.setActive(id, false, actorId);
+  deactivate(id: string, actorId: string, access: AccessContext): Promise<StoreResponse> {
+    return this.setActive(id, false, actorId, access);
   }
 
-  reactivate(id: string, actorId: string): Promise<StoreResponse> {
-    return this.setActive(id, true, actorId);
+  reactivate(id: string, actorId: string, access: AccessContext): Promise<StoreResponse> {
+    return this.setActive(id, true, actorId, access);
   }
 
-  private async setActive(id: string, isActive: boolean, actorId: string): Promise<StoreResponse> {
-    const existing = await this.require(id);
+  private async setActive(
+    id: string,
+    isActive: boolean,
+    actorId: string,
+    access: AccessContext,
+  ): Promise<StoreResponse> {
+    const existing = await this.requireManageable(id, access);
 
     if (existing.isActive === isActive) {
-      return toStoreResponse(existing);
+      return toStoreResponse(existing, true);
     }
 
     if (isActive && !existing.site.isActive) {
@@ -162,15 +208,18 @@ export class StoresService {
       return store;
     });
 
-    return toStoreResponse(updated);
+    return toStoreResponse(updated, true);
   }
 
-  private async require(id: string): Promise<StoreWithRelations> {
+  /** The record, once the user is known to be allowed to change it (404 out of scope, 403 view-only). */
+  private async requireManageable(id: string, access: AccessContext): Promise<StoreWithRelations> {
     const store = await this.prisma.store.findUnique({ where: { id }, include: storeInclude });
 
     if (store === null) {
       throw notFound('Store');
     }
+
+    assertManageable(access, SITE_PERMISSIONS, targetOf(store), 'Store');
 
     return store;
   }
