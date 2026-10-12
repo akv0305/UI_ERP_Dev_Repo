@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-031 · CQ-81 · OQ-25 · PDEF-021 · CR-002
+# REGISTER — next free: PD-037 · CQ-98 · OQ-27 · PDEF-023 · CR-002
 
 ## Decisions
 
@@ -7,7 +7,7 @@
 | PD-001 | (retired — demo is not a source) | RETIRED |
 | PD-002 | Stack: Next.js, TS, Tailwind, shadcn/ui, PostgreSQL, Prisma | APPROVED |
 | PD-003 | Numbering: series per company/docType/project?/FY; number taken in same transaction (SELECT…FOR UPDATE); drafts unnumbered | APPROVED |
-| PD-004 | Audit: append-only event per write, same transaction; approved docs immutable; change = revision + re-approval | APPROVED |
+| PD-004 | Audit: append-only event per write, same transaction; approved docs immutable; change = revision + re-approval | APPROVED (audit trail built G-04a) |
 | PD-005 | Planning view computed from ledger per WBS node × item; recursive roll-up | APPROVED, provisional |
 | PD-006 | Money (18,2), qty (18,3). Additions: rate (18,4), UOM factor (18,6), tax % (5,2), round each line half-up then sum, arithmetic server-side | APPROVED; additions PROPOSED |
 | PD-007 | (retired — see PD-017) | RETIRED |
@@ -34,6 +34,12 @@
 | PD-028 | Password login, argon2id, PostgreSQL sessions (httpOnly cookie), lockout 5 fails/15 min, permissions from DB | APPROVED |
 | PD-029 | Username required, email optional+unique, password ≥8 letter+digit, 12 h session, forced first change, 10 logins/min/IP, last-admin protection | APPROVED |
 | PD-030 | G-03 Genspark choices (27) incl. Prisma 7 config, case-insensitive unique indexes | APPROVED |
+| PD-031 | G-04 masters + statutory fields (all optional, validated when entered): Company (PAN, TAN, CIN, LLPIN, entity type Company/SPV/JV, address, state, PIN); GST registrations per state (GSTIN check digit, state + PAN match); State master (GST codes, seeded, read-only); Project (billing GST registration); Site (address, contact); Store | APPROVED (built G-04a) |
+| PD-032 | Item master + Excel import from client Material List | APPROVED — G-05 |
+| PD-033 | Scoped access: admin grants users one or more companies / projects / sites and roles; API refuses outside access; top-bar switcher | APPROVED — G-04b |
+| PD-034 | G-04a rules: codes immutable, no deactivate with active children, no create under inactive parent, no hard deletes (deactivate only), append-only audit, GST billing addresses, site contact | APPROVED (built G-04a) |
+| PD-035 | G-04a Genspark choices (20) incl. audit FK ON DELETE RESTRICT, request id via AsyncLocalStorage, secrets dropped from audit snapshots, audit date filters whole days IST, CODE_IMMUTABLE / GSTIN_PAN_MISMATCH errors | APPROVED |
+| PD-036 | Brand logo as Demo-uie: full logo 48 px above login card, app name below card; sidebar header full logo 32 px / mark 30 px when collapsed, links to Home; files in apps/web/public/brand; paths + sizes in theme.ts; initials fallback | APPROVED (built G-04a2) |
 
 ## Owner questions
 
@@ -55,13 +61,18 @@
 | OQ-21 | G-03 single run | CLOSED — ran in parts |
 | OQ-22 | Can users have no email? | OPEN (assumed yes) |
 | OQ-23 | `trust proxy` value per deployment | OPEN — at deploy |
-| OQ-24 | User access model (company-wide vs per project) | OPEN — before G-04 |
+| OQ-24 | User access model (company-wide vs per project) | CLOSED → PD-033 |
+| OQ-25 | (G-04a option question) | CLOSED — Option 1 |
+| OQ-26 | Tagline under the logo? Text? | OPEN — default none |
 
 ## Client questions
 
 CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | CQ-79 | Does an SPV/JV record its parent company / JV partners (with share %)? | OPEN |
-| CQ-80 | Store structure: Project → Site → Store, or one store per site/project? | OPEN |
+| CQ-80 | Store structure: Project → Site → Store, or one store per site/project? | CLOSED — Project → Site → Store |
+| CQ-82 | PO number `UIEPL/xxxx/xxxx/26-27`: what are the two middle parts? | OPEN |
+| CQ-83 | PO sample shows tax lines and also "Inclusive of GST @ 18%": which applies? | OPEN |
+| CQ-84..CQ-97 | Sample review questions (Indent book, PO format, Material List) drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md | OPEN |
 
 ## Defects
 
@@ -78,11 +89,13 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-013 | formatINR/formatQty number-only | CLOSED (G-02c) |
 | PDEF-014 | Permission check at build time | CLOSED (G-02d, G-03) |
 | PDEF-015 | PendingScreen read permissions | CLOSED (G-02d) |
-| PDEF-016 | Row action click also fires row click | FIXED in code (343af17); browser check PDEF-019 |
-| PDEF-017 | Rows not keyboard-accessible | FIXED in code (343af17); browser check PDEF-019 |
-| PDEF-018 | DIRECT_URL in local .env is a placeholder | OPEN |
-| PDEF-019 | Login + users/roles not tested in a browser | OPEN |
-| PDEF-020 | REGISTER/CONTEXT not updated after G-01 | CLOSED by this commit |
+| PDEF-016 | Row action click also fires row click | CLOSED — browser checked |
+| PDEF-017 | Rows not keyboard-accessible | CLOSED — browser checked |
+| PDEF-018 | DIRECT_URL in local .env is a placeholder | CLOSED — real URL set |
+| PDEF-019 | Login + users/roles not tested in a browser | CLOSED — browser test passed |
+| PDEF-020 | REGISTER/CONTEXT not updated after G-01 | CLOSED |
+| PDEF-021 | Hard-coded aria-labels in sidebar, top bar, breadcrumbs | CLOSED (G-04a2, 7e36ffa) |
+| PDEF-022 | G-04a masters + audit log screens not tested in a browser | OPEN |
 
 ## Change requests
 
@@ -100,3 +113,5 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | G-02c | DeepSeek V4 Pro | 147 | gen/G-02 | 546dccf |
 | G-02d | DeepSeek V4 Pro | 380 | gen/G-02 | 71e00f6 |
 | G-03 | Claude Sonnet 5 | 3,074 | gen/G-03 | 343af17 |
+| G-04a | Claude Sonnet 5 | 3,805 | gen/G-04a | dd0d383 |
+| G-04a2 | DeepSeek V4 Pro | TBC | gen/G-04a2 | 7e36ffa |
