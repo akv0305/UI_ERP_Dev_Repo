@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-038 · CQ-98 · OQ-27 · PDEF-023 · CR-002
+# REGISTER — next free: PD-041 · CQ-102 · OQ-28 · PDEF-024 · CR-002
 
 ## Decisions
 
@@ -35,12 +35,16 @@
 | PD-029 | Username required, email optional+unique, password ≥8 letter+digit, 12 h session, forced first change, 10 logins/min/IP, last-admin protection | APPROVED |
 | PD-030 | G-03 Genspark choices (27) incl. Prisma 7 config, case-insensitive unique indexes | APPROVED |
 | PD-031 | G-04 masters + statutory fields (all optional, validated when entered): Company (PAN, TAN, CIN, LLPIN, entity type Company/SPV/JV, address, state, PIN); GST registrations per state (GSTIN check digit, state + PAN match); State master (GST codes, seeded, read-only); Project (billing GST registration); Site (address, contact); Store | APPROVED (built G-04a) |
-| PD-032 | Item master + Excel import from client Material List | APPROVED — G-05 |
+| PD-032 | Item master + Excel import from client Material List | APPROVED — detailed in PD-040 |
 | PD-033 | Scoped access: admin grants users one or more companies / projects / sites and roles; API refuses outside access; top-bar switcher | APPROVED — detailed in PD-037 |
 | PD-034 | G-04a rules: codes immutable, no deactivate with active children, no create under inactive parent, no hard deletes (deactivate only), append-only audit, GST billing addresses, site contact | APPROVED (built G-04a) |
 | PD-035 | G-04a Genspark choices (20) incl. audit FK ON DELETE RESTRICT, request id via AsyncLocalStorage, secrets dropped from audit snapshots, audit date filters whole days IST, CODE_IMMUTABLE / GSTIN_PAN_MISMATCH errors | APPROVED |
 | PD-036 | Brand logo as Demo-uie: full logo 48 px above login card, app name below card; sidebar header full logo 32 px / mark 30 px when collapsed, links to Home; files in apps/web/public/brand; paths + sizes in theme.ts; initials fallback | APPROVED (built G-04a2) |
-| PD-037 | Scoped roles (OQ-25 Option 1): each user_roles row = role + scope (GLOBAL / COMPANY / PROJECT / SITE); access derived from assignments down the hierarchy; menu = union of permissions; API checks permission against the record's scope; administration.* and ADMINISTRATOR only GLOBAL; out-of-scope record = 404; canManage per row; option endpoints for form pick lists; switcher context stored on session, auto-select when only one; existing links migrated to GLOBAL; findUsersWithRoleCovering helper for PD-008 | PROPOSED — G-04b |
+| PD-037 | Scoped roles (OQ-25 Option 1): each user_roles row = role + scope (GLOBAL / COMPANY / PROJECT / SITE); access derived from assignments down the hierarchy; menu = union of permissions; API checks permission against the record's scope; administration.* and ADMINISTRATOR only GLOBAL; out-of-scope record = 404; canManage per row; option endpoints for form pick lists; switcher context stored on session, auto-select when only one; existing links migrated to GLOBAL; findUsersWithRoleCovering helper for PD-008 | APPROVED (built G-04b, 9f9e1b1) |
+| PD-038 | G-04b Genspark choices: removed assignments deleted from user_roles (user audit snapshot keeps before/after); site-scoped holders not returned by findUsersWithRoleCovering; site assignment makes its project selectable in switcher; create checks scope before parent existence (403, existence not revealed); visible-but-not-manageable = 403; roles with administration.* flagged requiresGlobalScope in role options | APPROVED |
+| PD-039 | Genspark AI Code stopped after G-04b. Manual loop from G-05: Claude gives complete files + commands, owner pastes in VS Code, runs checks, branch dev/G-xx, Claude reviews SHA, ff-merge to main; migrations create-only then approved | APPROVED |
+| PD-040 | Item master (G-05): Unit master (code, name, decimals 0–3); Category (Group) master (auto code IG-0001, unique name, label "Category (Group)"); Item (auto code ITM-000001, immutable; description, size/spec, category + unit required, item use Stock and issue / Stock only, HSN 4/6/8 optional, GST % optional, remarks); approval Draft → Pending → Approved / Rejected; edit of Approved → Pending, blocked for new documents until re-approved, past documents unchanged; permissions masters.items.manage + masters.items.approve (GLOBAL only); import skips rows with blank/unknown category or blank unit and lists them; duplicate = description + size + unit (case/space-insensitive); Excel via exceljs on API; Items / Categories / Units tabs; no hard deletes, audited | PROPOSED |
+| PD-041 | Item codes via Postgres sequences (IG-0001 / ITM-000001, gaps accepted); Rejected is own status, editable; editing Approved → Pending, remarks-only no re-approval; approve/reject audited as UPDATE; self-approval allowed for items only (OQ-28). Case-insensitive unique: unit code, unit name, category name. | PROPOSED |
 
 ## Owner questions
 
@@ -48,7 +52,7 @@
 | --- | --- | --- |
 | OQ-01,02,09,13–17 | (see history) | CLOSED |
 | OQ-03 | Adopt terminology/theme/Zod rules | CLOSED → PD-015 |
-| OQ-04 | Libraries (PDF, Excel, email) | OPEN — per package |
+| OQ-04 | Libraries (PDF, Excel, email) | Excel → exceljs (PD-040); PDF, email OPEN |
 | OQ-05 | Purchase/Stores reports in Phase A | DEFERRED |
 | OQ-06 | Opening stock import | WITH CLIENT |
 | OQ-07 | Rate precision | OPEN → PD-006 additions |
@@ -56,7 +60,7 @@
 | OQ-10 | UIE-only or resold (tenant layer)? | OPEN |
 | OQ-11 | Login identifier | CLOSED — username/emp code or email |
 | OQ-12 | Locale defaults | CLOSED → PD-014 |
-| OQ-18 | Laptop Node/pnpm | CLOSED — Node 20.20 (see PDEF-008), pnpm 12.9.1 |
+| OQ-18 | Laptop Node/pnpm | CLOSED — Node 22.23.3, pnpm 12.9.1 |
 | OQ-19 | Genspark runs commands? | CLOSED — yes, on laptop |
 | OQ-20 | Generic error text, seconds in date-time | CLOSED — keep text; no seconds |
 | OQ-21 | G-03 single run | CLOSED — ran in parts |
@@ -65,6 +69,9 @@
 | OQ-24 | User access model (company-wide vs per project) | CLOSED → PD-033 |
 | OQ-25 | Roles per scope (Option 1) or global (Option 2)? | CLOSED — Option 1 → PD-037 |
 | OQ-26 | Tagline under the logo? Text? | OPEN — default none |
+| OQ-27 | Edited approved item while pending: usable or blocked? | CLOSED — blocked for new documents until re-approved; past documents unchanged |
+| OQ-28 | Self-approval of items? | Item master only: holder of masters.items.approve (VP) may approve own item; all other documents keep maker-checker. Audit records both actions. | CLOSED |
+
 
 ## Client questions
 
@@ -74,6 +81,10 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | CQ-82 | PO number `UIEPL/xxxx/xxxx/26-27`: what are the two middle parts? | OPEN |
 | CQ-83 | PO sample shows tax lines and also "Inclusive of GST @ 18%": which applies? | OPEN |
 | CQ-84..CQ-97 | Sample review questions (Indent book, PO format, Material List) drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md | OPEN |
+| CQ-98 | Item / category codes | ANSWERED (owner) — category IG-0001 auto; label "Category (Group)"; item ITM-000001 proposed |
+| CQ-99 | HSN and GST rates per item | OPEN — may come in final Excel, else entered after import |
+| CQ-100 | Tools, furniture, laptops, AC: stocked or assets? | ANSWERED (owner) — per-item option: Stock and issue / Stock only |
+| CQ-101 | Plant Spares group "will give later" | ANSWERED (owner) — categories entered separately; rows without a known category skipped |
 
 ## Defects
 
@@ -82,7 +93,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-001..005 | Demo-doc defects | WITHDRAWN |
 | PDEF-006 | Assumed Genspark scaffold existed | CLOSED |
 | PDEF-007 | CI failed pnpm 24 h release-age check | CLOSED |
-| PDEF-008 | Laptop Node 20.20; project expects 22 | OPEN — before VS Code phase |
+| PDEF-008 | Laptop Node 20.20; project expects 22 | CLOSED — Node 22.23.3 installed |
 | PDEF-009 | .prettierignore missing docs/client-inputs | CLOSED (G-02) |
 | PDEF-010 | Exception filter validation payload | CLOSED (G-02) |
 | PDEF-011 | G-02 prompt lost mid-run | CLOSED — parts committed separately |
@@ -97,6 +108,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-020 | REGISTER/CONTEXT not updated after G-01 | CLOSED |
 | PDEF-021 | Hard-coded aria-labels in sidebar, top bar, breadcrumbs | CLOSED (G-04a2, 7e36ffa) |
 | PDEF-022 | G-04a masters + audit log screens not tested in a browser | CLOSED — browser test passed |
+| PDEF-023 | G-04b Part 4 not run (credits exhausted) | CLOSED — local checks, migrate status and browser test passed |
 
 ## Change requests
 
@@ -104,7 +116,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | --- | --- | --- |
 | CR-001 | Admin screen to edit theme (move theme to DB) | DEFERRED |
 
-## Genspark runs
+## Genspark runs (closed — manual from G-05, PD-039)
 
 | Run | Model | Credits | Branch | Commit |
 | --- | --- | --- | --- | --- |
@@ -116,3 +128,4 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | G-03 | Claude Sonnet 5 | 3,074 | gen/G-03 | 343af17 |
 | G-04a | Claude Sonnet 5 | 3,805 | gen/G-04a | dd0d383 |
 | G-04a2 | DeepSeek V4 Pro | 80 | gen/G-04a2 | 7e36ffa |
+| G-04b | Claude Sonnet 5 | 6,115 (stopped before Part 4) | gen/G-04b | 9f9e1b1 |

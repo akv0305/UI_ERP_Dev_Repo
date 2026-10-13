@@ -17,6 +17,8 @@ export const ALL_PERMISSIONS = [
   'masters.sitesAndStores.view',
   'masters.sitesAndStores.manage',
   'masters.items.view',
+  'masters.items.manage',
+  'masters.items.approve',
   'masters.vendors.view',
   'administration.users.view',
   'administration.users.manage',
