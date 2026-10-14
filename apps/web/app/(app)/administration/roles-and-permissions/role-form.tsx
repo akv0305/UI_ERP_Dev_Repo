@@ -77,7 +77,7 @@ function PermissionChecklist({
       {PERMISSION_GROUPS.map((group) => (
         <section
           key={group.labelKey}
-          className="rounded-lg border border-border bg-surface p-[var(--card-padding)]"
+          className="rounded-lg border border-border bg-surface p-(--card-padding)"
         >
           <h3 className="mb-3 text-sm font-semibold text-foreground">
             {terminology.nav[group.labelKey]}
@@ -86,11 +86,12 @@ function PermissionChecklist({
             {group.rows.map((row) => (
               <li
                 key={row.labelKey}
-                className="grid grid-cols-[1fr_auto_auto] items-center gap-4 py-2 sm:grid-cols-[1fr_8rem_8rem]"
+                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-4 py-2 sm:grid-cols-[1fr_8rem_8rem_8rem]"
               >
                 <span className="text-sm text-foreground">{terminology.nav[row.labelKey]}</span>
                 {renderBox(row.view, terminology.permissionActions.view)}
                 {renderBox(row.manage, terminology.permissionActions.manage)}
+                {renderBox(row.approve, terminology.permissionActions.approve)}
               </li>
             ))}
           </ul>

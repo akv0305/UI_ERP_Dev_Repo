@@ -7,7 +7,9 @@ describe('buildPermissionGroups', () => {
 
   it('lists every permission code exactly once', () => {
     const listed = groups.flatMap((group) =>
-      group.rows.flatMap((row) => [row.view, row.manage].filter((code) => code !== null)),
+      group.rows.flatMap((row) =>
+        [row.view, row.manage, row.approve].filter((code) => code !== null),
+      ),
     );
 
     expect(new Set(listed).size).toBe(listed.length);
@@ -22,6 +24,19 @@ describe('buildPermissionGroups', () => {
       labelKey: 'users',
       view: 'administration.users.view',
       manage: 'administration.users.manage',
+      approve: null,
+    });
+  });
+
+  it('adds approve for screens that have one', () => {
+    const masters = groups.find((group) => group.labelKey === 'masters');
+    const items = masters?.rows.find((row) => row.labelKey === 'items');
+
+    expect(items).toEqual({
+      labelKey: 'items',
+      view: 'masters.items.view',
+      manage: 'masters.items.manage',
+      approve: 'masters.items.approve',
     });
   });
 

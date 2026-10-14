@@ -6,6 +6,7 @@ export interface PermissionRow {
   labelKey: NavigationLabelKey;
   view: Permission | null;
   manage: Permission | null;
+  approve: Permission | null;
 }
 
 export interface PermissionGroup {
@@ -22,7 +23,8 @@ function findPermission(code: string): Permission | null {
 
 /**
  * Permissions grouped by menu group and screen, derived from the navigation config:
- * `<screen>.view` is the visibility permission, `<screen>.manage` (when it exists) the edit one.
+ * `<screen>.view` is the visibility permission, `<screen>.manage` (when it exists) the edit one,
+ * `<screen>.approve` (when it exists) the approval one.
  */
 export function buildPermissionGroups(): PermissionGroup[] {
   return navigation.map((group) => ({
@@ -35,6 +37,7 @@ export function buildPermissionGroups(): PermissionGroup[] {
         labelKey: item.labelKey,
         view,
         manage: base === undefined ? null : findPermission(`${base}.manage`),
+        approve: base === undefined ? null : findPermission(`${base}.approve`),
       };
     }),
   }));

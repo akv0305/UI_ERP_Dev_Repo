@@ -489,6 +489,7 @@ export const terminology = {
   permissionActions: {
     view: 'View',
     manage: 'Manage',
+    approve: 'Approve',
   },
   apiErrors: {
     FORBIDDEN: 'You do not have permission to do this.',
