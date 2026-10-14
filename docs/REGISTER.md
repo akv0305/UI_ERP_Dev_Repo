@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-041 · CQ-102 · OQ-28 · PDEF-024 · CR-002
+# REGISTER — next free: PD-042 · CQ-102 · OQ-30 · PDEF-028 · CR-003
 
 ## Decisions
 
@@ -45,7 +45,7 @@
 | PD-039 | Genspark AI Code stopped after G-04b. Manual loop from G-05: Claude gives complete files + commands, owner pastes in VS Code, runs checks, branch dev/G-xx, Claude reviews SHA, ff-merge to main; migrations create-only then approved | APPROVED |
 | PD-040 | Item master (G-05): Unit master (code, name, decimals 0–3); Category (Group) master (auto code IG-0001, unique name, label "Category (Group)"); Item (auto code ITM-000001, immutable; description, size/spec, category + unit required, item use Stock and issue / Stock only, HSN 4/6/8 optional, GST % optional, remarks); approval Draft → Pending → Approved / Rejected; edit of Approved → Pending, blocked for new documents until re-approved, past documents unchanged; permissions masters.items.manage + masters.items.approve (GLOBAL only); import skips rows with blank/unknown category or blank unit and lists them; duplicate = description + size + unit (case/space-insensitive); Excel via exceljs on API; Items / Categories / Units tabs; no hard deletes, audited | PROPOSED |
 | PD-041 | Item master codes and approval flow: (1) codes = last saved code + 1 inside the save transaction under a per-series lock; no gaps, no reuse (IG-0001 categories, ITM-000001 items); batch-1 sequences dropped. (2) Rejected is its own status; maker edits and resubmits. (3) Approved items are locked; holder of masters.items.approve may "Reopen for edit" (remarks required) → Draft; reopened item blocked for new documents until re-approved; past documents unchanged (OQ-27). (4) Submit, approve, reject, reopen recorded in Audit Log as UPDATE with before/after status. (5) Self-approval allowed for items only (OQ-28). Case-insensitive unique: unit code, unit name, category name. | APPROVED |
-
+| PD-042 | Item API rules: edit/submit only from Draft or Rejected; Approved and Pending locked (Pending change = approver rejects); approve/reject only from Pending; reopen only from Approved (remarks required) → Draft; deactivate/reactivate any status, reactivate needs active category and unit; duplicate = description + size + unit ignoring case/spacing (DUPLICATE_ITEM, checked under the series lock); inactive category/unit cannot be newly chosen; status changes guarded against concurrent edits (INVALID_STATUS). Roles that approve items also need masters.items.view to open the list. | PROPOSED |
 
 ## Owner questions
 
@@ -71,8 +71,8 @@
 | OQ-25 | Roles per scope (Option 1) or global (Option 2)? | CLOSED — Option 1 → PD-037 |
 | OQ-26 | Tagline under the logo? Text? | OPEN — default none |
 | OQ-27 | Edited approved item while pending: usable or blocked? | CLOSED — blocked for new documents until re-approved; past documents unchanged |
-| OQ-28 | Self-approval of items? | Item master only: holder of masters.items.approve (VP) may approve own item; all other documents keep maker-checker. Audit records both actions. | CLOSED |
-
+| OQ-28 | Self-approval of items? | CLOSED — item master only: holder of masters.items.approve (VP) may approve own item; all other documents keep maker-checker; audit records both actions |
+| OQ-29 | Can a Pending item be edited? | CLOSED — no; only Draft and Rejected are editable; Approved needs Reopen (PD-041) |
 
 ## Client questions
 
@@ -110,7 +110,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-021 | Hard-coded aria-labels in sidebar, top bar, breadcrumbs | CLOSED (G-04a2, 7e36ffa) |
 | PDEF-022 | G-04a masters + audit log screens not tested in a browser | CLOSED — browser test passed |
 | PDEF-023 | G-04b Part 4 not run (credits exhausted) | CLOSED — local checks, migrate status and browser test passed |
-| PDEF-027 | drop_code_sequences created twice (075753 applied on Neon, folder lost; 080823 created locally, not applied); prisma migrate dev asked for a reset (refused). | Local folder renamed to 20261014075753_drop_code_sequences to match Neon; idempotent SQL; if checksum differed, _prisma_migrations row deleted and migration re-applied. No data lost. | CLOSED |
+| PDEF-027 | Migration drop_code_sequences: duplicate folders from two migrate runs; Neon and repo out of step | CLOSED — only 20261014080823_drop_code_sequences kept in repo and Neon (d672e03, CI #41); no data lost |
 
 
 ## Change requests
@@ -118,6 +118,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | ID | Change | Status |
 | --- | --- | --- |
 | CR-001 | Admin screen to edit theme (move theme to DB) | DEFERRED |
+| CR-002 | Tailwind canonical classes: `x-[var(--token)]` → `x-(--token)` repo-wide | PROPOSED — role-form.tsx done by owner |
 
 ## Genspark runs (closed — manual from G-05, PD-039)
 
