@@ -35,12 +35,20 @@ export const ITEM_SERIES: CodeSeries = {
 export type CodeSeriesTx = Pick<Prisma.TransactionClient, '$executeRaw' | '$queryRaw'>;
 
 /**
+ * Serialises writes to the series until the surrounding transaction ends. Taking it twice in one
+ * transaction is harmless. Also used by item edits so the duplicate check cannot race.
+ */
+export async function lockSeries(tx: CodeSeriesTx, series: CodeSeries): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${series.lockKey}::bigint)`;
+}
+
+/**
  * Next code of the series. MUST run inside the transaction that inserts the record: the lock is
  * held until that transaction commits or rolls back, so concurrent saves wait their turn and a
  * failed save leaves no gap (its number is reused by the next save).
  */
 export async function nextCode(tx: CodeSeriesTx, series: CodeSeries): Promise<string> {
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(${series.lockKey}::bigint)`;
+  await lockSeries(tx, series);
 
   const pattern = `^${series.prefix}[0-9]+$`;
   const numberStart = series.prefix.length + 1;

@@ -6,6 +6,26 @@ export function duplicateName(): ApiError {
   return new ApiError(HttpStatus.CONFLICT, 'DUPLICATE_NAME', 'This name is already in use');
 }
 
+export function duplicateItem(existingCode: string): ApiError {
+  return new ApiError(
+    HttpStatus.CONFLICT,
+    'DUPLICATE_ITEM',
+    `An item with the same description, size and unit already exists (${existingCode})`,
+  );
+}
+
+export function invalidCategory(): ApiError {
+  return new ApiError(HttpStatus.BAD_REQUEST, 'INVALID_CATEGORY', 'Choose an active category');
+}
+
+export function invalidUnit(): ApiError {
+  return new ApiError(HttpStatus.BAD_REQUEST, 'INVALID_UNIT', 'Choose an active unit');
+}
+
+export function invalidStatus(message: string): ApiError {
+  return new ApiError(HttpStatus.CONFLICT, 'INVALID_STATUS', message);
+}
+
 /** A concurrent insert can still hit a unique index: name indexes map to DUPLICATE_NAME. */
 export function uniqueConflictOf(error: unknown): ApiError | null {
   if (!isUniqueViolation(error)) {

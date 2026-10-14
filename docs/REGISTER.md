@@ -110,7 +110,8 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-021 | Hard-coded aria-labels in sidebar, top bar, breadcrumbs | CLOSED (G-04a2, 7e36ffa) |
 | PDEF-022 | G-04a masters + audit log screens not tested in a browser | CLOSED — browser test passed |
 | PDEF-023 | G-04b Part 4 not run (credits exhausted) | CLOSED — local checks, migrate status and browser test passed |
-| PDEF-027 | Migration 20261014075753_drop_code_sequences applied on Neon but its folder was missing locally; prisma migrate dev asked for a reset (refused). | Folder recreated with identical name/SQL (LF); if checksum differed, the _prisma_migrations row was deleted in Neon SQL Editor and the idempotent migration re-applied. No data lost. | OPEN |
+| PDEF-027 | drop_code_sequences created twice (075753 applied on Neon, folder lost; 080823 created locally, not applied); prisma migrate dev asked for a reset (refused). | Local folder renamed to 20261014075753_drop_code_sequences to match Neon; idempotent SQL; if checksum differed, _prisma_migrations row deleted and migration re-applied. No data lost. | CLOSED |
+
 
 ## Change requests
 

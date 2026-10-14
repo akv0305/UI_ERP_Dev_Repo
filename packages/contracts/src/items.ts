@@ -8,7 +8,6 @@ export const ITEM_ERROR_CODES = [
   'INVALID_CATEGORY',
   'INVALID_UNIT',
   'INVALID_STATUS',
-  'SELF_APPROVAL_NOT_ALLOWED',
 ] as const;
 
 export type ItemErrorCode = (typeof ITEM_ERROR_CODES)[number];
@@ -172,6 +171,11 @@ export const RejectItemRequest = z.object({ remarks: z.string().trim().min(1).ma
 
 export type RejectItemRequest = z.infer<typeof RejectItemRequest>;
 
+/** Reopening an approved item for editing needs a reason (PD-041). */
+export const ReopenItemRequest = z.object({ remarks: z.string().trim().min(1).max(500) });
+
+export type ReopenItemRequest = z.infer<typeof ReopenItemRequest>;
+
 export const ItemListQuery = MasterListQueryBase.extend({
   categoryId: z.uuid().optional(),
   unitId: z.uuid().optional(),
@@ -225,10 +229,14 @@ export const ItemResponse = z.object({
   isActive: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  /** True when the signed-in user may edit, submit, deactivate or reactivate this item. */
+  /** True when the item is Draft or Rejected, active, and the user may edit and submit it. */
+  canEdit: z.boolean(),
+  /** True when the user may deactivate or reactivate the item. */
   canManage: z.boolean(),
-  /** True when the item is pending and the signed-in user may approve or reject it. */
+  /** True when the item is pending and the user may approve or reject it. */
   canApprove: z.boolean(),
+  /** True when the item is approved and the user may reopen it for editing. */
+  canReopen: z.boolean(),
 });
 
 export type ItemResponse = z.infer<typeof ItemResponse>;
