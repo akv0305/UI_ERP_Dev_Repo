@@ -44,7 +44,8 @@
 | PD-038 | G-04b Genspark choices: removed assignments deleted from user_roles (user audit snapshot keeps before/after); site-scoped holders not returned by findUsersWithRoleCovering; site assignment makes its project selectable in switcher; create checks scope before parent existence (403, existence not revealed); visible-but-not-manageable = 403; roles with administration.* flagged requiresGlobalScope in role options | APPROVED |
 | PD-039 | Genspark AI Code stopped after G-04b. Manual loop from G-05: Claude gives complete files + commands, owner pastes in VS Code, runs checks, branch dev/G-xx, Claude reviews SHA, ff-merge to main; migrations create-only then approved | APPROVED |
 | PD-040 | Item master (G-05): Unit master (code, name, decimals 0–3); Category (Group) master (auto code IG-0001, unique name, label "Category (Group)"); Item (auto code ITM-000001, immutable; description, size/spec, category + unit required, item use Stock and issue / Stock only, HSN 4/6/8 optional, GST % optional, remarks); approval Draft → Pending → Approved / Rejected; edit of Approved → Pending, blocked for new documents until re-approved, past documents unchanged; permissions masters.items.manage + masters.items.approve (GLOBAL only); import skips rows with blank/unknown category or blank unit and lists them; duplicate = description + size + unit (case/space-insensitive); Excel via exceljs on API; Items / Categories / Units tabs; no hard deletes, audited | PROPOSED |
-| PD-041 | Item codes via Postgres sequences (IG-0001 / ITM-000001, gaps accepted); Rejected is own status, editable; editing Approved → Pending, remarks-only no re-approval; approve/reject audited as UPDATE; self-approval allowed for items only (OQ-28). Case-insensitive unique: unit code, unit name, category name. | PROPOSED |
+| PD-041 | Item master codes and approval flow: (1) codes = last saved code + 1 inside the save transaction under a per-series lock; no gaps, no reuse (IG-0001 categories, ITM-000001 items); batch-1 sequences dropped. (2) Rejected is its own status; maker edits and resubmits. (3) Approved items are locked; holder of masters.items.approve may "Reopen for edit" (remarks required) → Draft; reopened item blocked for new documents until re-approved; past documents unchanged (OQ-27). (4) Submit, approve, reject, reopen recorded in Audit Log as UPDATE with before/after status. (5) Self-approval allowed for items only (OQ-28). Case-insensitive unique: unit code, unit name, category name. | APPROVED |
+
 
 ## Owner questions
 
@@ -109,6 +110,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-021 | Hard-coded aria-labels in sidebar, top bar, breadcrumbs | CLOSED (G-04a2, 7e36ffa) |
 | PDEF-022 | G-04a masters + audit log screens not tested in a browser | CLOSED — browser test passed |
 | PDEF-023 | G-04b Part 4 not run (credits exhausted) | CLOSED — local checks, migrate status and browser test passed |
+| PDEF-027 | Migration 20261014075753_drop_code_sequences applied on Neon but its folder was missing locally; prisma migrate dev asked for a reset (refused). | Folder recreated with identical name/SQL (LF); if checksum differed, the _prisma_migrations row was deleted in Neon SQL Editor and the idempotent migration re-applied. No data lost. | OPEN |
 
 ## Change requests
 

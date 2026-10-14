@@ -281,6 +281,9 @@ export const terminology = {
       Project: 'Project',
       Site: 'Site',
       Store: 'Store',
+      Unit: 'Unit',
+      ItemCategory: 'Category (Group)',
+      Item: 'Item',
     },
     fields: {
       username: 'Username',

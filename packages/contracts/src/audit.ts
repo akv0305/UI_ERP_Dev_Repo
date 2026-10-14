@@ -15,6 +15,9 @@ export const AUDIT_ENTITY_TYPES = [
   'Project',
   'Site',
   'Store',
+  'Unit',
+  'ItemCategory',
+  'Item',
 ] as const;
 
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];

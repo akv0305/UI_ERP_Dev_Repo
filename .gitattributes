@@ -1,0 +1,9 @@
+# Store every text file with LF line endings (PDEF-024), whatever the editor or OS.
+* text=auto eol=lf
+
+# Binary files: never touch their bytes.
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
