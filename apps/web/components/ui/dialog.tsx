@@ -10,6 +10,11 @@ export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
 export const DialogClose = DialogPrimitive.Close;
 
+/**
+ * The dialog scrolls itself (max-h + overflow-y-auto). Without that, the sticky form footer
+ * is positioned against the viewport and, combined with the -translate-y-1/2 centring, covers
+ * the last field of any dialog taller than half the screen (PDEF-028).
+ */
 export function DialogContent({
   className,
   children,
@@ -20,7 +25,7 @@ export function DialogContent({
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-foreground/40" />
       <DialogPrimitive.Content
         className={cn(
-          'fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-surface p-(--card-padding) shadow-lg focus-visible:outline-none',
+          'fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-full max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-lg border border-border bg-surface p-(--card-padding) shadow-lg focus-visible:outline-none',
           className,
         )}
         {...props}

@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-042 · CQ-102 · OQ-30 · PDEF-028 · CR-003
+# REGISTER — next free: PD-042 · CQ-102 · OQ-30 · PDEF-029 · CR-003
 
 ## Decisions
 
@@ -111,6 +111,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-022 | G-04a masters + audit log screens not tested in a browser | CLOSED — browser test passed |
 | PDEF-023 | G-04b Part 4 not run (credits exhausted) | CLOSED — local checks, migrate status and browser test passed |
 | PDEF-027 | Migration drop_code_sequences: duplicate folders from two migrate runs; Neon and repo out of step | CLOSED — only 20261014080823_drop_code_sequences kept in repo and Neon (d672e03, CI #41); no data lost |
+| PDEF-028 | Unit dialog: Save/Cancel bar covered the Decimal places field (sticky footer + translate-centred dialog taller than half the screen) | FIXED — DialogContent scrolls itself (max-h + overflow-y-auto); affects all dialogs |
 
 
 ## Change requests
