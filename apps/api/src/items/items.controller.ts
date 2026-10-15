@@ -13,6 +13,8 @@ import {
 } from '@nestjs/common';
 import {
   ApproveItemRequest,
+  BulkApproveItemsRequest,
+  type BulkApproveItemsResponse,
   CreateItemRequest,
   ItemListQuery,
   RejectItemRequest,
@@ -56,6 +58,17 @@ export class ItemsController {
     @Req() request: Request,
   ): Promise<ItemResponse> {
     return this.items.create(body, actorIdOf(request), accessOf(request));
+  }
+
+  /** POST /api/items/bulk-approve: up to 200 pending items (PD-042). */
+  @Post('bulk-approve')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions('masters.items.approve')
+  bulkApprove(
+    @Body(new ZodValidationPipe(BulkApproveItemsRequest)) body: BulkApproveItemsRequest,
+    @Req() request: Request,
+  ): Promise<BulkApproveItemsResponse> {
+    return this.items.bulkApprove(body, actorIdOf(request), accessOf(request));
   }
 
   @Patch(':id')

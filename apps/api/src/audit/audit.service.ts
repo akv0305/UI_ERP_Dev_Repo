@@ -72,6 +72,19 @@ function toJsonField(
   return sanitizeSnapshot(snapshot) ?? undefined;
 }
 
+function toCreateData(event: AuditRecordInput): Prisma.AuditEventCreateManyInput {
+  return {
+    actorUserId: event.actorUserId,
+    action: event.action,
+    entityType: event.entityType,
+    entityId: event.entityId,
+    companyId: event.companyId ?? null,
+    before: toJsonField(event.before),
+    after: toJsonField(event.after),
+    requestId: currentRequestId() ?? null,
+  };
+}
+
 @Injectable()
 export class AuditService {
   /**
@@ -79,17 +92,15 @@ export class AuditService {
    * so the change and its audit row commit or roll back together.
    */
   async record(tx: AuditTx, event: AuditRecordInput): Promise<void> {
-    await tx.auditEvent.create({
-      data: {
-        actorUserId: event.actorUserId,
-        action: event.action,
-        entityType: event.entityType,
-        entityId: event.entityId,
-        companyId: event.companyId ?? null,
-        before: toJsonField(event.before),
-        after: toJsonField(event.after),
-        requestId: currentRequestId() ?? null,
-      },
-    });
+    await tx.auditEvent.create({ data: toCreateData(event) });
+  }
+
+  /** Same rule as record, for bulk actions (import, bulk approve): one insert for all events. */
+  async recordMany(tx: AuditTx, events: readonly AuditRecordInput[]): Promise<void> {
+    if (events.length === 0) {
+      return;
+    }
+
+    await tx.auditEvent.createMany({ data: events.map(toCreateData) });
   }
 }

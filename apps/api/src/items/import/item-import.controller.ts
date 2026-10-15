@@ -14,10 +14,11 @@ import {
   ITEM_IMPORT_MAX_ROWS,
   ItemImportCheckRequest,
   type ItemImportCheckResponse,
+  type ItemImportCommitResponse,
   type ItemImportPreviewResponse,
 } from '@uie/contracts';
 import type { Request } from 'express';
-import { accessOf } from '../../auth/actor-id';
+import { accessOf, actorIdOf } from '../../auth/actor-id';
 import { RequirePermissions } from '../../auth/auth.decorators';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { importFileInvalid, importFileRequired } from './item-import-errors';
@@ -34,6 +35,17 @@ interface UploadedXlsx {
 @Controller('items/import')
 export class ItemImportController {
   constructor(private readonly imports: ItemImportService) {}
+
+  /** POST /api/items/import: imports the checked grid; red rows are skipped. */
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions('masters.items.manage')
+  commit(
+    @Body(new ZodValidationPipe(ItemImportCheckRequest)) body: ItemImportCheckRequest,
+    @Req() request: Request,
+  ): Promise<ItemImportCommitResponse> {
+    return this.imports.commit(body, actorIdOf(request), accessOf(request));
+  }
 
   @Post('preview')
   @HttpCode(HttpStatus.OK)

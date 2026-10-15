@@ -176,6 +176,28 @@ export const ReopenItemRequest = z.object({ remarks: z.string().trim().min(1).ma
 
 export type ReopenItemRequest = z.infer<typeof ReopenItemRequest>;
 
+/** Bulk approval from the Items list (PD-042): at most 200 items per click. */
+export const ITEM_BULK_APPROVE_MAX = 200;
+
+export const BulkApproveItemsRequest = z.object({
+  ids: z
+    .array(z.uuid())
+    .min(1)
+    .max(ITEM_BULK_APPROVE_MAX)
+    .refine((ids) => new Set(ids).size === ids.length, { message: 'Item ids must be unique' }),
+  remarks: OptionalText(500),
+});
+
+export type BulkApproveItemsRequest = z.infer<typeof BulkApproveItemsRequest>;
+
+/** Items no longer pending (approved, rejected or deactivated meanwhile) are skipped, not failed. */
+export const BulkApproveItemsResponse = z.object({
+  approved: z.number().int(),
+  skippedIds: z.array(z.uuid()),
+});
+
+export type BulkApproveItemsResponse = z.infer<typeof BulkApproveItemsResponse>;
+
 export const ItemListQuery = MasterListQueryBase.extend({
   categoryId: z.uuid().optional(),
   unitId: z.uuid().optional(),

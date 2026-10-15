@@ -43,11 +43,11 @@ export async function lockSeries(tx: CodeSeriesTx, series: CodeSeries): Promise<
 }
 
 /**
- * Next code of the series. MUST run inside the transaction that inserts the record: the lock is
- * held until that transaction commits or rolls back, so concurrent saves wait their turn and a
- * failed save leaves no gap (its number is reused by the next save).
+ * Next free number of the series (highest saved + 1). MUST run inside the transaction that inserts
+ * the record(s): the lock is held until that transaction commits or rolls back, so concurrent saves
+ * wait their turn and a failed save leaves no gap. A bulk insert uses number, number + 1, ...
  */
-export async function nextCode(tx: CodeSeriesTx, series: CodeSeries): Promise<string> {
+export async function nextNumber(tx: CodeSeriesTx, series: CodeSeries): Promise<number> {
   await lockSeries(tx, series);
 
   const pattern = `^${series.prefix}[0-9]+$`;
@@ -56,7 +56,11 @@ export async function nextCode(tx: CodeSeriesTx, series: CodeSeries): Promise<st
     SELECT MAX(CAST(SUBSTRING("code" FROM ${numberStart}::int) AS INTEGER))::int AS "last"
     FROM ${Prisma.raw(`"${series.table}"`)}
     WHERE "code" ~ ${pattern}`;
-  const last = rows[0]?.last ?? 0;
 
-  return formatMasterCode(series.prefix, series.digits, last + 1);
+  return (rows[0]?.last ?? 0) + 1;
+}
+
+/** Next code of the series, e.g. ITM-000012. Same transaction rule as nextNumber. */
+export async function nextCode(tx: CodeSeriesTx, series: CodeSeries): Promise<string> {
+  return formatMasterCode(series.prefix, series.digits, await nextNumber(tx, series));
 }

@@ -130,3 +130,23 @@ export const ItemImportCheckRequest = z.object({
 });
 
 export type ItemImportCheckRequest = z.infer<typeof ItemImportCheckRequest>;
+
+/** One row of the import result: the new item code, or null when the row was skipped. */
+export const ItemImportCommitRow = z.object({
+  rowNumber: z.number().int(),
+  code: z.string().nullable(),
+  issues: z.array(ItemImportIssue),
+});
+
+export type ItemImportCommitRow = z.infer<typeof ItemImportCommitRow>;
+
+/** Import result (PD-042). The request is ItemImportCheckRequest: the whole grid. */
+export const ItemImportCommitResponse = z.object({
+  imported: z.number().int(),
+  skipped: z.number().int(),
+  firstCode: z.string().nullable(),
+  lastCode: z.string().nullable(),
+  rows: z.array(ItemImportCommitRow),
+});
+
+export type ItemImportCommitResponse = z.infer<typeof ItemImportCommitResponse>;

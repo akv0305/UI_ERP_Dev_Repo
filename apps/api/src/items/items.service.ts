@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type {
   ApproveItemRequest,
+  BulkApproveItemsRequest,
+  BulkApproveItemsResponse,
   CreateItemRequest,
   ItemListQuery,
   ItemResponse,
@@ -269,6 +271,68 @@ export class ItemsService {
       decidedById: actorId,
       decisionRemarks: request.remarks,
     });
+  }
+
+  /** Approves up to 200 pending items at once (PD-042, OQ-28); others are skipped and listed. */
+  async bulkApprove(
+    request: BulkApproveItemsRequest,
+    actorId: string,
+    access: AccessContext,
+  ): Promise<BulkApproveItemsResponse> {
+    assertCanApproveItems(access);
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const pending = await tx.item.findMany({
+          where: { id: { in: request.ids }, isActive: true, status: 'PENDING_APPROVAL' },
+          include: itemInclude,
+        });
+        const ids = pending.map((item) => item.id);
+
+        if (ids.length > 0) {
+          const result = await tx.item.updateMany({
+            where: { id: { in: ids }, isActive: true, status: 'PENDING_APPROVAL' },
+            data: {
+              status: 'APPROVED',
+              decidedAt: new Date(),
+              decidedById: actorId,
+              decisionRemarks: request.remarks,
+              updatedById: actorId,
+            },
+          });
+
+          if (result.count !== ids.length) {
+            throw invalidStatus('Some items were changed by someone else. Reload and try again.');
+          }
+
+          const before = new Map(pending.map((item) => [item.id, toItemAuditSnapshot(item)]));
+          const approved = await tx.item.findMany({
+            where: { id: { in: ids } },
+            include: itemInclude,
+          });
+
+          await this.audit.recordMany(
+            tx,
+            approved.map((item) => ({
+              actorUserId: actorId,
+              action: 'UPDATE' as const,
+              entityType: 'Item' as const,
+              entityId: item.id,
+              before: before.get(item.id) ?? null,
+              after: toItemAuditSnapshot(item),
+            })),
+          );
+        }
+
+        const approvedIds = new Set(ids);
+
+        return {
+          approved: ids.length,
+          skippedIds: request.ids.filter((id) => !approvedIds.has(id)),
+        };
+      },
+      { maxWait: 10_000, timeout: 30_000 },
+    );
   }
 
   /** Approved -> Draft so the maker can edit; blocked for new documents until re-approved. */
