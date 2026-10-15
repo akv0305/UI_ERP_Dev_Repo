@@ -122,7 +122,7 @@ export class ItemImportService {
             size: orNull(row.size),
             categoryId: row.categoryId,
             unitId: row.unitId,
-            itemUse: 'STOCK_AND_ISSUE',
+            itemUse: row.itemUse,
             hsnCode: orNull(row.hsnCode),
             gstRate: orNull(row.gstRate),
             status: 'PENDING_APPROVAL',
@@ -152,7 +152,7 @@ export class ItemImportService {
                 category:
                   category === undefined ? row.categoryId : codeLabel(category.code, category.name),
                 unit: units.get(row.unitId)?.code ?? row.unitId,
-                itemUse: 'STOCK_AND_ISSUE',
+                itemUse: row.itemUse,
                 hsnCode: orNull(row.hsnCode),
                 gstRate: gstRate === null ? null : Number(gstRate).toFixed(2),
                 remarks: null,

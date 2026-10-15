@@ -152,9 +152,18 @@ export function ItemsListClient({
         subtitle={terminology.itemMaster.subtitle}
         actions={
           canManage ? (
-            <Button type="button" onClick={() => list.router.push('/masters/items/new')}>
-              {terminology.items.newItem}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => list.router.push('/masters/items/import')}
+              >
+                {terminology.itemImport.openImport}
+              </Button>
+              <Button type="button" onClick={() => list.router.push('/masters/items/new')}>
+                {terminology.items.newItem}
+              </Button>
+            </div>
           ) : undefined
         }
       />

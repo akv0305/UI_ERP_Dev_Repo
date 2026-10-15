@@ -119,6 +119,7 @@ export function extractRows(header: SheetHeader): ItemImportRowInput[] {
       categoryId: null,
       hsnCode: cell(row, 'hsn'),
       gstRate: cell(row, 'gst'),
+      itemUse: 'STOCK_AND_ISSUE',
     });
   }
 

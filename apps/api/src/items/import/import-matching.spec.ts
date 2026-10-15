@@ -38,6 +38,7 @@ function row(rowNumber: number, overrides: Partial<ItemImportRowInput> = {}): It
     categoryId: null,
     hsnCode: '',
     gstRate: '',
+    itemUse: 'STOCK_AND_ISSUE',
     ...overrides,
   };
 }

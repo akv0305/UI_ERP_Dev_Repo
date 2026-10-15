@@ -314,6 +314,7 @@ export function checkRows(
       categoryId,
       hsnCode,
       gstRate,
+      itemUse: row.itemUse,
       status,
       issues,
     };

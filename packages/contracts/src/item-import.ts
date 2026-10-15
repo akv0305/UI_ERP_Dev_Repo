@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ItemUse } from './items';
 
 /** PD-042 limits. */
 export const ITEM_IMPORT_MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -71,6 +72,8 @@ export const ItemImportRowInput = z.object({
   categoryId: z.uuid().nullable(),
   hsnCode: z.string().max(ITEM_IMPORT_CELL_MAX),
   gstRate: z.string().max(ITEM_IMPORT_CELL_MAX),
+  /** OQ-32: chosen per row in the grid (the file has no such column). */
+  itemUse: ItemUse.default('STOCK_AND_ISSUE'),
 });
 
 export type ItemImportRowInput = z.infer<typeof ItemImportRowInput>;

@@ -38,6 +38,7 @@ function gridRow(
     categoryId: null,
     hsnCode: '',
     gstRate: '',
+    itemUse: 'STOCK_AND_ISSUE',
     ...overrides,
   };
 }
@@ -152,7 +153,12 @@ describe('ItemImportService.commit', () => {
         rows: [
           gridRow(2),
           gridRow(3, { description: 'Grey Putty', unitText: 'Bags' }),
-          gridRow(4, { description: 'White Cement', size: '', gstRate: '18' }),
+          gridRow(4, {
+            description: 'White Cement',
+            size: '',
+            gstRate: '18',
+            itemUse: 'STOCK_ONLY',
+          }),
         ],
       },
       ACTOR,
@@ -182,7 +188,12 @@ describe('ItemImportService.commit', () => {
       submittedById: ACTOR,
       createdById: ACTOR,
     });
-    expect(data?.[1]).toMatchObject({ code: 'ITM-000009', size: null, gstRate: '18' });
+    expect(data?.[1]).toMatchObject({
+      code: 'ITM-000009',
+      size: null,
+      gstRate: '18',
+      itemUse: 'STOCK_ONLY',
+    });
     expect(audit.recordMany.mock.calls[0]?.[1]).toHaveLength(2);
   });
 

@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-043 · CQ-108 · OQ-33 · PDEF-030 · CR-003
+# REGISTER — next free: PD-043 · CQ-108 · OQ-33 · PDEF-031 · CR-003
 
 ## Decisions
 
@@ -76,7 +76,7 @@
 | OQ-29 | Can a Pending item be edited? | CLOSED — no; only Draft and Rejected are editable; Approved needs Reopen (PD-041) |
 | OQ-30 | How to detect spelling mistakes in the import | CLOSED — C: similar-item check (description + size vs existing items and other rows in the file; near-match ≥ 0.85 = yellow warning, exact = red duplicate); own code, no library, no migration (PD-042 item 11) |
 | OQ-31 | Duplicate rows in the file: first row kept, later copies flagged even when the first row is red | CLOSED — owner: keep as is |
-| OQ-32 | Item use for imported items: file has no column; all imported as Stock and issue. Proposed: Item use column in the import grid (default Stock and issue, apply-to-all) | PROPOSED — awaiting owner |
+| OQ-32 | Item use for imported items | CLOSED — owner: Item use column in the import grid, default Stock and issue, apply-to-all; sent per row to /api/items/import |
 
 ## Client questions
 
@@ -118,6 +118,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-027 | Migration drop_code_sequences: duplicate folders from two migrate runs; Neon and repo out of step | CLOSED — only 20261014080823_drop_code_sequences kept in repo and Neon (d672e03, CI #41); no data lost |
 | PDEF-028 | Unit dialog: Save/Cancel bar covered the Decimal places field (sticky footer + translate-centred dialog taller than half the screen) | FIXED — DialogContent scrolls itself (max-h + overflow-y-auto), 54066c1 |
 | PDEF-029 | CI #46 failed at Test: two wrong examples in import-matching.spec.ts — (1) Flexible/Flexbule is 84.6%, below the 0.85 OQ-30 C threshold; (2) category test used two rows with the same description+size+unit, so the second was correctly flagged DUPLICATE_IN_FILE. Code correct | FIXED — examples changed (Flexble Pipe; Spanner Set) |
+| PDEF-030 | (as before) | FIXED — CI #49 green on 120c503 |
 
 ## Change requests
 
@@ -140,4 +141,5 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | G-04a2 | DeepSeek V4 Pro | 80 | gen/G-04a2 | 7e36ffa |
 | G-04b | Claude Sonnet 5 | 6,115 (stopped before Part 4) | gen/G-04b | 9f9e1b1 |
 | G-05b-1 | Preview on real file: 509 rows read, 3 ready / 0 warning / 506 error — errors due to empty Unit and Category masters, not code | VERIFIED |
-| G-05b-2a | POST /api/items/import (re-check under ITM lock, red rows skipped, Pending approval, gap-free codes, one transaction, bulk insert + audit) and POST /api/items/bulk-approve (≤200, skipped ids returned, audited); AuditService.recordMany; nextNumber in code-series | IN PROGRESS |
+| G-05b-2a | Import and bulk approve API | DONE — 05210c8 + 120c503, CI #49 |
+| G-05b-2b | Import screen: upload, summary, unmatched-spelling pickers (re-check on pick), editable grid (100 rows/page, red/yellow), Check again, Import confirm, results; Import from Excel button on Items list | IN PROGRESS |
