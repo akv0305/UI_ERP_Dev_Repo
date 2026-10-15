@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-043 · CQ-108 · OQ-32 · PDEF-030 · CR-003
+# REGISTER — next free: PD-043 · CQ-108 · OQ-33 · PDEF-030 · CR-003
 
 ## Decisions
 
@@ -75,7 +75,8 @@
 | OQ-28 | Self-approval of items? | CLOSED — item master only: holder of masters.items.approve (VP) may approve own item; all other documents keep maker-checker; audit records both actions |
 | OQ-29 | Can a Pending item be edited? | CLOSED — no; only Draft and Rejected are editable; Approved needs Reopen (PD-041) |
 | OQ-30 | How to detect spelling mistakes in the import | CLOSED — C: similar-item check (description + size vs existing items and other rows in the file; near-match ≥ 0.85 = yellow warning, exact = red duplicate); own code, no library, no migration (PD-042 item 11) |
-| OQ-31 | Duplicate rows in the file: first row is kept and later copies flagged even when the first row is red (e.g. blank category). Fixing the first row imports it; not fixing skips both | PROPOSED — keep as is; awaiting owner |
+| OQ-31 | Duplicate rows in the file: first row kept, later copies flagged even when the first row is red | CLOSED — owner: keep as is |
+| OQ-32 | Item use for imported items: file has no column; all imported as Stock and issue. Proposed: Item use column in the import grid (default Stock and issue, apply-to-all) | PROPOSED — awaiting owner |
 
 ## Client questions
 
@@ -139,3 +140,4 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | G-04a2 | DeepSeek V4 Pro | 80 | gen/G-04a2 | 7e36ffa |
 | G-04b | Claude Sonnet 5 | 6,115 (stopped before Part 4) | gen/G-04b | 9f9e1b1 |
 | G-05b-1 | Preview on real file: 509 rows read, 3 ready / 0 warning / 506 error — errors due to empty Unit and Category masters, not code | VERIFIED |
+| G-05b-2a | POST /api/items/import (re-check under ITM lock, red rows skipped, Pending approval, gap-free codes, one transaction, bulk insert + audit) and POST /api/items/bulk-approve (≤200, skipped ids returned, audited); AuditService.recordMany; nextNumber in code-series | IN PROGRESS |

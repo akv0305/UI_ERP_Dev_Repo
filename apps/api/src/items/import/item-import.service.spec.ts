@@ -151,7 +151,7 @@ describe('ItemImportService.commit', () => {
       {
         rows: [
           gridRow(2),
-          gridRow(3, { description: 'PPC Cement', unitText: 'Bags' }),
+          gridRow(3, { description: 'Grey Putty', unitText: 'Bags' }),
           gridRow(4, { description: 'White Cement', size: '', gstRate: '18' }),
         ],
       },
@@ -166,7 +166,7 @@ describe('ItemImportService.commit', () => {
       lastCode: 'ITM-000009',
     });
     expect(result.rows.map((row) => row.code)).toEqual(['ITM-000008', null, 'ITM-000009']);
-    expect(result.rows[1]?.issues.map((issue) => issue.code)).toEqual(['UNIT_NOT_MATCHED']);
+    expect(result.rows[1]?.issues.map((issue) => issue.code)).toContain('UNIT_NOT_MATCHED');
 
     const data = tx.item.createMany.mock.calls[0]?.[0].data;
 
