@@ -13,6 +13,9 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger });
 
   app.setGlobalPrefix('api');
+  // "Check again" sends the whole import grid back (up to 2,000 rows); Express's default is 100 kb.
+  app.useBodyParser('json', { limit: '3mb' });
+
   // The web app proxies /api through one hop; trust it so request.ip is the real client address.
   app.set('trust proxy', 1);
   app.use(createRequestIdMiddleware());

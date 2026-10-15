@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-042 · CQ-102 · OQ-30 · PDEF-029 · CR-003
+# REGISTER — next free: PD-043 · CQ-107 · OQ-31 · PDEF-029 · CR-003
 
 ## Decisions
 
@@ -43,9 +43,11 @@
 | PD-037 | Scoped roles (OQ-25 Option 1): each user_roles row = role + scope (GLOBAL / COMPANY / PROJECT / SITE); access derived from assignments down the hierarchy; menu = union of permissions; API checks permission against the record's scope; administration.* and ADMINISTRATOR only GLOBAL; out-of-scope record = 404; canManage per row; option endpoints for form pick lists; switcher context stored on session, auto-select when only one; existing links migrated to GLOBAL; findUsersWithRoleCovering helper for PD-008 | APPROVED (built G-04b, 9f9e1b1) |
 | PD-038 | G-04b Genspark choices: removed assignments deleted from user_roles (user audit snapshot keeps before/after); site-scoped holders not returned by findUsersWithRoleCovering; site assignment makes its project selectable in switcher; create checks scope before parent existence (403, existence not revealed); visible-but-not-manageable = 403; roles with administration.* flagged requiresGlobalScope in role options | APPROVED |
 | PD-039 | Genspark AI Code stopped after G-04b. Manual loop from G-05: Claude gives complete files + commands, owner pastes in VS Code, runs checks, branch dev/G-xx, Claude reviews SHA, ff-merge to main; migrations create-only then approved | APPROVED |
-| PD-040 | Item master (G-05): Unit master (code, name, decimals 0–3); Category (Group) master (auto code IG-0001, unique name, label "Category (Group)"); Item (auto code ITM-000001, immutable; description, size/spec, category + unit required, item use Stock and issue / Stock only, HSN 4/6/8 optional, GST % optional, remarks); approval Draft → Pending → Approved / Rejected; edit of Approved → Pending, blocked for new documents until re-approved, past documents unchanged; permissions masters.items.manage + masters.items.approve (GLOBAL only); import skips rows with blank/unknown category or blank unit and lists them; duplicate = description + size + unit (case/space-insensitive); Excel via exceljs on API; Items / Categories / Units tabs; no hard deletes, audited | PROPOSED |
+| PD-040 | Item master: Category (Group) IG-0001 · Item ITM-000001 · Units with decimals 0–3 · Use = Stock and issue / Stock only · HSN, GST % optional · no hard deletes · full audit · tabs Items / Categories / Units | APPROVED — built G-05a (54066c1) |
 | PD-041 | Item master codes and approval flow: (1) codes = last saved code + 1 inside the save transaction under a per-series lock; no gaps, no reuse (IG-0001 categories, ITM-000001 items); batch-1 sequences dropped. (2) Rejected is its own status; maker edits and resubmits. (3) Approved items are locked; holder of masters.items.approve may "Reopen for edit" (remarks required) → Draft; reopened item blocked for new documents until re-approved; past documents unchanged (OQ-27). (4) Submit, approve, reject, reopen recorded in Audit Log as UPDATE with before/after status. (5) Self-approval allowed for items only (OQ-28). Case-insensitive unique: unit code, unit name, category name. | APPROVED |
-| PD-042 | Item API rules: edit/submit only from Draft or Rejected; Approved and Pending locked (Pending change = approver rejects); approve/reject only from Pending; reopen only from Approved (remarks required) → Draft; deactivate/reactivate any status, reactivate needs active category and unit; duplicate = description + size + unit ignoring case/spacing (DUPLICATE_ITEM, checked under the series lock); inactive category/unit cannot be newly chosen; status changes guarded against concurrent edits (INVALID_STATUS). Roles that approve items also need masters.items.view to open the list. | PROPOSED |
+| PD-042 | Item Excel import/export: upload → editable preview grid → import → results; no file stored (5 MB / 2,000 rows) · header detection · unit/category matched by normalised spelling, unmatched = red with DB pick list + "apply to all rows with this spelling" · no auto-create of units/categories · duplicates (vs DB and within file) red, imported only if edited, else skipped · similar-item check = yellow warning, imported as written unless corrected (OQ-30 C) · "Check again" re-validates on API · Ready + yellow rows created in one transaction as Pending approval · bulk approve (max 200) · export in import layout · exceljs · no migration | PROPOSED |
+| PD-042 | Item Excel import/export: upload → editable preview grid → import → results; no file stored (5 MB / 2,000 rows) · header detection (first 10 rows, Description + Unit + Group required) · unit/category matched by normalised spelling, unmatched = red with DB pick list + "apply to all rows with this spelling" · no auto-create of units/categories · duplicates (vs DB and within file) red, imported only if edited, else skipped · similar-item check = yellow warning (OQ-30 C: same category + same size + same numbers, similarity ≥ 0.85), imported as written unless corrected · "Check again" re-validates on API · Ready + yellow rows created in one transaction as Pending approval · bulk approve (max 200) · export in import layout · exceljs (MIT) · no migration | APPROVED — batch 1 G-05b |
+
 
 ## Owner questions
 
@@ -53,7 +55,7 @@
 | --- | --- | --- |
 | OQ-01,02,09,13–17 | (see history) | CLOSED |
 | OQ-03 | Adopt terminology/theme/Zod rules | CLOSED → PD-015 |
-| OQ-04 | Libraries (PDF, Excel, email) | Excel → exceljs (PD-040); PDF, email OPEN |
+| OQ-04 | Excel library? | CLOSED — exceljs (MIT), PD-042 |
 | OQ-05 | Purchase/Stores reports in Phase A | DEFERRED |
 | OQ-06 | Opening stock import | WITH CLIENT |
 | OQ-07 | Rate precision | OPEN → PD-006 additions |
@@ -73,6 +75,7 @@
 | OQ-27 | Edited approved item while pending: usable or blocked? | CLOSED — blocked for new documents until re-approved; past documents unchanged |
 | OQ-28 | Self-approval of items? | CLOSED — item master only: holder of masters.items.approve (VP) may approve own item; all other documents keep maker-checker; audit records both actions |
 | OQ-29 | Can a Pending item be edited? | CLOSED — no; only Draft and Rejected are editable; Approved needs Reopen (PD-041) |
+| OQ-30 | How to detect spelling mistakes in the import | CLOSED — C: similar-item check (description + size vs existing items and other rows in the file; near-match ≥ 0.85 = yellow warning, exact = red duplicate); own code, no library, no migration (PD-042 item 11) |
 
 ## Client questions
 
@@ -111,7 +114,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-022 | G-04a masters + audit log screens not tested in a browser | CLOSED — browser test passed |
 | PDEF-023 | G-04b Part 4 not run (credits exhausted) | CLOSED — local checks, migrate status and browser test passed |
 | PDEF-027 | Migration drop_code_sequences: duplicate folders from two migrate runs; Neon and repo out of step | CLOSED — only 20261014080823_drop_code_sequences kept in repo and Neon (d672e03, CI #41); no data lost |
-| PDEF-028 | Unit dialog: Save/Cancel bar covered the Decimal places field (sticky footer + translate-centred dialog taller than half the screen) | FIXED — DialogContent scrolls itself (max-h + overflow-y-auto); affects all dialogs |
+| PDEF-028 | Unit dialog: Save/Cancel bar covered the Decimal places field (sticky footer + translate-centred dialog taller than half the screen) | FIXED — DialogContent scrolls itself (max-h + overflow-y-auto), 54066c1 |
 
 
 ## Change requests
