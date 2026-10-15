@@ -90,7 +90,10 @@ describe('checkRows', () => {
 
   it('marks a blank group CATEGORY_REQUIRED and an unknown one CATEGORY_NOT_MATCHED', () => {
     const results = checkRows(
-      [row(3, { categoryText: '' }), row(4, { categoryText: 'Plant Spares' })],
+      [
+        row(3, { categoryText: '' }),
+        row(4, { description: 'Spanner Set', categoryText: 'Plant Spares' }),
+      ],
       REFS,
     );
 
@@ -153,7 +156,7 @@ describe('checkRows', () => {
 
   it('warns about a near spelling of an earlier row in the file', () => {
     const results = checkRows(
-      [row(10, { description: 'Flexible Pipe' }), row(11, { description: 'Flexbule Pipe' })],
+      [row(10, { description: 'Flexible Pipe' }), row(11, { description: 'Flexble Pipe' })],
       REFS,
     );
 
