@@ -484,10 +484,10 @@ export function ItemImportClient({ categoryOptions, unitOptions }: ItemImportCli
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-border">
+      <div className="max-h-[70dvh] overflow-auto rounded-md border border-border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border text-left text-muted-foreground">
+            <tr className="sticky top-0 z-10 border-b border-border bg-background text-left text-muted-foreground">
               <th className="px-2 py-2 font-medium">{t.columnRow}</th>
               <th className="px-2 py-2 font-medium">{t.columnDescription}</th>
               <th className="px-2 py-2 font-medium">{t.columnSize}</th>

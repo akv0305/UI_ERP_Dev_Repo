@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-043 · CQ-108 · OQ-33 · PDEF-031 · CR-003
+# REGISTER — next free: PD-043 · CQ-108 · OQ-33 · PDEF-032 · CR-003
 
 ## Decisions
 
@@ -119,6 +119,8 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-028 | Unit dialog: Save/Cancel bar covered the Decimal places field (sticky footer + translate-centred dialog taller than half the screen) | FIXED — DialogContent scrolls itself (max-h + overflow-y-auto), 54066c1 |
 | PDEF-029 | CI #46 failed at Test: two wrong examples in import-matching.spec.ts — (1) Flexible/Flexbule is 84.6%, below the 0.85 OQ-30 C threshold; (2) category test used two rows with the same description+size+unit, so the second was correctly flagged DUPLICATE_IN_FILE. Code correct | FIXED — examples changed (Flexble Pipe; Spanner Set) |
 | PDEF-030 | (as before) | FIXED — CI #49 green on 120c503 |
+| PDEF-031 | Import grid: horizontal scroll bar only at the bottom of a 100-row table, so the Issues column could not be reached | FIXED — grid box max-h 70dvh with overflow-auto, sticky column header |
+
 
 ## Change requests
 
@@ -142,4 +144,4 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | G-04b | Claude Sonnet 5 | 6,115 (stopped before Part 4) | gen/G-04b | 9f9e1b1 |
 | G-05b-1 | Preview on real file: 509 rows read, 3 ready / 0 warning / 506 error — errors due to empty Unit and Category masters, not code | VERIFIED |
 | G-05b-2a | Import and bulk approve API | DONE — 05210c8 + 120c503, CI #49 |
-| G-05b-2b | Import screen: upload, summary, unmatched-spelling pickers (re-check on pick), editable grid (100 rows/page, red/yellow), Check again, Import confirm, results; Import from Excel button on Items list | IN PROGRESS |
+| G-05b-2b | Import screen (upload, summary, unmatched pickers, editable grid, Check again, Import, results, Import from Excel button) | DONE — 860f8ca, CI #50; scroll fix PDEF-031 |
