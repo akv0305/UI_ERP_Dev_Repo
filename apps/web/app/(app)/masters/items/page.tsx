@@ -63,6 +63,7 @@ export default async function ItemsPage({ searchParams }: { searchParams: Promis
       data={result.data}
       query={query}
       canManage={permissions.includes('masters.items.manage')}
+      canApprove={permissions.includes('masters.items.approve')}
       categoryOptions={
         categories.kind === 'ok'
           ? categories.data.items.map((c) => ({ value: c.id, label: `${c.code} ${c.name}` }))

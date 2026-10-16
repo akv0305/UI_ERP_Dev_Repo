@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-043 · CQ-108 · OQ-33 · PDEF-032 · CR-003
+# REGISTER — next free: PD-043 · CQ-108 · OQ-34 · PDEF-032 · CR-003
 
 ## Decisions
 
@@ -119,7 +119,8 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-028 | Unit dialog: Save/Cancel bar covered the Decimal places field (sticky footer + translate-centred dialog taller than half the screen) | FIXED — DialogContent scrolls itself (max-h + overflow-y-auto), 54066c1 |
 | PDEF-029 | CI #46 failed at Test: two wrong examples in import-matching.spec.ts — (1) Flexible/Flexbule is 84.6%, below the 0.85 OQ-30 C threshold; (2) category test used two rows with the same description+size+unit, so the second was correctly flagged DUPLICATE_IN_FILE. Code correct | FIXED — examples changed (Flexble Pipe; Spanner Set) |
 | PDEF-030 | (as before) | FIXED — CI #49 green on 120c503 |
-| PDEF-031 | Import grid: horizontal scroll bar only at the bottom of a 100-row table, so the Issues column could not be reached | FIXED — grid box max-h 70dvh with overflow-auto, sticky column header |
+| PDEF-031 | Import grid: no visible scroll bars, Issues column cut off on the right | FIXED — grid scrolls inside a 70dvh box with sticky header (cdf5fc1, CI #51) |
+| OQ-33 | Bulk approve selection: current page only (max 100 rows), cleared when page/filter changes; only pending items selectable | PROPOSED — confirm "OQ-33 ok" |
 
 
 ## Change requests
