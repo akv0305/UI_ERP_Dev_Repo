@@ -342,3 +342,46 @@ describe('accessible id lists (null = unrestricted)', () => {
     await expect(access.contextCompanyIds()).resolves.toEqual([C2]);
   });
 });
+
+describe('shared item catalogue (PD-043, PDEF-032)', () => {
+  const VIEW: Permission = 'masters.items.view';
+  const ITEM_MANAGE: Permission = 'masters.items.manage';
+  const ITEM_APPROVE: Permission = 'masters.items.approve';
+
+  it('masters.items.view counts from an assignment at any scope', () => {
+    const access = context(assignment('PROJECT', { projectId: P1 }, [VIEW]));
+
+    expect(access.holds(VIEW)).toBe(true);
+    expect(access.menuPermissions()).toContain(VIEW);
+  });
+
+  it.each<RoleScopeType>(['COMPANY', 'PROJECT', 'SITE'])(
+    'manage and approve are ignored at %s scope',
+    (scopeType) => {
+      const target =
+        scopeType === 'COMPANY'
+          ? { companyId: C1 }
+          : scopeType === 'PROJECT'
+            ? { projectId: P1 }
+            : { siteId: S1 };
+      const access = context(assignment(scopeType, target, [VIEW, ITEM_MANAGE, ITEM_APPROVE]));
+
+      expect(access.menuPermissions()).toEqual([VIEW]);
+      expect(access.holds(ITEM_MANAGE)).toBe(false);
+      expect(access.canOn(ITEM_APPROVE, { global: true })).toBe(false);
+    },
+  );
+
+  it('manage and approve count from a GLOBAL assignment', () => {
+    const access = context(assignment('GLOBAL', {}, [ITEM_MANAGE, ITEM_APPROVE]));
+
+    expect(access.canOn(ITEM_MANAGE, { global: true })).toBe(true);
+    expect(access.canOn(ITEM_APPROVE, { global: true })).toBe(true);
+  });
+
+  it('holds() is false for a permission no active role grants', () => {
+    const access = context(assignment('GLOBAL', {}, [VIEW], { isActive: false }));
+
+    expect(access.holds(VIEW)).toBe(false);
+  });
+});

@@ -16,8 +16,9 @@ export function canManageItems(access: AccessContext): boolean {
   return access.canOn(ITEM_MANAGE, SHARED);
 }
 
+/** Viewing the shared catalogue counts from an assignment at any scope (PD-043). */
 export function canViewItems(access: AccessContext): boolean {
-  return access.canOn(ITEM_VIEW, SHARED) || canManageItems(access);
+  return access.holds(ITEM_VIEW) || canManageItems(access);
 }
 
 export function canApproveItems(access: AccessContext): boolean {

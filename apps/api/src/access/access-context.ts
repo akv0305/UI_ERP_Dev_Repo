@@ -1,7 +1,7 @@
 import {
   ADMINISTRATOR_ROLE_CODE,
-  ADMIN_PERMISSION_PREFIX,
   ALL_PERMISSIONS,
+  isGlobalOnlyPermission,
   type Permission,
   type RoleScopeType,
 } from '@uie/contracts';
@@ -108,7 +108,7 @@ export function permissionsOf(assignment: AccessAssignment): Permission[] {
 
   return assignment.scopeType === 'GLOBAL'
     ? granted
-    : granted.filter((code) => !code.startsWith(ADMIN_PERMISSION_PREFIX));
+    : granted.filter((code) => !isGlobalOnlyPermission(code));
 }
 
 function unique(values: string[]): string[] {
@@ -165,8 +165,8 @@ export class AccessContext {
   canOn(permission: Permission, target: Partial<ResolvedTarget>): boolean {
     const holders = this.holdersOf(permission);
 
-    // administration.* permissions are global-only, whatever the target.
-    if (permission.startsWith(ADMIN_PERMISSION_PREFIX)) {
+    // administration.* and the shared-catalogue permissions are global-only, whatever the target.
+    if (isGlobalOnlyPermission(permission)) {
       return holders.some((assignment) => assignment.scopeType === 'GLOBAL');
     }
 
@@ -179,6 +179,11 @@ export class AccessContext {
     };
 
     return holders.some((assignment) => covers(assignment, resolved));
+  }
+
+  /** True when any active assignment grants the permission, whatever its scope (shared catalogues). */
+  holds(permission: Permission): boolean {
+    return this.holdersOf(permission).length > 0;
   }
 
   /** Company ids the user's assignments cover (for list filtering); null = unrestricted. */

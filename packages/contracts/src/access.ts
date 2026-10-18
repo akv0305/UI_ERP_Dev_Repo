@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Permission } from './permissions';
 
 /** Where a role assignment applies. Hierarchy: GLOBAL covers company covers project covers site covers store. */
 export const ROLE_SCOPE_TYPES = ['GLOBAL', 'COMPANY', 'PROJECT', 'SITE'] as const;
@@ -9,6 +10,23 @@ export type RoleScopeType = z.infer<typeof RoleScopeType>;
 
 /** Permissions with this prefix are only ever granted by GLOBAL assignments. */
 export const ADMIN_PERMISSION_PREFIX = 'administration.';
+
+/**
+ * Permissions that change the shared item catalogue. Like administration.*, they are granted only by
+ * GLOBAL assignments (PD-043). masters.items.view counts from an assignment at any scope.
+ */
+export const GLOBAL_ONLY_PERMISSIONS = [
+  'masters.items.manage',
+  'masters.items.approve',
+] as const satisfies readonly Permission[];
+
+/** True for administration.* and the GLOBAL_ONLY_PERMISSIONS. */
+export function isGlobalOnlyPermission(code: string): boolean {
+  return (
+    code.startsWith(ADMIN_PERMISSION_PREFIX) ||
+    (GLOBAL_ONLY_PERMISSIONS as readonly string[]).includes(code)
+  );
+}
 
 export const ADMINISTRATOR_ROLE_CODE = 'ADMINISTRATOR';
 
