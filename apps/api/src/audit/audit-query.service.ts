@@ -19,7 +19,15 @@ const actorSelect = { select: { id: true, username: true, displayName: true } } 
 // Dates are calendar days in India Standard Time (UTC+05:30, no daylight saving).
 const IST_OFFSET = '+05:30';
 const DAY_MS = 24 * 60 * 60 * 1000;
-const LABEL_KEYS = ['code', 'username', 'gstin', 'name', 'legalName', 'displayName'] as const;
+const LABEL_KEYS = [
+  'code',
+  'username',
+  'gstin',
+  'name',
+  'legalName',
+  'displayName',
+  'accountNumber',
+] as const;
 
 export function startOfDayIst(isoDate: string): Date {
   return new Date(`${isoDate}T00:00:00.000${IST_OFFSET}`);

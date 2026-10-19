@@ -1,4 +1,4 @@
-import type { Prisma, State } from '@prisma/client';
+import type { Prisma, State, VendorBankAccount, VendorContact } from '@prisma/client';
 import type {
   VendorBankAccountResponse,
   VendorContactResponse,
@@ -179,5 +179,48 @@ export function toVendorAuditSnapshot(vendor: VendorWithRelations): Record<strin
     status: vendor.status,
     decisionRemarks: vendor.decisionRemarks,
     isActive: vendor.isActive,
+  };
+}
+export const vendorGstInclude = { state: true } satisfies Prisma.VendorGstRegistrationInclude;
+
+export type VendorGstWithState = Prisma.VendorGstRegistrationGetPayload<{
+  include: typeof vendorGstInclude;
+}>;
+
+export function toVendorGstAuditSnapshot(row: VendorGstWithState): Record<string, unknown> {
+  return {
+    gstin: row.gstin,
+    state: stateLabel(row.state),
+    registrationType: row.registrationType,
+    effectiveFrom: fromDateOnly(row.effectiveFrom),
+    addressLine1: row.addressLine1,
+    addressLine2: row.addressLine2,
+    city: row.city,
+    pinCode: row.pinCode,
+    isActive: row.isActive,
+  };
+}
+
+/** The Audit Log keeps only the last 4 digits of the account number (OQ-37). */
+export function toVendorBankAuditSnapshot(row: VendorBankAccount): Record<string, unknown> {
+  return {
+    accountName: row.accountName,
+    accountNumber: maskAccountNumber(row.accountNumber),
+    ifsc: row.ifsc,
+    bankName: row.bankName,
+    branchName: row.branchName,
+    isPrimary: row.isPrimary,
+    isActive: row.isActive,
+  };
+}
+
+export function toVendorContactAuditSnapshot(row: VendorContact): Record<string, unknown> {
+  return {
+    name: row.name,
+    designation: row.designation,
+    phone: row.phone,
+    email: row.email,
+    isPrimary: row.isPrimary,
+    isActive: row.isActive,
   };
 }

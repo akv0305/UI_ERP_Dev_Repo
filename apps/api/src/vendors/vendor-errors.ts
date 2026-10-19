@@ -57,3 +57,53 @@ export function vendorUniqueConflictOf(error: unknown): ApiError | null {
 
   return /pan/i.test(detail) ? duplicatePan() : duplicateCode();
 }
+export function invalidGstin(): ApiError {
+  return new ApiError(HttpStatus.BAD_REQUEST, 'INVALID_GSTIN', 'The GSTIN is not valid');
+}
+
+export function gstinStateMismatch(): ApiError {
+  return new ApiError(
+    HttpStatus.BAD_REQUEST,
+    'GSTIN_STATE_MISMATCH',
+    'The GSTIN does not belong to the selected state',
+  );
+}
+
+export function gstinVendorPanMismatch(): ApiError {
+  return new ApiError(
+    HttpStatus.BAD_REQUEST,
+    'GSTIN_PAN_MISMATCH',
+    'The GSTIN does not match the vendor PAN',
+  );
+}
+
+export function duplicateVendorGstin(existingCode?: string): ApiError {
+  return new ApiError(
+    HttpStatus.CONFLICT,
+    'DUPLICATE_GSTIN',
+    `This GSTIN is already registered for a vendor${existing(existingCode)}`,
+  );
+}
+
+export function duplicateBankAccount(): ApiError {
+  return new ApiError(
+    HttpStatus.CONFLICT,
+    'DUPLICATE_BANK_ACCOUNT',
+    'This bank account is already added for the vendor',
+  );
+}
+
+/** A concurrent insert can still hit a unique index (GSTIN, or vendor + IFSC + account number). */
+export function vendorDetailConflictOf(error: unknown): ApiError | null {
+  if (!isUniqueViolation(error)) {
+    return null;
+  }
+
+  const detail = JSON.stringify((error as { meta?: unknown }).meta ?? {});
+
+  if (/gstin/i.test(detail)) {
+    return duplicateVendorGstin();
+  }
+
+  return /accountNumber|ifsc|bank_accounts/i.test(detail) ? duplicateBankAccount() : null;
+}
