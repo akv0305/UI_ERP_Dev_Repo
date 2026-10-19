@@ -18,6 +18,8 @@ export const ADMIN_PERMISSION_PREFIX = 'administration.';
 export const GLOBAL_ONLY_PERMISSIONS = [
   'masters.items.manage',
   'masters.items.approve',
+  'masters.vendors.manage',
+  'masters.vendors.approve',
 ] as const satisfies readonly Permission[];
 
 /** True for administration.* and the GLOBAL_ONLY_PERMISSIONS. */

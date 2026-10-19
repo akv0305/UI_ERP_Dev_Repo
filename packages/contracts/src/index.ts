@@ -28,3 +28,5 @@ export * from './access';
 export * from './items';
 
 export * from './item-import';
+
+export * from './vendors';

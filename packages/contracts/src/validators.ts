@@ -8,6 +8,9 @@ export const PIN_CODE_PATTERN = /^[1-9][0-9]{5}$/;
 export const PHONE_PATTERN = /^\+?[0-9]{10,15}$/;
 export const MASTER_CODE_PATTERN = /^[A-Z0-9][A-Z0-9-]{0,19}$/;
 export const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+export const IFSC_PATTERN = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+export const UDYAM_PATTERN = /^UDYAM-[A-Z]{2}-[0-9]{2}-[0-9]{7}$/;
+export const BANK_ACCOUNT_PATTERN = /^[0-9]{9,18}$/;
 
 const GSTIN_CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -80,6 +83,9 @@ export const LlpinSchema = identifier(LLPIN_PATTERN);
 export const PinCodeSchema = identifier(PIN_CODE_PATTERN);
 export const PhoneSchema = identifier(PHONE_PATTERN);
 export const MasterCodeSchema = identifier(MASTER_CODE_PATTERN);
+export const IfscSchema = identifier(IFSC_PATTERN);
+export const UdyamSchema = identifier(UDYAM_PATTERN);
+export const BankAccountNumberSchema = z.string().trim().regex(BANK_ACCOUNT_PATTERN);
 
 /** Uppercased only; the GSTIN format and check digit are verified by the API (INVALID_GSTIN). */
 export const GstinInputSchema = z.string().trim().toUpperCase().min(1).max(30);
