@@ -47,9 +47,11 @@ function setup() {
       findFirst: jest.fn(),
       findMany: jest.fn(),
     },
+    userRole: { count: jest.fn() },
     $transaction: jest.fn(),
   };
   prisma.role.findFirst.mockResolvedValue(null);
+  prisma.userRole.count.mockResolvedValue(0);
   prisma.$transaction.mockImplementation(async (arg: unknown) =>
     (arg as (client: typeof tx) => Promise<unknown>)(tx),
   );
@@ -213,5 +215,59 @@ describe('RolesService custom roles', () => {
         data: expect.objectContaining({ isSystem: false }) as unknown,
       }),
     );
+  });
+});
+
+describe('global-only permissions on a scoped role (PDEF-033)', () => {
+  const request = {
+    code: 'CLERK',
+    name: 'Clerk',
+    isActive: true,
+    permissionCodes: ['masters.items.view', 'masters.items.manage'] as const,
+  };
+
+  it('refuses when the role is given below GLOBAL', async () => {
+    const { prisma, service } = setup();
+    prisma.role.findUnique.mockResolvedValue(roleRow());
+    prisma.userRole.count.mockResolvedValue(2);
+
+    await expect(
+      codeOf(
+        service.update(
+          ROLE_ID,
+          { ...request, permissionCodes: [...request.permissionCodes] },
+          ACTOR_ID,
+        ),
+      ),
+    ).resolves.toBe('ROLE_ASSIGNED_BELOW_GLOBAL');
+    expect(prisma.userRole.count).toHaveBeenCalledWith({
+      where: { roleId: ROLE_ID, scopeType: { not: 'GLOBAL' } },
+    });
+  });
+
+  it('allows it when every assignment is GLOBAL', async () => {
+    const { prisma, service } = setup();
+    prisma.role.findUnique.mockResolvedValue(roleRow());
+
+    await expect(
+      service.update(
+        ROLE_ID,
+        { ...request, permissionCodes: [...request.permissionCodes] },
+        ACTOR_ID,
+      ),
+    ).resolves.toBeDefined();
+  });
+
+  it('does not query assignments for ordinary permissions', async () => {
+    const { prisma, service } = setup();
+    prisma.role.findUnique.mockResolvedValue(roleRow());
+
+    await service.update(
+      ROLE_ID,
+      { ...request, permissionCodes: ['masters.items.view'] },
+      ACTOR_ID,
+    );
+
+    expect(prisma.userRole.count).not.toHaveBeenCalled();
   });
 });

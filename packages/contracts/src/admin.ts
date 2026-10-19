@@ -139,7 +139,7 @@ export const RoleOption = z.object({
   code: z.string(),
   name: z.string(),
   isActive: z.boolean(),
-  /** True for ADMINISTRATOR and any role holding an administration.* permission. */
+  /** True for ADMINISTRATOR and any role holding a global-only permission (administration.*, item manage/approve). */
   requiresGlobalScope: z.boolean(),
 });
 

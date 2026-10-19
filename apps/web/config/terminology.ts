@@ -199,7 +199,7 @@ export const terminology = {
     rolesUnavailable: 'Roles could not be loaded. The existing roles are kept unchanged.',
     fieldAssignments: 'Role assignments',
     assignmentsHint:
-      'Each row gives one role for one scope. Roles with administration permissions can only be given for all companies.',
+      'Each row gives one role for one scope. Roles with administration or item manage/approve permissions can only be given for all companies.',
     columnRole: 'Role',
     columnScope: 'Scope',
     columnTarget: 'Company, project or site',
@@ -756,7 +756,9 @@ export const terminology = {
     SCOPE_TARGET_INACTIVE: 'A new assignment cannot point at an inactive company, project or site.',
     ADMIN_ROLE_MUST_BE_GLOBAL: 'The Administrator role can only be given for all companies.',
     ROLE_HAS_ADMIN_PERMISSIONS_MUST_BE_GLOBAL:
-      'A role with administration permissions can only be given for all companies.',
+      'A role with administration or item manage/approve permissions can only be given for all companies.',
+    ROLE_ASSIGNED_BELOW_GLOBAL:
+      'This role is given to users for a company, project or site. Change those assignments to "All companies" first, then add this permission.',
     DUPLICATE_ASSIGNMENT: 'The same role is given twice for the same scope.',
     CONTEXT_NOT_ALLOWED: 'That company or project is not available to you.',
     DUPLICATE_NAME: 'This name is already in use.',

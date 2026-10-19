@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-043 · CQ-108 · OQ-34 · PDEF-032 · CR-003
+# REGISTER — next free: PD-045 · CQ-110 · OQ-35 · PDEF-034 · CR-003
 
 ## Decisions
 
@@ -46,7 +46,8 @@
 | PD-040 | Item master: Category (Group) IG-0001 · Item ITM-000001 · Units with decimals 0–3 · Use = Stock and issue / Stock only · HSN, GST % optional · no hard deletes · full audit · tabs Items / Categories / Units | APPROVED — built G-05a (54066c1) |
 | PD-041 | Item master codes and approval flow: (1) codes = last saved code + 1 inside the save transaction under a per-series lock; no gaps, no reuse (IG-0001 categories, ITM-000001 items); batch-1 sequences dropped. (2) Rejected is its own status; maker edits and resubmits. (3) Approved items are locked; holder of masters.items.approve may "Reopen for edit" (remarks required) → Draft; reopened item blocked for new documents until re-approved; past documents unchanged (OQ-27). (4) Submit, approve, reject, reopen recorded in Audit Log as UPDATE with before/after status. (5) Self-approval allowed for items only (OQ-28). Case-insensitive unique: unit code, unit name, category name. | APPROVED |
 | PD-042 | Item Excel import/export: upload → editable preview grid → import → results; no file stored (5 MB / 2,000 rows) · header detection (first 10 rows, Description + Unit + Group required) · unit/category matched by normalised spelling, unmatched = red with DB pick list + "apply to all rows with this spelling" · no auto-create of units/categories · duplicates (vs DB and within file) red, imported only if edited, else skipped · similar-item check = yellow warning (OQ-30 C: same category + same size + same numbers, similarity ≥ 0.85), imported as written unless corrected · "Check again" re-validates on API · Ready + yellow rows created in one transaction as Pending approval · bulk approve (max 200) · export in import layout · exceljs (MIT) · no migration | APPROVED — batch 1 G-05b |
-
+| PD-043 | Shared item catalogue access: items view at any scope; items manage/approve GLOBAL only | APPROVED — 4cd0a8a, CI #55 |
+| PD-044 | Vendor master (G-06) fields and rules | PROPOSED — see draft |
 
 ## Owner questions
 
@@ -77,6 +78,8 @@
 | OQ-30 | How to detect spelling mistakes in the import | CLOSED — C: similar-item check (description + size vs existing items and other rows in the file; near-match ≥ 0.85 = yellow warning, exact = red duplicate); own code, no library, no migration (PD-042 item 11) |
 | OQ-31 | Duplicate rows in the file: first row kept, later copies flagged even when the first row is red | CLOSED — owner: keep as is |
 | OQ-32 | Item use for imported items | CLOSED — owner: Item use column in the import grid, default Stock and issue, apply-to-all; sent per row to /api/items/import |
+| OQ-33 | Bulk approve selection: current page only, only pending items | CLOSED — ok (1ec42cb, CI #53) |
+| OQ-34 | Refuse roles with item manage/approve below GLOBAL in the user form/API | CLOSED — yes; reuses requiresGlobalScope + isGlobalOnlyPermission; error code name ROLE_HAS_ADMIN_PERMISSIONS_MUST_BE_GLOBAL kept, message widened |
 
 ## Client questions
 
@@ -91,6 +94,8 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | CQ-100 | Tools, furniture, laptops, AC: stocked or assets? | ANSWERED (owner) — per-item option: Stock and issue / Stock only |
 | CQ-101 | Plant Spares group "will give later" | ANSWERED (owner) — categories entered separately; rows without a known category skipped |
 | CQ-107 | Material List: Group names in Sheet1 differ from "Abstrct" sheet — "Oil & Lubricants" vs "Lubricants & Oil"; not in Abstract: Water Supply & Plumbing (105), Tools (57), Shuttering material (15), Safety Items (14), Structural steel (6); probable typos "Safety material" (1), "Shutting Material" (1). Client to confirm final category list before import | OPEN — client |
+| CQ-108 | Who approves a new vendor (VP like items, Purchase Manager, or no approval)? | OPEN — client |
+| CQ-109 | Does the client have an existing vendor list (Excel) to import? | OPEN — client |
 
 ## Defects
 
@@ -120,8 +125,8 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-029 | CI #46 failed at Test: two wrong examples in import-matching.spec.ts — (1) Flexible/Flexbule is 84.6%, below the 0.85 OQ-30 C threshold; (2) category test used two rows with the same description+size+unit, so the second was correctly flagged DUPLICATE_IN_FILE. Code correct | FIXED — examples changed (Flexble Pipe; Spanner Set) |
 | PDEF-030 | (as before) | FIXED — CI #49 green on 120c503 |
 | PDEF-031 | Import grid: no visible scroll bars, Issues column cut off on the right | FIXED — grid scrolls inside a 70dvh box with sticky header (cdf5fc1, CI #51) |
-| OQ-33 | Bulk approve selection: current page only (max 100 rows), cleared when page/filter changes; only pending items selectable | PROPOSED — confirm "OQ-33 ok" |
-
+| PDEF-032 | View-only user saw Items menu but got Not authorised | FIXED — 4cd0a8a, CI #55 |
+| PDEF-033 | Roles screen allowed adding administration.* or item manage/approve to a role already given at company/project/site scope (permission silently ignored) | FIX GIVEN — RolesService refuses with ROLE_ASSIGNED_BELOW_GLOBAL |
 
 ## Change requests
 

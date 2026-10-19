@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import {
   ALL_PERMISSIONS,
+  isGlobalOnlyPermission,
   type CreateRoleRequest,
   type Permission,
   type RoleListResponse,
@@ -130,6 +131,8 @@ export class RolesService {
     await this.assertCodeFree(request.code, id);
 
     const permissionCodes = [...new Set(request.permissionCodes)];
+
+    await this.assertNoScopedAssignments(id, permissionCodes);
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.rolePermission.deleteMany({ where: { roleId: id } });
       await tx.rolePermission.createMany({
@@ -174,6 +177,29 @@ export class RolesService {
         HttpStatus.CONFLICT,
         'SYSTEM_ROLE_PROTECTED',
         'System roles cannot be renamed, deactivated or have their permissions changed',
+      );
+    }
+  }
+
+  /**
+   * PDEF-033: a role given for a company, project or site cannot gain a global-only permission,
+   * because that permission would be silently ignored at those scopes.
+   */
+  private async assertNoScopedAssignments(roleId: string, codes: readonly string[]): Promise<void> {
+    if (!codes.some((code) => isGlobalOnlyPermission(code))) {
+      return;
+    }
+
+    const scoped = await this.prisma.userRole.count({
+      where: { roleId, scopeType: { not: 'GLOBAL' } },
+    });
+
+    if (scoped > 0) {
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        'ROLE_ASSIGNED_BELOW_GLOBAL',
+        'This role is given for a company, project or site. Change those assignments to all companies first',
+        { scopedAssignments: scoped },
       );
     }
   }

@@ -674,3 +674,47 @@ describe('UsersService.list', () => {
     ]);
   });
 });
+
+describe('item manage/approve roles are global-only (OQ-34)', () => {
+  const company = {
+    roleId: USERS_ROLE.id,
+    scopeType: 'COMPANY' as const,
+    companyId: COMPANY_ID,
+    projectId: null,
+    siteId: null,
+  };
+
+  it.each(['masters.items.manage', 'masters.items.approve'])(
+    'rejects a role holding %s below GLOBAL',
+    async (permission) => {
+      const { prisma, service } = setup();
+      prisma.role.findMany.mockResolvedValue([
+        roleRecord(USERS_ROLE, ['masters.items.view', permission]),
+      ]);
+
+      await expect(
+        codeOf(service.create({ ...baseCreate, assignments: [company] }, ACTOR_ID)),
+      ).resolves.toBe('ROLE_HAS_ADMIN_PERMISSIONS_MUST_BE_GLOBAL');
+    },
+  );
+
+  it('accepts a role with only masters.items.view at company scope', async () => {
+    const { prisma, service } = setup();
+    prisma.role.findMany.mockResolvedValue([roleRecord(USERS_ROLE, ['masters.items.view'])]);
+
+    await expect(
+      service.create({ ...baseCreate, assignments: [company] }, ACTOR_ID),
+    ).resolves.toBeDefined();
+  });
+
+  it('role options flag an item-approve role as global-only', async () => {
+    const { prisma, service } = setup();
+    prisma.role.findMany.mockResolvedValue([
+      { ...roleRecord(USERS_ROLE, ['masters.items.approve']), isActive: true },
+    ]);
+
+    const result = await service.roleOptions();
+
+    expect(result.items[0]?.requiresGlobalScope).toBe(true);
+  });
+});

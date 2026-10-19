@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import {
-  ADMIN_PERMISSION_PREFIX,
+  isGlobalOnlyPermission,
   hasValidScopeShape,
   type CreateUserRequest,
   type PagedUsersResponse,
@@ -446,7 +446,7 @@ export class UsersService {
         throw new ApiError(
           HttpStatus.BAD_REQUEST,
           'ROLE_HAS_ADMIN_PERMISSIONS_MUST_BE_GLOBAL',
-          'A role with administration permissions can only be assigned with global scope',
+          'A role with administration or item manage/approve permissions can only be assigned for all companies',
         );
       }
     }
@@ -564,15 +564,13 @@ export class UsersService {
   }
 }
 
-/** ADMINISTRATOR, or any role holding an administration.* permission, can only be assigned globally. */
+/** ADMINISTRATOR, or any role holding a global-only permission (PD-043), can only be assigned globally. */
 function requiresGlobalScope(role: {
   code: string;
   permissions: Array<{ permissionCode: string }>;
 }): boolean {
   return (
     role.code === ADMINISTRATOR_ROLE_CODE ||
-    role.permissions.some((permission) =>
-      permission.permissionCode.startsWith(ADMIN_PERMISSION_PREFIX),
-    )
+    role.permissions.some((permission) => isGlobalOnlyPermission(permission.permissionCode))
   );
 }
