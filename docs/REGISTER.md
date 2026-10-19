@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-045 · CQ-110 · OQ-36 · PDEF-035 · CR-003
+# REGISTER — next free: PD-045 · CQ-110 · OQ-37 · PDEF-035 · CR-003
 
 ## Decisions
 
@@ -47,7 +47,8 @@
 | PD-041 | Item master codes and approval flow: (1) codes = last saved code + 1 inside the save transaction under a per-series lock; no gaps, no reuse (IG-0001 categories, ITM-000001 items); batch-1 sequences dropped. (2) Rejected is its own status; maker edits and resubmits. (3) Approved items are locked; holder of masters.items.approve may "Reopen for edit" (remarks required) → Draft; reopened item blocked for new documents until re-approved; past documents unchanged (OQ-27). (4) Submit, approve, reject, reopen recorded in Audit Log as UPDATE with before/after status. (5) Self-approval allowed for items only (OQ-28). Case-insensitive unique: unit code, unit name, category name. | APPROVED |
 | PD-042 | Item Excel import/export: upload → editable preview grid → import → results; no file stored (5 MB / 2,000 rows) · header detection (first 10 rows, Description + Unit + Group required) · unit/category matched by normalised spelling, unmatched = red with DB pick list + "apply to all rows with this spelling" · no auto-create of units/categories · duplicates (vs DB and within file) red, imported only if edited, else skipped · similar-item check = yellow warning (OQ-30 C: same category + same size + same numbers, similarity ≥ 0.85), imported as written unless corrected · "Check again" re-validates on API · Ready + yellow rows created in one transaction as Pending approval · bulk approve (max 200) · export in import layout · exceljs (MIT) · no migration | APPROVED — batch 1 G-05b |
 | PD-043 | Shared item catalogue access: items view at any scope; items manage/approve GLOBAL only | APPROVED — 4cd0a8a, CI #55 |
-| PD-044 | Vendor master (G-06): VEN-0001 no gaps; legal/trade name, type, PAN, Udyam+MSME category, address, payment terms, credit limit; GST rows, bank accounts, contacts; Draft→Pending→Approved; view any scope, manage/approve GLOBAL only | APPROVED — batch 1 on dev/G-06 |
+| PD-044 | Vendor master (G-06): VEN-0001 no gaps; legal/trade name, type, PAN, Udyam+MSME category, address, payment terms, credit limit; GST rows, bank accounts, contacts; Draft→Pending→Approved; view any scope, manage/approve GLOBAL only | APPROVED — batch 1 f1f3e4e (CI #57); batch 2a API on dev/G-06 |
+
 
 ## Owner questions
 
@@ -80,7 +81,8 @@
 | OQ-32 | Item use for imported items | CLOSED — owner: Item use column in the import grid, default Stock and issue, apply-to-all; sent per row to /api/items/import |
 | OQ-33 | Bulk approve selection: current page only, only pending items | CLOSED — ok (1ec42cb, CI #53) |
 | OQ-34 | Roles with item manage/approve global-only in user form/API | CLOSED — 7a5ed5e, CI #56 |
-| OQ-35 | Vendor details: (a) unregistered = no GST rows, GST rows reuse company types; (b) no self-approval (OQ-28 items-only); (c) PAN and Udyam unique among vendors; (d) approved vendor locked incl. GST + bank (reopen to change), contacts always editable, bank number masked for non-managers | PROPOSED — confirm "OQ-35 ok" |
+| OQ-35 | Vendor details: (a) unregistered = no GST rows, GST rows reuse company types; (b) no self-approval (OQ-28 items-only); (c) PAN and Udyam unique among vendors; (d) approved vendor locked incl. GST + bank (reopen to change), contacts always editable, bank number masked for non-managers | CLOSED — owner ok (f1f3e4e) |
+| OQ-36 | Vendor maker-checker: the submitter can neither approve nor reject their own vendor (SELF_APPROVAL_NOT_ALLOWED); no "withdraw" — maker asks another approver to reject | PROPOSED — confirm "OQ-36 ok" |
 
 
 ## Client questions
@@ -129,7 +131,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-031 | Import grid: no visible scroll bars, Issues column cut off on the right | FIXED — grid scrolls inside a 70dvh box with sticky header (cdf5fc1, CI #51) |
 | PDEF-032 | View-only user saw Items menu but got Not authorised | FIXED — 4cd0a8a, CI #55 |
 | PDEF-033 | Roles screen allowed global-only permissions on a role given below GLOBAL | FIXED — 7a5ed5e, CI #56 (ROLE_ASSIGNED_BELOW_GLOBAL) |
-| PDEF-034 | schema.prisma comments above ItemCategory and Item held leftover find/replace text ("… becomes ///") | FIX GIVEN — G-06 batch 1 |
+| PDEF-034 | schema.prisma comments above ItemCategory and Item held leftover find/replace text ("… becomes ///") | FIXED — f1f3e4e, CI #57 |
 
 ## Change requests
 

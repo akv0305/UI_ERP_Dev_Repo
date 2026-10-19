@@ -5,6 +5,8 @@ import {
   ITEM_CODE_DIGITS,
   ITEM_CODE_PREFIX,
   formatMasterCode,
+  VENDOR_CODE_DIGITS,
+  VENDOR_CODE_PREFIX,
 } from '@uie/contracts';
 
 /** One gap-free code series (PD-041): next code = highest saved number + 1. */
@@ -29,6 +31,13 @@ export const ITEM_SERIES: CodeSeries = {
   table: 'items',
   prefix: ITEM_CODE_PREFIX,
   digits: ITEM_CODE_DIGITS,
+};
+
+export const VENDOR_SERIES: CodeSeries = {
+  lockKey: 50_003,
+  table: 'vendors',
+  prefix: VENDOR_CODE_PREFIX,
+  digits: VENDOR_CODE_DIGITS,
 };
 
 /** The part of a Prisma transaction client the code series needs. */

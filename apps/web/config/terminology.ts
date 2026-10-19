@@ -289,6 +289,10 @@ export const terminology = {
       Unit: 'Unit',
       ItemCategory: 'Category (Group)',
       Item: 'Item',
+      Vendor: 'Vendor',
+      VendorGstRegistration: 'Vendor GST registration',
+      VendorBankAccount: 'Vendor bank account',
+      VendorContact: 'Vendor contact',
     },
     fields: {
       username: 'Username',
@@ -743,7 +747,7 @@ export const terminology = {
     CODE_IMMUTABLE: 'The code cannot be changed.',
     INVALID_GSTIN: 'The GSTIN is not valid. Check the number and its last character.',
     GSTIN_STATE_MISMATCH: 'The first two digits of the GSTIN do not match the selected state.',
-    GSTIN_PAN_MISMATCH: 'Characters 3 to 12 of the GSTIN must equal the company PAN.',
+    GSTIN_PAN_MISMATCH: 'Characters 3 to 12 of the GSTIN must equal the PAN.',
     DUPLICATE_GSTIN: 'This GSTIN is already registered.',
     INVALID_STATE: 'The selected state is not valid.',
     INVALID_GST_REGISTRATION:
@@ -765,7 +769,11 @@ export const terminology = {
     DUPLICATE_ITEM: 'An item with the same description, size and unit already exists.',
     INVALID_CATEGORY: 'The selected category (group) is not available. Choose an active one.',
     INVALID_UNIT: 'The selected unit is not available. Choose an active one.',
-    INVALID_STATUS: 'This action is not allowed in the current status of the item.',
+    DUPLICATE_PAN: 'Another vendor already has this PAN.',
+    DUPLICATE_UDYAM: 'Another vendor already has this Udyam number.',
+    DUPLICATE_BANK_ACCOUNT: 'This bank account is already added for the vendor.',
+    SELF_APPROVAL_NOT_ALLOWED: 'You submitted this record, so another approver must decide on it.',
+    INVALID_STATUS: 'This action is not allowed in the current status of the record.',
     IMPORT_FILE_REQUIRED: 'Choose an .xlsx file.',
     IMPORT_FILE_INVALID:
       'The file could not be read. Save it as an Excel workbook (.xlsx) and try again.',

@@ -18,6 +18,10 @@ export const AUDIT_ENTITY_TYPES = [
   'Unit',
   'ItemCategory',
   'Item',
+  'Vendor',
+  'VendorGstRegistration',
+  'VendorBankAccount',
+  'VendorContact',
 ] as const;
 
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];
