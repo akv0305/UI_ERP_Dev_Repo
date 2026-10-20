@@ -10,7 +10,7 @@ import { stateLabel } from '@/lib/state-options';
 import { ActiveStatus } from '../../_components/active-status';
 import { CompanyForm } from '../company-form';
 import { CompanyStatusAction } from './company-status-action';
-import { GstRegistrationsSection } from './gst-registrations-section';
+import { GstRegistrationsSection } from '../../_components/gst-registrations-section';
 
 export default async function CompanyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const permissions = await getCurrentPermissions();
@@ -71,7 +71,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
           </>
         }
       />
-      <section className="rounded-lg border border-border bg-surface p-[var(--card-padding)]">
+      <section className="rounded-lg border border-border bg-surface p-(--card-padding)">
         <h2 className="mb-3 text-sm font-semibold text-foreground">
           {terminology.masters.sectionAudit}
         </h2>
@@ -80,7 +80,7 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
       {canManage ? (
         <CompanyForm company={company} states={states.data.items} />
       ) : (
-        <section className="rounded-lg border border-border bg-surface p-[var(--card-padding)]">
+        <section className="rounded-lg border border-border bg-surface p-(--card-padding)">
           <KeyValueGrid
             items={[
               { label: terminology.companies.fieldCode, value: company.code },
@@ -131,7 +131,8 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
         </section>
       )}
       <GstRegistrationsSection
-        companyId={company.id}
+        createPath={`/api/companies/${company.id}/gst-registrations`}
+        rowPath="/api/gst-registrations"
         registrations={company.gstRegistrations}
         states={states.data.items}
         canManage={canManage}

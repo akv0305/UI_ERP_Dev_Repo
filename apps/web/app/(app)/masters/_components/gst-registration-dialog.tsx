@@ -17,6 +17,9 @@ import { apiRequest, messageForApiError } from '@/lib/api/client';
 import { buildStateOptions } from '@/lib/state-options';
 import * as toast from '@/lib/toast';
 
+/** A company or vendor GST row; both have the same fields apart from the owner id. */
+export type GstRow = Omit<GstRegistrationResponse, 'companyId'>;
+
 const registrationSchema = z.object({
   gstin: z.string().refine(isValidGstin, terminology.validation.invalidGstin),
   stateId: z.string().min(1, terminology.validation.required),
@@ -33,9 +36,12 @@ type RegistrationFormValues = z.infer<typeof registrationSchema>;
 export interface GstRegistrationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  companyId: string;
+  /** POST target for a new row, for example /api/companies/<id>/gst-registrations. */
+  createPath: string;
+  /** Base path of existing rows, for example /api/gst-registrations; /<id> is added. */
+  rowPath: string;
   /** Present when editing an existing registration. */
-  registration?: GstRegistrationResponse;
+  registration?: GstRow;
   states: StateResponse[];
   onSaved: () => void;
 }
@@ -43,7 +49,8 @@ export interface GstRegistrationDialogProps {
 export function GstRegistrationDialog({
   open,
   onOpenChange,
-  companyId,
+  createPath,
+  rowPath,
   registration,
   states,
   onSaved,
@@ -75,8 +82,8 @@ export function GstRegistrationDialog({
     }
 
     const result = isEdit
-      ? await apiRequest('PATCH', `/api/gst-registrations/${registration.id}`, checked.data)
-      : await apiRequest('POST', `/api/companies/${companyId}/gst-registrations`, checked.data);
+      ? await apiRequest('PATCH', `${rowPath}/${registration.id}`, checked.data)
+      : await apiRequest('POST', createPath, checked.data);
 
     if (!result.ok) {
       setErrorMessage(messageForApiError(result.code));

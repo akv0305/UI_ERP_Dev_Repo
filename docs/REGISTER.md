@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-045 · CQ-110 · OQ-38 · PDEF-035 · CR-003
+# REGISTER — next free: PD-046 · CQ-110 · OQ-38 · PDEF-035 · CR-003
 
 ## Decisions
 
@@ -25,7 +25,7 @@
 | PD-019 | Local: Windows 10 + VS Code + Node, no Docker; DB = Neon | APPROVED |
 | PD-020 | File storage and email deferred (Cloudflare R2; Resend/Hostinger mail) | APPROVED |
 | PD-021 | Browser calls same-origin /api/*; Next.js rewrites to API_BASE_URL; no CORS | APPROVED (cookie verified G-03) |
-| PD-022 | Hostinger api: type "Other", root "/", build `build:api`, entry `apps/api/dist/main.js`; Node 22 | PROPOSED (deploy test pending) |
+| PD-022 | Hostinger api: type "Other", root "/", build `build:api`, entry `apps/api/dist/main.js`; Node 22 | DEFERRED — last in build order (PD-045) |
 | PD-023 | Menu: Home · Purchase · Stores · Planning · Masters · Administration. Approvals via bell + Home list | APPROVED |
 | PD-024 | Theme defaults in apps/web/config/theme.ts (Demo-uie look), all configurable | APPROVED |
 | PD-025 | Every menu item, screen and action gated by permission code | APPROVED |
@@ -48,6 +48,7 @@
 | PD-042 | Item Excel import/export: upload → editable preview grid → import → results; no file stored (5 MB / 2,000 rows) · header detection (first 10 rows, Description + Unit + Group required) · unit/category matched by normalised spelling, unmatched = red with DB pick list + "apply to all rows with this spelling" · no auto-create of units/categories · duplicates (vs DB and within file) red, imported only if edited, else skipped · similar-item check = yellow warning (OQ-30 C: same category + same size + same numbers, similarity ≥ 0.85), imported as written unless corrected · "Check again" re-validates on API · Ready + yellow rows created in one transaction as Pending approval · bulk approve (max 200) · export in import layout · exceljs (MIT) · no migration | APPROVED — batch 1 G-05b |
 | PD-043 | Shared item catalogue access: items view at any scope; items manage/approve GLOBAL only | APPROVED — 4cd0a8a, CI #55 |
 | PD-044 | Vendor master (G-06): VEN-0001 no gaps; legal/trade name, type, PAN, Udyam+MSME category, address, payment terms, credit limit; GST rows, bank accounts, contacts; Draft→Pending→Approved; view any scope, manage/approve GLOBAL only | APPROVED — batch 1 f1f3e4e (CI #57); 2a a9257b8 (CI #58); 2b 059a4f4 (CI #59); 3a screens on dev/G-06 |
+| PD-045 | Build order (owner, 20-10-2026): finish G-06 Vendors → Purchase → approval matrix/ladder (PD-008) → Stores → customer samples → HR Employee Master → Hostinger deploy test (PD-022) | APPROVED |
 
 
 ## Owner questions

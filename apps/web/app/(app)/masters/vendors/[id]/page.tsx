@@ -8,8 +8,11 @@ import { getCurrentPermissions } from '@/lib/auth/permissions';
 import { formatDateTime, formatINR } from '@/lib/format';
 import { stateLabel } from '@/lib/state-options';
 import { ActiveStatus } from '../../_components/active-status';
+import { GstRegistrationsSection } from '../../_components/gst-registrations-section';
 import { VendorStatusChip } from '../_components/vendor-status-chip';
 import { VendorForm } from '../vendor-form';
+import { BankAccountsSection } from './bank-accounts-section';
+import { ContactsSection } from './contacts-section';
 import { VendorActions } from './vendor-actions';
 
 const t = terminology.vendors;
@@ -42,6 +45,18 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
   }
 
   const vendor = result.data;
+
+  // States are needed only by the vendor form and the GST dialog, i.e. when canEdit.
+  const states = vendor.canEdit ? await apiGet('/api/states', StateListResponse) : null;
+
+  if (states !== null && states.kind !== 'ok') {
+    return <ErrorState description={t.statesUnavailable} />;
+  }
+
+  const stateItems = states?.kind === 'ok' ? states.data.items : [];
+  const lockedHint =
+    vendor.canManage && vendor.isActive && !vendor.canEdit ? t.lockedDetailsHint : null;
+
   const history = permissions.includes('administration.auditLog.view') ? (
     <Button asChild variant="outline">
       <Link href={`/administration/audit-log?entityId=${vendor.id}`}>
@@ -73,6 +88,30 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
         ]}
       />
     </section>
+  );
+  const details = (
+    <>
+      <GstRegistrationsSection
+        createPath={`/api/vendors/${vendor.id}/gst-registrations`}
+        rowPath="/api/vendor-gst-registrations"
+        registrations={vendor.gstRegistrations}
+        states={stateItems}
+        canManage={vendor.canEdit}
+        labels={terminology.vendorGst}
+        notice={lockedHint}
+      />
+      <BankAccountsSection
+        vendorId={vendor.id}
+        accounts={vendor.bankAccounts}
+        canEdit={vendor.canEdit}
+        notice={lockedHint}
+      />
+      <ContactsSection
+        vendorId={vendor.id}
+        contacts={vendor.contacts}
+        canEdit={vendor.canManage && vendor.isActive}
+      />
+    </>
   );
 
   if (!vendor.canEdit) {
@@ -120,15 +159,9 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
             ]}
           />
         </section>
+        {details}
       </div>
     );
-  }
-
-  // canEdit implies masters.vendors.manage.
-  const states = await apiGet('/api/states', StateListResponse);
-
-  if (states.kind !== 'ok') {
-    return <ErrorState description={t.statesUnavailable} />;
   }
 
   return (
@@ -139,7 +172,8 @@ export default async function VendorDetailPage({ params }: { params: Promise<{ i
         actions={actions}
       />
       {approval}
-      <VendorForm vendor={vendor} states={states.data.items} />
+      <VendorForm vendor={vendor} states={stateItems} />
+      {details}
     </div>
   );
 }
