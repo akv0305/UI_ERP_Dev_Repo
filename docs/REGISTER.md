@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-047 · CQ-110 · OQ-43 · PDEF-035 · CR-003
+# REGISTER — next free: PD-047 · CQ-110 · OQ-43 · PDEF-036 · CR-003
 
 ## Decisions
 
@@ -140,6 +140,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-032 | View-only user saw Items menu but got Not authorised | FIXED — 4cd0a8a, CI #55 |
 | PDEF-033 | Roles screen allowed global-only permissions on a role given below GLOBAL | FIXED — 7a5ed5e, CI #56 (ROLE_ASSIGNED_BELOW_GLOBAL) |
 | PDEF-034 | schema.prisma comments above ItemCategory and Item held leftover find/replace text ("… becomes ///") | FIXED — f1f3e4e, CI #57 |
+| PDEF-035 | permission-groups.test.ts picked the first Purchase row (Indents) to prove "no manage"; broke when purchase.indents.manage was added (CI #63). Test now finds screens by labelKey and checks Indents view/manage/approve | FIXED — G-07 |
 
 ## Change requests
 

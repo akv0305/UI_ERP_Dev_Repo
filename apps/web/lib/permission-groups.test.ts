@@ -40,9 +40,27 @@ describe('buildPermissionGroups', () => {
     });
   });
 
-  it('leaves manage empty for screens without one', () => {
+  it('adds manage and approve for indents', () => {
     const purchase = groups.find((group) => group.labelKey === 'purchase');
+    const indents = purchase?.rows.find((row) => row.labelKey === 'indents');
 
-    expect(purchase?.rows[0]?.manage).toBeNull();
+    expect(indents).toEqual({
+      labelKey: 'indents',
+      view: 'purchase.indents.view',
+      manage: 'purchase.indents.manage',
+      approve: 'purchase.indents.approve',
+    });
+  });
+
+  it('leaves manage and approve empty for screens without them', () => {
+    const purchase = groups.find((group) => group.labelKey === 'purchase');
+    const enquiries = purchase?.rows.find((row) => row.labelKey === 'enquiries');
+
+    expect(enquiries).toEqual({
+      labelKey: 'enquiries',
+      view: 'purchase.enquiries.view',
+      manage: null,
+      approve: null,
+    });
   });
 });
