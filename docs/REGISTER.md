@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-047 · CQ-110 · OQ-43 · PDEF-036 · CR-003
+# REGISTER — next free: PD-047 · CQ-110 · OQ-44 · PDEF-037 · CR-003
 
 ## Decisions
 
@@ -91,6 +91,7 @@
 | OQ-40 | Approved qty: approver may lower per line (0 = refused), never above required | CLOSED — ok |
 | OQ-41 | Indent number IND/<project code>/<FY>/0001, per project per FY, given on Submit | CLOSED — ok |
 | OQ-42 | Requested by = text field (HR master later); posted by = logged-in user | CLOSED — ok |
+| OQ-43 | Indent: (a) indent date not in the future (IST); (b) while Draft/Rejected, saving replaces the line rows (full before/after lines in Audit Log) | OPEN |
 
 
 ## Client questions
@@ -141,6 +142,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-033 | Roles screen allowed global-only permissions on a role given below GLOBAL | FIXED — 7a5ed5e, CI #56 (ROLE_ASSIGNED_BELOW_GLOBAL) |
 | PDEF-034 | schema.prisma comments above ItemCategory and Item held leftover find/replace text ("… becomes ///") | FIXED — f1f3e4e, CI #57 |
 | PDEF-035 | permission-groups.test.ts picked the first Purchase row (Indents) to prove "no manage"; broke when purchase.indents.manage was added (CI #63). Test now finds screens by labelKey and checks Indents view/manage/approve | FIXED — G-07 |
+| PDEF-036 | G-07 batch 2: indent-rules.spec.ts imported describe/expect/it from @jest/globals; repo uses Jest globals (@types/jest) and imports only `jest` from @jest/globals | FIXED |
 
 ## Change requests
 

@@ -255,6 +255,12 @@ export const IndentFormOptionsResponse = z.object({
 
 export type IndentFormOptionsResponse = z.infer<typeof IndentFormOptionsResponse>;
 
+export const IndentItemOptionsQuery = z.object({
+  search: z.string().trim().max(120).optional(),
+});
+
+export type IndentItemOptionsQuery = z.infer<typeof IndentItemOptionsQuery>;
+
 /** Approved, active items for the line picker. */
 export const IndentItemOptionsResponse = z.object({
   items: z.array(
