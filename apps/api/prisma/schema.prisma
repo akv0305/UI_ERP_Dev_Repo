@@ -63,6 +63,12 @@ model User {
   createdVendorContacts         VendorContact[]         @relation("VendorContactCreatedBy")
   updatedVendorContacts         VendorContact[]         @relation("VendorContactUpdatedBy")
 
+  createdIndents   Indent[] @relation("IndentCreatedBy")
+  updatedIndents   Indent[] @relation("IndentUpdatedBy")
+  submittedIndents Indent[] @relation("IndentSubmittedBy")
+  decidedIndents   Indent[] @relation("IndentDecidedBy")
+  cancelledIndents Indent[] @relation("IndentCancelledBy")
+
   @@map("users")
 }
 
@@ -234,6 +240,9 @@ model Company {
   userRoles        UserRole[]
   sessionContexts  Session[]                @relation("SessionCurrentCompany")
 
+  documentSeries DocumentSeries[]
+  indents        Indent[]
+
   @@map("companies")
 }
 
@@ -285,6 +294,9 @@ model Project {
   sites      Site[]
   userRoles  UserRole[]
 
+  documentSeries DocumentSeries[]
+  indents        Indent[]
+
   sessionContexts Session[] @relation("SessionCurrentProject")
 
   @@index([companyId])
@@ -316,6 +328,8 @@ model Site {
   stores    Store[]
   userRoles UserRole[]
 
+  indents Indent[]
+
   @@index([projectId])
   @@map("sites")
 }
@@ -331,9 +345,10 @@ model Store {
   createdById String   @db.Uuid
   updatedById String   @db.Uuid
 
-  site      Site @relation(fields: [siteId], references: [id])
-  createdBy User @relation("StoreCreatedBy", fields: [createdById], references: [id])
-  updatedBy User @relation("StoreUpdatedBy", fields: [updatedById], references: [id])
+  site      Site     @relation(fields: [siteId], references: [id])
+  createdBy User     @relation("StoreCreatedBy", fields: [createdById], references: [id])
+  updatedBy User     @relation("StoreUpdatedBy", fields: [updatedById], references: [id])
+  indents   Indent[]
 
   @@index([siteId])
   @@map("stores")
@@ -418,6 +433,7 @@ model Item {
   decidedBy   User?        @relation("ItemDecidedBy", fields: [decidedById], references: [id])
   createdBy   User         @relation("ItemCreatedBy", fields: [createdById], references: [id])
   updatedBy   User         @relation("ItemUpdatedBy", fields: [updatedById], references: [id])
+  indentLines IndentLine[]
 
   @@index([categoryId])
   @@index([unitId])
@@ -563,4 +579,103 @@ model VendorContact {
 
   @@index([vendorId])
   @@map("vendor_contacts")
+}
+
+enum DocumentType {
+  INDENT
+}
+
+/// Last number used per company / document type / project / financial year (PD-003). The next number
+/// is taken inside the saving transaction with this row locked (SELECT ... FOR UPDATE), so no gaps.
+/// projectId is null for company-level series; the migration makes the key UNIQUE NULLS NOT DISTINCT.
+model DocumentSeries {
+  id           String       @id @default(uuid()) @db.Uuid
+  companyId    String       @db.Uuid
+  documentType DocumentType
+  projectId    String?      @db.Uuid
+  fiscalYear   String
+  lastNumber   Int          @default(0)
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime     @updatedAt @db.Timestamptz(3)
+
+  company Company  @relation(fields: [companyId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
+
+  @@unique([companyId, documentType, projectId, fiscalYear], map: "document_series_key")
+  @@map("document_series")
+}
+
+enum IndentStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+/// Material indent (PD-046). number IND/<project>/<FY>/0001 is given on Submit; null while Draft.
+/// companyId is copied from the project. createdBy = "Posted by"; requestedBy is text until the HR master (OQ-42).
+model Indent {
+  id              String       @id @default(uuid()) @db.Uuid
+  number          String?      @unique
+  fiscalYear      String?
+  companyId       String       @db.Uuid
+  projectId       String       @db.Uuid
+  siteId          String       @db.Uuid
+  storeId         String?      @db.Uuid
+  indentDate      DateTime     @db.Date
+  requiredByDate  DateTime?    @db.Date
+  requestedBy     String
+  remarks         String?
+  status          IndentStatus @default(DRAFT)
+  submittedAt     DateTime?    @db.Timestamptz(3)
+  submittedById   String?      @db.Uuid
+  decidedAt       DateTime?    @db.Timestamptz(3)
+  decidedById     String?      @db.Uuid
+  decisionRemarks String?
+  cancelledAt     DateTime?    @db.Timestamptz(3)
+  cancelledById   String?      @db.Uuid
+  cancelRemarks   String?
+  createdAt       DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
+  createdById     String       @db.Uuid
+  updatedById     String       @db.Uuid
+
+  company     Company      @relation(fields: [companyId], references: [id])
+  project     Project      @relation(fields: [projectId], references: [id])
+  site        Site         @relation(fields: [siteId], references: [id])
+  store       Store?       @relation(fields: [storeId], references: [id])
+  submittedBy User?        @relation("IndentSubmittedBy", fields: [submittedById], references: [id])
+  decidedBy   User?        @relation("IndentDecidedBy", fields: [decidedById], references: [id])
+  cancelledBy User?        @relation("IndentCancelledBy", fields: [cancelledById], references: [id])
+  createdBy   User         @relation("IndentCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User         @relation("IndentUpdatedBy", fields: [updatedById], references: [id])
+  lines       IndentLine[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([siteId])
+  @@index([status])
+  @@index([indentDate])
+  @@map("indents")
+}
+
+/// One item per indent. requiredQty > 0; approvedQty 0..requiredQty, set at approval (CHECKs in the migration).
+model IndentLine {
+  id          String   @id @default(uuid()) @db.Uuid
+  indentId    String   @db.Uuid
+  lineNo      Int      @db.SmallInt
+  itemId      String   @db.Uuid
+  requiredQty Decimal  @db.Decimal(18, 3)
+  approvedQty Decimal? @db.Decimal(18, 3)
+  purpose     String?
+  remarks     String?
+
+  indent Indent @relation(fields: [indentId], references: [id])
+  item   Item   @relation(fields: [itemId], references: [id])
+
+  @@unique([indentId, lineNo])
+  @@unique([indentId, itemId])
+  @@index([itemId])
+  @@map("indent_lines")
 }

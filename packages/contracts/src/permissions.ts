@@ -1,5 +1,7 @@
 export const ALL_PERMISSIONS = [
   'purchase.indents.view',
+  'purchase.indents.manage',
+  'purchase.indents.approve',
   'purchase.enquiries.view',
   'purchase.quotations.view',
   'purchase.comparisons.view',

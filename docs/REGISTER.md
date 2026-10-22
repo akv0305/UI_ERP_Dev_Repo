@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-046 · CQ-110 · OQ-38 · PDEF-035 · CR-003
+# REGISTER — next free: PD-047 · CQ-110 · OQ-43 · PDEF-035 · CR-003
 
 ## Decisions
 
@@ -47,8 +47,9 @@
 | PD-041 | Item master codes and approval flow: (1) codes = last saved code + 1 inside the save transaction under a per-series lock; no gaps, no reuse (IG-0001 categories, ITM-000001 items); batch-1 sequences dropped. (2) Rejected is its own status; maker edits and resubmits. (3) Approved items are locked; holder of masters.items.approve may "Reopen for edit" (remarks required) → Draft; reopened item blocked for new documents until re-approved; past documents unchanged (OQ-27). (4) Submit, approve, reject, reopen recorded in Audit Log as UPDATE with before/after status. (5) Self-approval allowed for items only (OQ-28). Case-insensitive unique: unit code, unit name, category name. | APPROVED |
 | PD-042 | Item Excel import/export: upload → editable preview grid → import → results; no file stored (5 MB / 2,000 rows) · header detection (first 10 rows, Description + Unit + Group required) · unit/category matched by normalised spelling, unmatched = red with DB pick list + "apply to all rows with this spelling" · no auto-create of units/categories · duplicates (vs DB and within file) red, imported only if edited, else skipped · similar-item check = yellow warning (OQ-30 C: same category + same size + same numbers, similarity ≥ 0.85), imported as written unless corrected · "Check again" re-validates on API · Ready + yellow rows created in one transaction as Pending approval · bulk approve (max 200) · export in import layout · exceljs (MIT) · no migration | APPROVED — batch 1 G-05b |
 | PD-043 | Shared item catalogue access: items view at any scope; items manage/approve GLOBAL only | APPROVED — 4cd0a8a, CI #55 |
-| PD-044 | Vendor master (G-06): VEN-0001 no gaps; legal/trade name, type, PAN, Udyam+MSME category, address, payment terms, credit limit; GST rows, bank accounts, contacts; Draft→Pending→Approved; view any scope, manage/approve GLOBAL only | APPROVED — batch 1 f1f3e4e (CI #57); 2a a9257b8 (CI #58); 2b 059a4f4 (CI #59); 3a screens on dev/G-06 |
+| PD-044 | Vendor master (G-06): VEN-0001 no gaps; legal/trade name, type, PAN, Udyam+MSME category, address, payment terms, credit limit; GST rows, bank accounts, contacts; Draft→Pending→Approved; view any scope, manage/approve GLOBAL only | APPROVED — built G-06: batch 1 f1f3e4e (CI #57); 2a a9257b8 (CI #58); 2b 059a4f4 (CI #59); 3a 0c419fd (CI #60); 3b 946b5a3 (CI #61); merged to main |
 | PD-045 | Build order (owner, 20-10-2026): finish G-06 Vendors → Purchase → approval matrix/ladder (PD-008) → Stores → customer samples → HR Employee Master → Hostinger deploy test (PD-022) | APPROVED |
+| PD-046 | Indent (G-07): header project → site (Location) → store (optional), indent date, required-by date, requested by (text), remarks; lines = approved active items only, required qty, approved qty, purpose, remarks, one line per item; Draft → Pending → Approved / Rejected (edit + resubmit) / Cancelled (from Draft or Rejected); no self-approval; reject/cancel need remarks; number IND/<project>/<FY>/0001 given on Submit, no gaps, per project per FY (document_series table, reused by later documents); project picker lists only the user's assigned projects (auto-picked if one); permissions purchase.indents.manage / .approve checked on the project/site, not GLOBAL-only | APPROVED |
 
 
 ## Owner questions
@@ -85,6 +86,11 @@
 | OQ-35 | Vendor details: (a) unregistered = no GST rows, GST rows reuse company types; (b) no self-approval (OQ-28 items-only); (c) PAN and Udyam unique among vendors; (d) approved vendor locked incl. GST + bank (reopen to change), contacts always editable, bank number masked for non-managers | CLOSED — owner ok (f1f3e4e) |
 | OQ-36 | Vendor maker-checker: the submitter can neither approve nor reject their own vendor (SELF_APPROVAL_NOT_ALLOWED); no "withdraw" — maker asks another approver to reject | CLOSED — owner ok (a9257b8) |
 | OQ-37 | Audit Log stores vendor bank account numbers masked (XXXXXX1234); full number only on the vendor screen for masters.vendors.manage holders | CLOSED — owner ok (059a4f4) |
+| OQ-38 | Indent lines: item master only (approved, active items) | CLOSED — item master only |
+| OQ-39 | Indent approver until the matrix: holder of purchase.indents.approve on that project/site (or company/global), never the creator | CLOSED — ok |
+| OQ-40 | Approved qty: approver may lower per line (0 = refused), never above required | CLOSED — ok |
+| OQ-41 | Indent number IND/<project code>/<FY>/0001, per project per FY, given on Submit | CLOSED — ok |
+| OQ-42 | Requested by = text field (HR master later); posted by = logged-in user | CLOSED — ok |
 
 
 ## Client questions
