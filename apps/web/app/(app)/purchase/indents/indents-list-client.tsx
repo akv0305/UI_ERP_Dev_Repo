@@ -112,12 +112,7 @@ export function IndentsListClient({ data, query, canManage }: IndentsListClientP
         onPageChange={(page) => list.navigate({ page })}
         onPageSizeChange={(pageSize) => list.navigate({ pageSize, page: 1 })}
         onSortingChange={list.handleSortingChange}
-        onRowClick={(indent) => {
-          // Batch 3c opens the detail page for every row.
-          if (indent.canEdit) {
-            list.router.push(`/purchase/indents/${indent.id}/edit`);
-          }
-        }}
+        onRowClick={(indent) => list.router.push(`/purchase/indents/${indent.id}`)}
       />
     </div>
   );

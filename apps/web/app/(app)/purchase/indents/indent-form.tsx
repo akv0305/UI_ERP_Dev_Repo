@@ -238,7 +238,7 @@ export function IndentForm({ indent, options }: IndentFormProps) {
       }
 
       toast.success(t.updated);
-      router.refresh();
+      router.push(`/purchase/indents/${indent.id}`);
       return;
     }
 
@@ -257,8 +257,7 @@ export function IndentForm({ indent, options }: IndentFormProps) {
     }
 
     toast.success(t.created);
-    // Batch 3c changes this to the detail page.
-    router.push(`/purchase/indents/${result.data.id}/edit`);
+    router.push(`/purchase/indents/${result.data.id}`);
   }
 
   return (
@@ -272,7 +271,9 @@ export function IndentForm({ indent, options }: IndentFormProps) {
         schema={schema}
         defaultValues={defaults}
         onSubmit={handleSubmit}
-        onCancel={() => router.push('/purchase/indents')}
+        onCancel={() =>
+          router.push(isEdit ? `/purchase/indents/${indent.id}` : '/purchase/indents')
+        }
       >
         <FormSection title={t.sectionHeader}>
           <IndentHeaderFields
