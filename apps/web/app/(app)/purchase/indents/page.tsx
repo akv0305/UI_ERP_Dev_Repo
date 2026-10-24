@@ -37,5 +37,11 @@ export default async function IndentsPage({
     return <ErrorState description={terminology.indents.loadError} />;
   }
 
-  return <IndentsListClient data={result.data} query={query} />;
+  return (
+    <IndentsListClient
+      data={result.data}
+      query={query}
+      canManage={permissions.includes('purchase.indents.manage')}
+    />
+  );
 }

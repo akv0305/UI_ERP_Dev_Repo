@@ -8,6 +8,7 @@ import {
   type DataTableColumn,
   type FilterField,
 } from '@/components/erp';
+import { Button } from '@/components/ui/button';
 import { terminology } from '@/config/terminology';
 import { formatDate } from '@/lib/format';
 import { ALL_VALUE } from '@/lib/list-params';
@@ -67,9 +68,10 @@ const filterFields: FilterField[] = [
 export interface IndentsListClientProps {
   data: PagedIndentsResponse;
   query: IndentListQuery;
+  canManage: boolean;
 }
 
-export function IndentsListClient({ data, query }: IndentsListClientProps) {
+export function IndentsListClient({ data, query, canManage }: IndentsListClientProps) {
   const list = useMasterList({
     basePath: '/purchase/indents',
     query,
@@ -83,7 +85,17 @@ export function IndentsListClient({ data, query }: IndentsListClientProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title={terminology.nav.indents} subtitle={t.subtitle} />
+      <PageHeader
+        title={terminology.nav.indents}
+        subtitle={t.subtitle}
+        actions={
+          canManage ? (
+            <Button type="button" onClick={() => list.router.push('/purchase/indents/new')}>
+              {t.newIndent}
+            </Button>
+          ) : undefined
+        }
+      />
       <FilterBar
         fields={filterFields}
         value={list.filters}
@@ -100,6 +112,12 @@ export function IndentsListClient({ data, query }: IndentsListClientProps) {
         onPageChange={(page) => list.navigate({ page })}
         onPageSizeChange={(pageSize) => list.navigate({ pageSize, page: 1 })}
         onSortingChange={list.handleSortingChange}
+        onRowClick={(indent) => {
+          // Batch 3c opens the detail page for every row.
+          if (indent.canEdit) {
+            list.router.push(`/purchase/indents/${indent.id}/edit`);
+          }
+        }}
       />
     </div>
   );
