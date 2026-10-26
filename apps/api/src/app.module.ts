@@ -4,6 +4,7 @@ import { AccessModule } from './access/access.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { CompaniesModule } from './companies/companies.module';
+import { EnquiriesModule } from './enquiries/enquiries.module';
 import { validateEnv } from './config/env.validation';
 import { HealthModule } from './health/health.module';
 import { IndentsModule } from './indents/indents.module';
@@ -38,6 +39,7 @@ import { VendorsModule } from './vendors/vendors.module';
     ItemsModule,
     VendorsModule,
     IndentsModule,
+    EnquiriesModule,
   ],
 })
 export class AppModule {}

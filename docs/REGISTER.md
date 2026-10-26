@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-047 · CQ-110 · OQ-44 · PDEF-038 · CR-003
+# REGISTER — next free: PD-048 · CQ-110 · OQ-52 · PDEF-038 · CR-003
 
 ## Decisions
 
@@ -50,7 +50,7 @@
 | PD-044 | Vendor master (G-06): VEN-0001 no gaps; legal/trade name, type, PAN, Udyam+MSME category, address, payment terms, credit limit; GST rows, bank accounts, contacts; Draft→Pending→Approved; view any scope, manage/approve GLOBAL only | APPROVED — built G-06: batch 1 f1f3e4e (CI #57); 2a a9257b8 (CI #58); 2b 059a4f4 (CI #59); 3a 0c419fd (CI #60); 3b 946b5a3 (CI #61); merged to main |
 | PD-045 | Build order (owner, 20-10-2026): finish G-06 Vendors → Purchase → approval matrix/ladder (PD-008) → Stores → customer samples → HR Employee Master → Hostinger deploy test (PD-022) | APPROVED |
 | PD-046 | Indent (G-07): header project → site (Location) → store (optional), indent date, required-by date, requested by (text), remarks; lines = approved active items only, required qty, approved qty, purpose, remarks, one line per item; Draft → Pending → Approved / Rejected (edit + resubmit) / Cancelled (from Draft or Rejected); no self-approval; reject/cancel need remarks; number IND/<project>/<FY>/0001 given on Submit, no gaps, per project per FY (document_series table, reused by later documents); project picker lists only the user's assigned projects (auto-picked if one); permissions purchase.indents.manage / .approve checked on the project/site, not GLOBAL-only | APPROVED — built G-07: batch 1 a99f7d6 (CI #64); 2 0ba27be (CI #65); 3a a22fbb1 (CI #66); 3b 32f900a (CI #67); 3c 51113a1 (CI #68); merged to main |
-
+| PD-047 | Purchase Enquiry (G-08): one project + one site (delivery location); lines from Approved indent lines of that site (approved qty > 0), several indents per enquiry; one indent line once per enquiry but may be in several enquiries; qty ≤ approved qty; 1–20 approved active vendors; enquiry date, quote due date (required, ≥ enquiry date), terms, remarks; Draft → Sent → Closed, Cancel from Draft/Sent (remarks); number ENQ/<project>/<FY>/0001 on Send, no gaps (document_series); no approval (ladder at PO); print view now, PDF later; no email (PD-020); permission purchase.enquiries.manage on project/site | APPROVED — batch 1 4898639 (CI #70); batch 2 pending |
 
 ## Owner questions
 
@@ -93,6 +93,13 @@
 | OQ-42 | Requested by = text field (HR master later); posted by = logged-in user | CLOSED — ok |
 | OQ-43 | Indent: (a) indent date not in the future (IST); (b) while Draft/Rejected, saving replaces the line rows (full before/after lines in Audit Log) | CLOSED — owner ok (0ba27be) |
 | OQ-44 | Indent date (editable, no future date) and Requested by (free text) kept as built; options for the customer: date read-only set on Submit / set on first save / limited back-dating; Requested by pre-filled with the logged-in user / always the logged-in user / free text | WITH CLIENT |
+| OQ-45 | Can one enquiry combine lines from several approved indents of the same project? | CLOSED — yes |
+| OQ-46 | Can one indent line go into more than one enquiry? | CLOSED — yes; indent shows the enquiries per line; quantity used up only by PO |
+| OQ-47 | Enquiry qty vs approved indent qty | CLOSED — may be lower, never higher (default accepted) |
+| OQ-48 | Does an enquiry need approval? | CLOSED — no; approval ladder at PO (default accepted) |
+| OQ-49 | Printable enquiry in G-08? | CLOSED — print view now, PDF later (default accepted) |
+| OQ-50 | Enquiry header fields | CLOSED — quote due date (required), delivery = site address, free-text terms (default accepted) |
+| OQ-51 | Lines in one enquiry from indents of one site only (site = delivery location) | CLOSED — ok (schema 4898639) |
 
 
 ## Client questions
