@@ -52,13 +52,25 @@ describe('buildPermissionGroups', () => {
     });
   });
 
-  it('leaves manage and approve empty for screens without them', () => {
+  it('adds manage only for enquiries', () => {
     const purchase = groups.find((group) => group.labelKey === 'purchase');
     const enquiries = purchase?.rows.find((row) => row.labelKey === 'enquiries');
 
     expect(enquiries).toEqual({
       labelKey: 'enquiries',
       view: 'purchase.enquiries.view',
+      manage: 'purchase.enquiries.manage',
+      approve: null,
+    });
+  });
+
+  it('leaves manage and approve empty for screens without them', () => {
+    const purchase = groups.find((group) => group.labelKey === 'purchase');
+    const quotations = purchase?.rows.find((row) => row.labelKey === 'quotations');
+
+    expect(quotations).toEqual({
+      labelKey: 'quotations',
+      view: 'purchase.quotations.view',
       manage: null,
       approve: null,
     });

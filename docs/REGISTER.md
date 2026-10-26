@@ -49,7 +49,7 @@
 | PD-043 | Shared item catalogue access: items view at any scope; items manage/approve GLOBAL only | APPROVED — 4cd0a8a, CI #55 |
 | PD-044 | Vendor master (G-06): VEN-0001 no gaps; legal/trade name, type, PAN, Udyam+MSME category, address, payment terms, credit limit; GST rows, bank accounts, contacts; Draft→Pending→Approved; view any scope, manage/approve GLOBAL only | APPROVED — built G-06: batch 1 f1f3e4e (CI #57); 2a a9257b8 (CI #58); 2b 059a4f4 (CI #59); 3a 0c419fd (CI #60); 3b 946b5a3 (CI #61); merged to main |
 | PD-045 | Build order (owner, 20-10-2026): finish G-06 Vendors → Purchase → approval matrix/ladder (PD-008) → Stores → customer samples → HR Employee Master → Hostinger deploy test (PD-022) | APPROVED |
-| PD-046 | Indent (G-07): header project → site (Location) → store (optional), indent date, required-by date, requested by (text), remarks; lines = approved active items only, required qty, approved qty, purpose, remarks, one line per item; Draft → Pending → Approved / Rejected (edit + resubmit) / Cancelled (from Draft or Rejected); no self-approval; reject/cancel need remarks; number IND/<project>/<FY>/0001 given on Submit, no gaps, per project per FY (document_series table, reused by later documents); project picker lists only the user's assigned projects (auto-picked if one); permissions purchase.indents.manage / .approve checked on the project/site, not GLOBAL-only | APPROVED — batch 1 a99f7d6 (CI #64); batch 2 0ba27be (CI #65); 3a a22fbb1 (CI #66); 3b 32f900a (CI #67); 3c pending |
+| PD-046 | Indent (G-07): header project → site (Location) → store (optional), indent date, required-by date, requested by (text), remarks; lines = approved active items only, required qty, approved qty, purpose, remarks, one line per item; Draft → Pending → Approved / Rejected (edit + resubmit) / Cancelled (from Draft or Rejected); no self-approval; reject/cancel need remarks; number IND/<project>/<FY>/0001 given on Submit, no gaps, per project per FY (document_series table, reused by later documents); project picker lists only the user's assigned projects (auto-picked if one); permissions purchase.indents.manage / .approve checked on the project/site, not GLOBAL-only | APPROVED — built G-07: batch 1 a99f7d6 (CI #64); 2 0ba27be (CI #65); 3a a22fbb1 (CI #66); 3b 32f900a (CI #67); 3c 51113a1 (CI #68); merged to main |
 
 
 ## Owner questions
@@ -91,7 +91,7 @@
 | OQ-40 | Approved qty: approver may lower per line (0 = refused), never above required | CLOSED — ok |
 | OQ-41 | Indent number IND/<project code>/<FY>/0001, per project per FY, given on Submit | CLOSED — ok |
 | OQ-42 | Requested by = text field (HR master later); posted by = logged-in user | CLOSED — ok |
-| OQ-43 | Indent: (a) indent date not in the future (IST); (b) while Draft/Rejected, saving replaces the line rows (full before/after lines in Audit Log) | OPEN |
+| OQ-43 | Indent: (a) indent date not in the future (IST); (b) while Draft/Rejected, saving replaces the line rows (full before/after lines in Audit Log) | CLOSED — owner ok (0ba27be) |
 | OQ-44 | Indent date (editable, no future date) and Requested by (free text) kept as built; options for the customer: date read-only set on Submit / set on first save / limited back-dating; Requested by pre-filled with the logged-in user / always the logged-in user / free text | WITH CLIENT |
 
 

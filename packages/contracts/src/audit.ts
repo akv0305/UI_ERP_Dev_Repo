@@ -23,6 +23,7 @@ export const AUDIT_ENTITY_TYPES = [
   'VendorBankAccount',
   'VendorContact',
   'Indent',
+  'Enquiry',
 ] as const;
 
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];

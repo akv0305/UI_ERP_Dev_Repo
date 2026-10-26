@@ -69,6 +69,12 @@ model User {
   decidedIndents   Indent[] @relation("IndentDecidedBy")
   cancelledIndents Indent[] @relation("IndentCancelledBy")
 
+  createdEnquiries   Enquiry[] @relation("EnquiryCreatedBy")
+  updatedEnquiries   Enquiry[] @relation("EnquiryUpdatedBy")
+  sentEnquiries      Enquiry[] @relation("EnquirySentBy")
+  closedEnquiries    Enquiry[] @relation("EnquiryClosedBy")
+  cancelledEnquiries Enquiry[] @relation("EnquiryCancelledBy")
+
   @@map("users")
 }
 
@@ -242,6 +248,7 @@ model Company {
 
   documentSeries DocumentSeries[]
   indents        Indent[]
+  enquiries      Enquiry[]
 
   @@map("companies")
 }
@@ -296,6 +303,7 @@ model Project {
 
   documentSeries DocumentSeries[]
   indents        Indent[]
+  enquiries      Enquiry[]
 
   sessionContexts Session[] @relation("SessionCurrentProject")
 
@@ -328,7 +336,8 @@ model Site {
   stores    Store[]
   userRoles UserRole[]
 
-  indents Indent[]
+  indents   Indent[]
+  enquiries Enquiry[]
 
   @@index([projectId])
   @@map("sites")
@@ -427,13 +436,14 @@ model Item {
   createdById     String     @db.Uuid
   updatedById     String     @db.Uuid
 
-  category    ItemCategory @relation(fields: [categoryId], references: [id])
-  unit        Unit         @relation(fields: [unitId], references: [id])
-  submittedBy User?        @relation("ItemSubmittedBy", fields: [submittedById], references: [id])
-  decidedBy   User?        @relation("ItemDecidedBy", fields: [decidedById], references: [id])
-  createdBy   User         @relation("ItemCreatedBy", fields: [createdById], references: [id])
-  updatedBy   User         @relation("ItemUpdatedBy", fields: [updatedById], references: [id])
-  indentLines IndentLine[]
+  category     ItemCategory  @relation(fields: [categoryId], references: [id])
+  unit         Unit          @relation(fields: [unitId], references: [id])
+  submittedBy  User?         @relation("ItemSubmittedBy", fields: [submittedById], references: [id])
+  decidedBy    User?         @relation("ItemDecidedBy", fields: [decidedById], references: [id])
+  createdBy    User          @relation("ItemCreatedBy", fields: [createdById], references: [id])
+  updatedBy    User          @relation("ItemUpdatedBy", fields: [updatedById], references: [id])
+  indentLines  IndentLine[]
+  enquiryLines EnquiryLine[]
 
   @@index([categoryId])
   @@index([unitId])
@@ -500,6 +510,7 @@ model Vendor {
   gstRegistrations VendorGstRegistration[]
   bankAccounts     VendorBankAccount[]
   contacts         VendorContact[]
+  enquiries        EnquiryVendor[]
 
   @@index([status])
   @@index([stateId])
@@ -583,6 +594,7 @@ model VendorContact {
 
 enum DocumentType {
   INDENT
+  ENQUIRY
 }
 
 /// Last number used per company / document type / project / financial year (PD-003). The next number
@@ -671,11 +683,101 @@ model IndentLine {
   purpose     String?
   remarks     String?
 
-  indent Indent @relation(fields: [indentId], references: [id])
-  item   Item   @relation(fields: [itemId], references: [id])
+  indent       Indent        @relation(fields: [indentId], references: [id])
+  item         Item          @relation(fields: [itemId], references: [id])
+  enquiryLines EnquiryLine[]
 
   @@unique([indentId, lineNo])
   @@unique([indentId, itemId])
   @@index([itemId])
   @@map("indent_lines")
+}
+
+enum EnquiryStatus {
+  DRAFT
+  SENT
+  CLOSED
+  CANCELLED
+}
+
+/// Purchase enquiry (PD-047). number ENQ/<project>/<FY>/0001 is given on Send; null while Draft.
+/// siteId is the delivery location; all lines come from Approved indents of that site (OQ-51).
+model Enquiry {
+  id            String        @id @default(uuid()) @db.Uuid
+  number        String?       @unique
+  fiscalYear    String?
+  companyId     String        @db.Uuid
+  projectId     String        @db.Uuid
+  siteId        String        @db.Uuid
+  enquiryDate   DateTime      @db.Date
+  quoteDueDate  DateTime      @db.Date
+  terms         String?
+  remarks       String?
+  status        EnquiryStatus @default(DRAFT)
+  sentAt        DateTime?     @db.Timestamptz(3)
+  sentById      String?       @db.Uuid
+  closedAt      DateTime?     @db.Timestamptz(3)
+  closedById    String?       @db.Uuid
+  cancelledAt   DateTime?     @db.Timestamptz(3)
+  cancelledById String?       @db.Uuid
+  cancelRemarks String?
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
+  createdById   String        @db.Uuid
+  updatedById   String        @db.Uuid
+
+  company     Company         @relation(fields: [companyId], references: [id])
+  project     Project         @relation(fields: [projectId], references: [id])
+  site        Site            @relation(fields: [siteId], references: [id])
+  sentBy      User?           @relation("EnquirySentBy", fields: [sentById], references: [id])
+  closedBy    User?           @relation("EnquiryClosedBy", fields: [closedById], references: [id])
+  cancelledBy User?           @relation("EnquiryCancelledBy", fields: [cancelledById], references: [id])
+  createdBy   User            @relation("EnquiryCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User            @relation("EnquiryUpdatedBy", fields: [updatedById], references: [id])
+  lines       EnquiryLine[]
+  vendors     EnquiryVendor[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([siteId])
+  @@index([status])
+  @@index([enquiryDate])
+  @@map("enquiries")
+}
+
+/// One row per indent line per enquiry; the same indent line may be in other enquiries (OQ-46).
+/// itemId is copied from the indent line. quantity > 0 (CHECK); <= approved qty checked by the API (OQ-47).
+model EnquiryLine {
+  id           String  @id @default(uuid()) @db.Uuid
+  enquiryId    String  @db.Uuid
+  lineNo       Int     @db.SmallInt
+  indentLineId String  @db.Uuid
+  itemId       String  @db.Uuid
+  quantity     Decimal @db.Decimal(18, 3)
+  remarks      String?
+
+  enquiry    Enquiry    @relation(fields: [enquiryId], references: [id])
+  indentLine IndentLine @relation(fields: [indentLineId], references: [id])
+  item       Item       @relation(fields: [itemId], references: [id])
+
+  @@unique([enquiryId, lineNo])
+  @@unique([enquiryId, indentLineId])
+  @@index([indentLineId])
+  @@index([itemId])
+  @@map("enquiry_lines")
+}
+
+/// Vendors the enquiry is sent to (approved, active vendors; checked by the API).
+model EnquiryVendor {
+  id        String   @id @default(uuid()) @db.Uuid
+  enquiryId String   @db.Uuid
+  vendorId  String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  enquiry Enquiry @relation(fields: [enquiryId], references: [id])
+  vendor  Vendor  @relation(fields: [vendorId], references: [id])
+
+  @@unique([enquiryId, vendorId])
+  @@index([vendorId])
+  @@map("enquiry_vendors")
 }
