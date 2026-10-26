@@ -61,6 +61,7 @@
   --color-status-revised: var(--status-revised);
   --color-status-cancelled: var(--status-cancelled);
   --color-status-closed: var(--status-closed);
+  --color-status-sent: var(--status-sent);
 }
 
 @layer base {

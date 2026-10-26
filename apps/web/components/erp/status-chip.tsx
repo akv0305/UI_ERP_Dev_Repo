@@ -15,6 +15,7 @@ const statusChipClasses: Record<StatusKey, string> = {
   revised: 'border-status-revised/40 bg-status-revised/10 text-status-revised',
   cancelled: 'border-status-cancelled/40 bg-status-cancelled/10 text-status-cancelled',
   closed: 'border-status-closed/40 bg-status-closed/10 text-status-closed',
+  sent: 'border-status-sent/40 bg-status-sent/10 text-status-sent',
 };
 
 export interface StatusChipProps {

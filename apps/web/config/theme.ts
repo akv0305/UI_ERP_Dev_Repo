@@ -27,6 +27,7 @@ export const theme = {
       revised: 'hsl(190 60% 36%)',
       cancelled: 'hsl(215 10% 60%)',
       closed: 'hsl(215 22% 34%)',
+      sent: 'hsl(199 75% 36%)',
     },
   },
   typography: {
