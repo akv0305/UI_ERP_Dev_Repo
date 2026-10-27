@@ -10,6 +10,7 @@ import { HealthModule } from './health/health.module';
 import { IndentsModule } from './indents/indents.module';
 import { ItemsModule } from './items/items.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { QuotationsModule } from './quotations/quotations.module';
 import { ProjectsModule } from './projects/projects.module';
 import { RolesModule } from './roles/roles.module';
 import { SitesModule } from './sites/sites.module';
@@ -40,6 +41,7 @@ import { VendorsModule } from './vendors/vendors.module';
     VendorsModule,
     IndentsModule,
     EnquiriesModule,
+    QuotationsModule,
   ],
 })
 export class AppModule {}
