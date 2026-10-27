@@ -35,3 +35,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# local test output
+preview.json
