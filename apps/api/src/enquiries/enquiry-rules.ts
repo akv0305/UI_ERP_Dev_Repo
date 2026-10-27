@@ -17,6 +17,9 @@ export const EDITABLE_ENQUIRY_STATUSES: readonly EnquiryStatus[] = ['DRAFT'];
 /** Draft or sent enquiries may be cancelled (PD-047). */
 export const CANCELLABLE_ENQUIRY_STATUSES: readonly EnquiryStatus[] = ['DRAFT', 'SENT'];
 
+/** Only numbered enquiries can be printed for vendors (OQ-52 A). */
+export const PRINTABLE_ENQUIRY_STATUSES: readonly EnquiryStatus[] = ['SENT', 'CLOSED'];
+
 /** Checked against the enquiry's site, like an indent; the row carries project and company. */
 export function enquiryTargetOf(enquiry: {
   companyId: string;

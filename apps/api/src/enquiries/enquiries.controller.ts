@@ -16,11 +16,13 @@ import {
   CreateEnquiryRequest,
   EnquiryIndentLineOptionsQuery,
   EnquiryListQuery,
+  EnquiryPrintQuery,
   EnquiryVendorOptionsQuery,
   UpdateEnquiryRequest,
   type EnquiryDetailResponse,
   type EnquiryFormOptionsResponse,
   type EnquiryIndentLineOptionsResponse,
+  EnquiryPrintResponse,
   type EnquiryResponse,
   type EnquiryVendorOptionsResponse,
   type PagedEnquiriesResponse,
@@ -76,6 +78,16 @@ export class EnquiriesController {
     @Req() request: Request,
   ): Promise<EnquiryDetailResponse> {
     return this.enquiries.get(id, accessOf(request));
+  }
+
+  @Get(':id/print')
+  @RequirePermissions('purchase.enquiries.view')
+  print(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query(new ZodValidationPipe(EnquiryPrintQuery)) query: EnquiryPrintQuery,
+    @Req() request: Request,
+  ): Promise<EnquiryPrintResponse> {
+    return this.enquiries.print(id, query.vendorId, accessOf(request));
   }
 
   @Post()

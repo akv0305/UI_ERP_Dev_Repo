@@ -12,6 +12,7 @@ import {
   type EnquiryIndentLineOptionsQuery,
   type EnquiryIndentLineOptionsResponse,
   type EnquiryListQuery,
+  type EnquiryPrintResponse,
   type EnquiryResponse,
   type EnquiryStatus,
   type EnquiryVendorOptionsQuery,
@@ -40,6 +41,7 @@ import {
   EDITABLE_ENQUIRY_STATUSES,
   ENQUIRY_MANAGE,
   ENQUIRY_VIEW,
+  PRINTABLE_ENQUIRY_STATUSES,
   canSeeEnquiry,
   enquiryFlagsFor,
   enquiryLineProblem,
@@ -49,9 +51,12 @@ import {
 import {
   enquiryDetailInclude,
   enquiryInclude,
+  printAddressSelect,
   toEnquiryAuditSnapshot,
   toEnquiryDetailResponse,
+  toEnquiryLineResponse,
   toEnquiryResponse,
+  toPrintAddress,
   type EnquiryWithDetails,
 } from './enquiries.mapper';
 
@@ -60,6 +65,7 @@ const CHANGED_BY_SOMEONE_ELSE = 'This enquiry was changed by someone else. Reloa
 const NOT_EDITABLE = 'Only a draft enquiry can be changed or sent.';
 const NOT_SENT = 'Only a sent enquiry can be closed.';
 const NOT_CANCELLABLE = 'Only a draft or sent enquiry can be cancelled.';
+const NOT_PRINTABLE = 'Vendor copies can be printed after the enquiry is sent.';
 const VENDOR_OPTION_LIMIT = 50;
 const INDENT_LINE_OPTION_LIMIT = 200;
 
@@ -484,6 +490,109 @@ export class EnquiriesService {
         cancelRemarks: request.remarks,
       }),
     );
+  }
+
+  /** One vendor's copy of a sent or closed enquiry (OQ-52 A); the vendor must be on the enquiry. */
+  async print(id: string, vendorId: string, access: AccessContext): Promise<EnquiryPrintResponse> {
+    const existing = await this.requireVisible(id, access);
+
+    this.assertStatus(existing, PRINTABLE_ENQUIRY_STATUSES, NOT_PRINTABLE);
+
+    if (!existing.vendors.some((row) => row.vendor.id === vendorId)) {
+      throw notFound('Vendor');
+    }
+
+    const [company, project, site, vendor] = await Promise.all([
+      this.prisma.company.findUniqueOrThrow({
+        where: { id: existing.companyId },
+        select: { code: true, legalName: true, pan: true, ...printAddressSelect },
+      }),
+      this.prisma.project.findUniqueOrThrow({
+        where: { id: existing.projectId },
+        select: { billingGst: { select: { gstin: true } } },
+      }),
+      this.prisma.site.findUniqueOrThrow({
+        where: { id: existing.siteId },
+        select: {
+          code: true,
+          name: true,
+          stateId: true,
+          contactPerson: true,
+          contactPhone: true,
+          ...printAddressSelect,
+        },
+      }),
+      this.prisma.vendor.findUniqueOrThrow({
+        where: { id: vendorId },
+        select: {
+          id: true,
+          code: true,
+          legalName: true,
+          ...printAddressSelect,
+          gstRegistrations: {
+            where: { isActive: true },
+            orderBy: { gstin: 'asc' },
+            select: { gstin: true, stateId: true },
+          },
+          contacts: {
+            where: { isActive: true },
+            orderBy: [{ isPrimary: 'desc' }, { name: 'asc' }],
+            take: 1,
+            select: { name: true, phone: true, email: true },
+          },
+        },
+      }),
+    ]);
+
+    const vendorGst =
+      vendor.gstRegistrations.find((row) => row.stateId === site.stateId) ??
+      vendor.gstRegistrations[0];
+    const contact = vendor.contacts[0];
+
+    return {
+      id: existing.id,
+      // A sent or closed enquiry always has a number; '' only guards the type.
+      number: existing.number ?? '',
+      status: existing.status,
+      enquiryDate: isoDateOf(existing.enquiryDate),
+      quoteDueDate: isoDateOf(existing.quoteDueDate),
+      terms: existing.terms,
+      company: {
+        code: company.code,
+        legalName: company.legalName,
+        pan: company.pan,
+        gstin: project.billingGst?.gstin ?? null,
+        address: toPrintAddress(company),
+      },
+      project: existing.project,
+      site: {
+        code: site.code,
+        name: site.name,
+        address: toPrintAddress(site),
+        contactPerson: site.contactPerson,
+        contactPhone: site.contactPhone,
+      },
+      vendor: {
+        id: vendor.id,
+        code: vendor.code,
+        legalName: vendor.legalName,
+        gstin: vendorGst?.gstin ?? null,
+        address: toPrintAddress(vendor),
+        contactName: contact?.name ?? null,
+        contactPhone: contact?.phone ?? null,
+        contactEmail: contact?.email ?? null,
+      },
+      lines: existing.lines.map((row) => {
+        const line = toEnquiryLineResponse(row);
+
+        return {
+          lineNo: line.lineNo,
+          item: line.item,
+          quantity: line.quantity,
+          remarks: line.remarks,
+        };
+      }),
+    };
   }
 
   /**

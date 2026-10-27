@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-048 · CQ-110 · OQ-52 · PDEF-038 · CR-003
+# REGISTER — next free: PD-049 · CQ-110 · OQ-54 · PDEF-038 · CR-003
 
 ## Decisions
 
@@ -50,7 +50,9 @@
 | PD-044 | Vendor master (G-06): VEN-0001 no gaps; legal/trade name, type, PAN, Udyam+MSME category, address, payment terms, credit limit; GST rows, bank accounts, contacts; Draft→Pending→Approved; view any scope, manage/approve GLOBAL only | APPROVED — built G-06: batch 1 f1f3e4e (CI #57); 2a a9257b8 (CI #58); 2b 059a4f4 (CI #59); 3a 0c419fd (CI #60); 3b 946b5a3 (CI #61); merged to main |
 | PD-045 | Build order (owner, 20-10-2026): finish G-06 Vendors → Purchase → approval matrix/ladder (PD-008) → Stores → customer samples → HR Employee Master → Hostinger deploy test (PD-022) | APPROVED |
 | PD-046 | Indent (G-07): header project → site (Location) → store (optional), indent date, required-by date, requested by (text), remarks; lines = approved active items only, required qty, approved qty, purpose, remarks, one line per item; Draft → Pending → Approved / Rejected (edit + resubmit) / Cancelled (from Draft or Rejected); no self-approval; reject/cancel need remarks; number IND/<project>/<FY>/0001 given on Submit, no gaps, per project per FY (document_series table, reused by later documents); project picker lists only the user's assigned projects (auto-picked if one); permissions purchase.indents.manage / .approve checked on the project/site, not GLOBAL-only | APPROVED — built G-07: batch 1 a99f7d6 (CI #64); 2 0ba27be (CI #65); 3a a22fbb1 (CI #66); 3b 32f900a (CI #67); 3c 51113a1 (CI #68); merged to main |
-| PD-047 | Purchase Enquiry (G-08): one project + one site (delivery location); lines from Approved indent lines of that site (approved qty > 0), several indents per enquiry; one indent line once per enquiry but may be in several enquiries; qty ≤ approved qty; 1–20 approved active vendors; enquiry date, quote due date (required, ≥ enquiry date), terms, remarks; Draft → Sent → Closed, Cancel from Draft/Sent (remarks); number ENQ/<project>/<FY>/0001 on Send, no gaps (document_series); no approval (ladder at PO); print view now, PDF later; no email (PD-020); permission purchase.enquiries.manage on project/site | APPROVED — batch 1 4898639 (CI #70); batch 2 pending |
+| PD-047 | Purchase Enquiry (G-08): one project + one site (delivery location); lines from Approved indent lines of that site (approved qty > 0), several indents per enquiry; one indent line once per enquiry but may be in several enquiries; qty ≤ approved qty; 1–20 approved active vendors; enquiry date, quote due date (required, ≥ enquiry date), terms, remarks; Draft → Sent → Closed, Cancel from Draft/Sent (remarks); number ENQ/<project>/<FY>/0001 on Send, no gaps (document_series); no approval (ladder at PO); print view now, PDF later; no email (PD-020); permission purchase.enquiries.manage on project/site | APPROVED — batch 1 4898639 (CI #70); 2 a248a1c (CI #71); 3a cd18ae4; 3b pending |
+| PD-048 | New status colour key `sent` (theme.ts, globals.css, status-chip.tsx, terminology) for Sent enquiries | APPROVED — cd18ae4 |
+
 
 ## Owner questions
 
@@ -100,6 +102,8 @@
 | OQ-49 | Printable enquiry in G-08? | CLOSED — print view now, PDF later (default accepted) |
 | OQ-50 | Enquiry header fields | CLOSED — quote due date (required), delivery = site address, free-text terms (default accepted) |
 | OQ-51 | Lines in one enquiry from indents of one site only (site = delivery location) | CLOSED — ok (schema 4898639) |
+| OQ-52 | Enquiry print: one copy per vendor or one common copy? | CLOSED — A: one copy per vendor (vendor in "To" block, others not shown); printable when Sent/Closed; vendor picker + browser Print / Save as PDF; indent numbers not printed; vendor GSTIN = registration in the site's state, else first active |
+| OQ-53 | Company logo on the printed enquiry (and later PO)? | OPEN — default: company name + address as letterhead, no logo |
 
 
 ## Client questions
@@ -152,6 +156,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-035 | permission-groups.test.ts picked the first Purchase row (Indents) to prove "no manage"; broke when purchase.indents.manage was added (CI #63). Test now finds screens by labelKey and checks Indents view/manage/approve | FIXED — G-07 |
 | PDEF-036 | G-07 batch 2: indent-rules.spec.ts imported describe/expect/it from @jest/globals; repo uses Jest globals (@types/jest) and imports only `jest` from @jest/globals | FIXED |
 | PDEF-037 | G-07 batch 3c: template strings written directly in JSX (indent-actions.tsx, [id]/page.tsx) broke react/jsx-no-literals; moved into helper functions, same as vendor screens | FIXED |
+| PDEF-038 | Audit Log had no readable entity-type label for Indent (raw "Indent" missing from terminology.auditLog.entityTypes); Enquiry added at the same time | FIXED — G-08 batch 3a |
 
 
 ## Change requests

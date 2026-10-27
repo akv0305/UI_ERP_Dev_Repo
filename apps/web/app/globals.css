@@ -84,3 +84,9 @@
     font-weight: var(--font-weight-heading);
   }
 }
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+}

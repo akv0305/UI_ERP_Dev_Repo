@@ -8,6 +8,7 @@ import { getCurrentPermissions } from '@/lib/auth/permissions';
 import { formatDate, formatDateTime, formatQty } from '@/lib/format';
 import { EnquiryStatusChip } from '../_components/enquiry-status-chip';
 import { codeName, indentLineRef, itemText } from '../_components/enquiry-text';
+import { EnquiryActions } from './enquiry-actions';
 
 const t = terminology.enquiries;
 const notSet = terminology.labels.notSet;
@@ -61,6 +62,13 @@ export default async function EnquiryDetailPage({ params }: { params: Promise<{ 
     </Button>
   ) : null;
 
+  const printable = enquiry.status === 'SENT' || enquiry.status === 'CLOSED';
+  const print = printable ? (
+    <Button asChild variant="outline">
+      <Link href={`/print/enquiries/${enquiry.id}`}>{t.print}</Link>
+    </Button>
+  ) : null;
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
@@ -70,6 +78,8 @@ export default async function EnquiryDetailPage({ params }: { params: Promise<{ 
           <>
             {history}
             {edit}
+            {print}
+            <EnquiryActions enquiry={enquiry} />
           </>
         }
       />

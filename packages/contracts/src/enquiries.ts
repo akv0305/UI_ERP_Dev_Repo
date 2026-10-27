@@ -262,3 +262,66 @@ export const EnquiryVendorOptionsResponse = z.object({
 });
 
 export type EnquiryVendorOptionsResponse = z.infer<typeof EnquiryVendorOptionsResponse>;
+// ---------- One vendor's printed copy (OQ-52 A) ----------
+
+export const EnquiryPrintQuery = z.object({ vendorId: z.uuid() });
+
+export type EnquiryPrintQuery = z.infer<typeof EnquiryPrintQuery>;
+
+/** state = "36 Telangana" (GST code + name). */
+export const EnquiryPrintAddress = z.object({
+  line1: z.string().nullable(),
+  line2: z.string().nullable(),
+  city: z.string().nullable(),
+  state: z.string().nullable(),
+  pinCode: z.string().nullable(),
+});
+
+export type EnquiryPrintAddress = z.infer<typeof EnquiryPrintAddress>;
+
+/** Sent or Closed enquiries only. Indent references are internal and not printed. */
+export const EnquiryPrintResponse = z.object({
+  id: z.uuid(),
+  number: z.string(),
+  status: EnquiryStatus,
+  enquiryDate: z.string(),
+  quoteDueDate: z.string(),
+  terms: z.string().nullable(),
+  company: z.object({
+    code: z.string(),
+    legalName: z.string(),
+    pan: z.string().nullable(),
+    /** The project's billing GST registration, if set. */
+    gstin: z.string().nullable(),
+    address: EnquiryPrintAddress,
+  }),
+  project: IndentScopeSummary,
+  site: z.object({
+    code: z.string(),
+    name: z.string(),
+    address: EnquiryPrintAddress,
+    contactPerson: z.string().nullable(),
+    contactPhone: z.string().nullable(),
+  }),
+  vendor: z.object({
+    id: z.uuid(),
+    code: z.string(),
+    legalName: z.string(),
+    /** Registration in the site's state if any, else the first active one. */
+    gstin: z.string().nullable(),
+    address: EnquiryPrintAddress,
+    contactName: z.string().nullable(),
+    contactPhone: z.string().nullable(),
+    contactEmail: z.string().nullable(),
+  }),
+  lines: z.array(
+    z.object({
+      lineNo: z.number().int(),
+      item: EnquiryItemSummary,
+      quantity: z.string(),
+      remarks: z.string().nullable(),
+    }),
+  ),
+});
+
+export type EnquiryPrintResponse = z.infer<typeof EnquiryPrintResponse>;

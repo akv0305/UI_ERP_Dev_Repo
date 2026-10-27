@@ -1,5 +1,10 @@
 import type { Prisma } from '@prisma/client';
-import type { EnquiryDetailResponse, EnquiryLineResponse, EnquiryResponse } from '@uie/contracts';
+import type {
+  EnquiryDetailResponse,
+  EnquiryLineResponse,
+  EnquiryPrintAddress,
+  EnquiryResponse,
+} from '@uie/contracts';
 import { isoDateOf } from '../indents/indents.mapper';
 import type { EnquiryFlags } from './enquiry-rules';
 
@@ -152,5 +157,31 @@ export function toEnquiryAuditSnapshot(enquiry: EnquiryWithDetails): Record<stri
       remarks: line.remarks,
     })),
     vendors: enquiry.vendors.map((row) => row.vendor.code),
+  };
+}
+/** Address columns shared by companies, sites and vendors, for the print copy. */
+export const printAddressSelect = {
+  addressLine1: true,
+  addressLine2: true,
+  city: true,
+  pinCode: true,
+  state: { select: { gstCode: true, name: true } },
+} as const;
+
+interface PrintAddressRow {
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  pinCode: string | null;
+  state: { gstCode: string; name: string } | null;
+}
+
+export function toPrintAddress(row: PrintAddressRow): EnquiryPrintAddress {
+  return {
+    line1: row.addressLine1,
+    line2: row.addressLine2,
+    city: row.city,
+    state: row.state === null ? null : `${row.state.gstCode} ${row.state.name}`,
+    pinCode: row.pinCode,
   };
 }
