@@ -64,13 +64,25 @@ describe('buildPermissionGroups', () => {
     });
   });
 
-  it('leaves manage and approve empty for screens without them', () => {
+  it('adds manage only for quotations', () => {
     const purchase = groups.find((group) => group.labelKey === 'purchase');
     const quotations = purchase?.rows.find((row) => row.labelKey === 'quotations');
 
     expect(quotations).toEqual({
       labelKey: 'quotations',
       view: 'purchase.quotations.view',
+      manage: 'purchase.quotations.manage',
+      approve: null,
+    });
+  });
+
+  it('leaves manage and approve empty for screens without them', () => {
+    const purchase = groups.find((group) => group.labelKey === 'purchase');
+    const comparisons = purchase?.rows.find((row) => row.labelKey === 'comparisons');
+
+    expect(comparisons).toEqual({
+      labelKey: 'comparisons',
+      view: 'purchase.comparisons.view',
       manage: null,
       approve: null,
     });

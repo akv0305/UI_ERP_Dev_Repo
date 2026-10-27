@@ -34,3 +34,5 @@ export * from './vendors';
 export * from './indents';
 
 export * from './enquiries';
+
+export * from './quotations';

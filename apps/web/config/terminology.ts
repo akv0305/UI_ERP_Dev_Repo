@@ -312,6 +312,7 @@ export const terminology = {
       VendorContact: 'Vendor contact',
       Indent: 'Indent',
       Enquiry: 'Enquiry',
+      Quotation: 'Quotation',
     },
     fields: {
       username: 'Username',

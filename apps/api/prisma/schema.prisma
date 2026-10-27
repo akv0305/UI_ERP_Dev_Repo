@@ -75,6 +75,11 @@ model User {
   closedEnquiries    Enquiry[] @relation("EnquiryClosedBy")
   cancelledEnquiries Enquiry[] @relation("EnquiryCancelledBy")
 
+  createdQuotations   Quotation[] @relation("QuotationCreatedBy")
+  updatedQuotations   Quotation[] @relation("QuotationUpdatedBy")
+  submittedQuotations Quotation[] @relation("QuotationSubmittedBy")
+  cancelledQuotations Quotation[] @relation("QuotationCancelledBy")
+
   @@map("users")
 }
 
@@ -249,6 +254,7 @@ model Company {
   documentSeries DocumentSeries[]
   indents        Indent[]
   enquiries      Enquiry[]
+  quotations     Quotation[]
 
   @@map("companies")
 }
@@ -304,6 +310,7 @@ model Project {
   documentSeries DocumentSeries[]
   indents        Indent[]
   enquiries      Enquiry[]
+  quotations     Quotation[]
 
   sessionContexts Session[] @relation("SessionCurrentProject")
 
@@ -336,8 +343,9 @@ model Site {
   stores    Store[]
   userRoles UserRole[]
 
-  indents   Indent[]
-  enquiries Enquiry[]
+  indents    Indent[]
+  enquiries  Enquiry[]
+  quotations Quotation[]
 
   @@index([projectId])
   @@map("sites")
@@ -436,14 +444,15 @@ model Item {
   createdById     String     @db.Uuid
   updatedById     String     @db.Uuid
 
-  category     ItemCategory  @relation(fields: [categoryId], references: [id])
-  unit         Unit          @relation(fields: [unitId], references: [id])
-  submittedBy  User?         @relation("ItemSubmittedBy", fields: [submittedById], references: [id])
-  decidedBy    User?         @relation("ItemDecidedBy", fields: [decidedById], references: [id])
-  createdBy    User          @relation("ItemCreatedBy", fields: [createdById], references: [id])
-  updatedBy    User          @relation("ItemUpdatedBy", fields: [updatedById], references: [id])
-  indentLines  IndentLine[]
-  enquiryLines EnquiryLine[]
+  category       ItemCategory    @relation(fields: [categoryId], references: [id])
+  unit           Unit            @relation(fields: [unitId], references: [id])
+  submittedBy    User?           @relation("ItemSubmittedBy", fields: [submittedById], references: [id])
+  decidedBy      User?           @relation("ItemDecidedBy", fields: [decidedById], references: [id])
+  createdBy      User            @relation("ItemCreatedBy", fields: [createdById], references: [id])
+  updatedBy      User            @relation("ItemUpdatedBy", fields: [updatedById], references: [id])
+  indentLines    IndentLine[]
+  enquiryLines   EnquiryLine[]
+  quotationLines QuotationLine[]
 
   @@index([categoryId])
   @@index([unitId])
@@ -511,6 +520,7 @@ model Vendor {
   bankAccounts     VendorBankAccount[]
   contacts         VendorContact[]
   enquiries        EnquiryVendor[]
+  quotations       Quotation[]
 
   @@index([status])
   @@index([stateId])
@@ -595,6 +605,7 @@ model VendorContact {
 enum DocumentType {
   INDENT
   ENQUIRY
+  QUOTATION
 }
 
 /// Last number used per company / document type / project / financial year (PD-003). The next number
@@ -736,6 +747,7 @@ model Enquiry {
   updatedBy   User            @relation("EnquiryUpdatedBy", fields: [updatedById], references: [id])
   lines       EnquiryLine[]
   vendors     EnquiryVendor[]
+  quotations  Quotation[]
 
   @@index([companyId])
   @@index([projectId])
@@ -756,9 +768,10 @@ model EnquiryLine {
   quantity     Decimal @db.Decimal(18, 3)
   remarks      String?
 
-  enquiry    Enquiry    @relation(fields: [enquiryId], references: [id])
-  indentLine IndentLine @relation(fields: [indentLineId], references: [id])
-  item       Item       @relation(fields: [itemId], references: [id])
+  enquiry        Enquiry         @relation(fields: [enquiryId], references: [id])
+  indentLine     IndentLine      @relation(fields: [indentLineId], references: [id])
+  item           Item            @relation(fields: [itemId], references: [id])
+  quotationLines QuotationLine[]
 
   @@unique([enquiryId, lineNo])
   @@unique([enquiryId, indentLineId])
@@ -780,4 +793,123 @@ model EnquiryVendor {
   @@unique([enquiryId, vendorId])
   @@index([vendorId])
   @@map("enquiry_vendors")
+}
+
+enum QuotationStatus {
+  DRAFT
+  SUBMITTED
+  SUPERSEDED
+  CANCELLED
+}
+
+enum QuotationChargeType {
+  FREIGHT
+  LOADING_UNLOADING
+  OTHER
+}
+
+/// Vendor quotation against a Sent enquiry (PD-049). number QTN/<project>/<FY>/0001 is given on the first
+/// Submit; revisions keep the number with revisionNo 1, 2... (OQ-54). Project and site are copied from the
+/// enquiry. Totals are computed by the API (PD-006). One Submitted and one Draft per enquiry + vendor
+/// (partial unique indexes in the migration).
+model Quotation {
+  id               String          @id @default(uuid()) @db.Uuid
+  number           String?
+  revisionNo       Int             @default(0) @db.SmallInt
+  revisedFromId    String?         @db.Uuid
+  fiscalYear       String?
+  companyId        String          @db.Uuid
+  projectId        String          @db.Uuid
+  siteId           String          @db.Uuid
+  enquiryId        String          @db.Uuid
+  vendorId         String          @db.Uuid
+  vendorQuoteRef   String?
+  quoteDate        DateTime        @db.Date
+  validUntil       DateTime?       @db.Date
+  deliveryDays     Int?            @db.SmallInt
+  paymentTermsDays Int?            @db.SmallInt
+  remarks          String?
+  subtotal         Decimal         @default(0) @db.Decimal(18, 2)
+  taxTotal         Decimal         @default(0) @db.Decimal(18, 2)
+  chargesTotal     Decimal         @default(0) @db.Decimal(18, 2)
+  grandTotal       Decimal         @default(0) @db.Decimal(18, 2)
+  status           QuotationStatus @default(DRAFT)
+  submittedAt      DateTime?       @db.Timestamptz(3)
+  submittedById    String?         @db.Uuid
+  supersededAt     DateTime?       @db.Timestamptz(3)
+  cancelledAt      DateTime?       @db.Timestamptz(3)
+  cancelledById    String?         @db.Uuid
+  cancelRemarks    String?
+  createdAt        DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime        @updatedAt @db.Timestamptz(3)
+  createdById      String          @db.Uuid
+  updatedById      String          @db.Uuid
+
+  company     Company           @relation(fields: [companyId], references: [id])
+  project     Project           @relation(fields: [projectId], references: [id])
+  site        Site              @relation(fields: [siteId], references: [id])
+  enquiry     Enquiry           @relation(fields: [enquiryId], references: [id])
+  vendor      Vendor            @relation(fields: [vendorId], references: [id])
+  revisedFrom Quotation?        @relation("QuotationRevision", fields: [revisedFromId], references: [id])
+  revisions   Quotation[]       @relation("QuotationRevision")
+  submittedBy User?             @relation("QuotationSubmittedBy", fields: [submittedById], references: [id])
+  cancelledBy User?             @relation("QuotationCancelledBy", fields: [cancelledById], references: [id])
+  createdBy   User              @relation("QuotationCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User              @relation("QuotationUpdatedBy", fields: [updatedById], references: [id])
+  lines       QuotationLine[]
+  charges     QuotationCharge[]
+
+  @@unique([number, revisionNo], map: "quotations_number_revision_key")
+  @@index([companyId])
+  @@index([projectId])
+  @@index([enquiryId])
+  @@index([vendorId])
+  @@index([status])
+  @@map("quotations")
+}
+
+/// One row per enquiry line; quantity copied from the enquiry. A quoted line carries rate, discount, GST %
+/// and the computed amounts; an unquoted line carries none of them (CHECK in the migration).
+model QuotationLine {
+  id              String   @id @default(uuid()) @db.Uuid
+  quotationId     String   @db.Uuid
+  lineNo          Int      @db.SmallInt
+  enquiryLineId   String   @db.Uuid
+  itemId          String   @db.Uuid
+  quantity        Decimal  @db.Decimal(18, 3)
+  isQuoted        Boolean  @default(false)
+  rate            Decimal? @db.Decimal(18, 4)
+  discountPercent Decimal? @db.Decimal(5, 2)
+  gstRate         Decimal? @db.Decimal(5, 2)
+  taxableAmount   Decimal? @db.Decimal(18, 2)
+  taxAmount       Decimal? @db.Decimal(18, 2)
+  lineTotal       Decimal? @db.Decimal(18, 2)
+  makeBrand       String?
+  remarks         String?
+
+  quotation   Quotation   @relation(fields: [quotationId], references: [id])
+  enquiryLine EnquiryLine @relation(fields: [enquiryLineId], references: [id])
+  item        Item        @relation(fields: [itemId], references: [id])
+
+  @@unique([quotationId, lineNo])
+  @@unique([quotationId, enquiryLineId])
+  @@index([enquiryLineId])
+  @@index([itemId])
+  @@map("quotation_lines")
+}
+
+/// Freight, loading/unloading and one other charge per quotation, each with its own GST % (OQ-56).
+model QuotationCharge {
+  id          String              @id @default(uuid()) @db.Uuid
+  quotationId String              @db.Uuid
+  chargeType  QuotationChargeType
+  description String?
+  amount      Decimal             @db.Decimal(18, 2)
+  gstRate     Decimal             @db.Decimal(5, 2)
+  taxAmount   Decimal             @db.Decimal(18, 2)
+
+  quotation Quotation @relation(fields: [quotationId], references: [id])
+
+  @@unique([quotationId, chargeType])
+  @@map("quotation_charges")
 }
