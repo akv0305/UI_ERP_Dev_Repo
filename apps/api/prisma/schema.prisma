@@ -80,6 +80,11 @@ model User {
   submittedQuotations Quotation[] @relation("QuotationSubmittedBy")
   cancelledQuotations Quotation[] @relation("QuotationCancelledBy")
 
+  createdComparisons   Comparison[] @relation("ComparisonCreatedBy")
+  updatedComparisons   Comparison[] @relation("ComparisonUpdatedBy")
+  finalisedComparisons Comparison[] @relation("ComparisonFinalisedBy")
+  cancelledComparisons Comparison[] @relation("ComparisonCancelledBy")
+
   @@map("users")
 }
 
@@ -255,6 +260,7 @@ model Company {
   indents        Indent[]
   enquiries      Enquiry[]
   quotations     Quotation[]
+  comparisons    Comparison[]
 
   @@map("companies")
 }
@@ -311,6 +317,7 @@ model Project {
   indents        Indent[]
   enquiries      Enquiry[]
   quotations     Quotation[]
+  comparisons    Comparison[]
 
   sessionContexts Session[] @relation("SessionCurrentProject")
 
@@ -343,9 +350,10 @@ model Site {
   stores    Store[]
   userRoles UserRole[]
 
-  indents    Indent[]
-  enquiries  Enquiry[]
-  quotations Quotation[]
+  indents     Indent[]
+  enquiries   Enquiry[]
+  quotations  Quotation[]
+  comparisons Comparison[]
 
   @@index([projectId])
   @@map("sites")
@@ -521,6 +529,7 @@ model Vendor {
   contacts         VendorContact[]
   enquiries        EnquiryVendor[]
   quotations       Quotation[]
+  comparisonLines  ComparisonLine[]
 
   @@index([status])
   @@index([stateId])
@@ -606,6 +615,7 @@ enum DocumentType {
   INDENT
   ENQUIRY
   QUOTATION
+  COMPARISON
 }
 
 /// Last number used per company / document type / project / financial year (PD-003). The next number
@@ -748,6 +758,7 @@ model Enquiry {
   lines       EnquiryLine[]
   vendors     EnquiryVendor[]
   quotations  Quotation[]
+  comparisons Comparison[]
 
   @@index([companyId])
   @@index([projectId])
@@ -768,10 +779,11 @@ model EnquiryLine {
   quantity     Decimal @db.Decimal(18, 3)
   remarks      String?
 
-  enquiry        Enquiry         @relation(fields: [enquiryId], references: [id])
-  indentLine     IndentLine      @relation(fields: [indentLineId], references: [id])
-  item           Item            @relation(fields: [itemId], references: [id])
-  quotationLines QuotationLine[]
+  enquiry         Enquiry          @relation(fields: [enquiryId], references: [id])
+  indentLine      IndentLine       @relation(fields: [indentLineId], references: [id])
+  item            Item             @relation(fields: [itemId], references: [id])
+  quotationLines  QuotationLine[]
+  comparisonLines ComparisonLine[]
 
   @@unique([enquiryId, lineNo])
   @@unique([enquiryId, indentLineId])
@@ -845,19 +857,20 @@ model Quotation {
   createdById      String          @db.Uuid
   updatedById      String          @db.Uuid
 
-  company     Company           @relation(fields: [companyId], references: [id])
-  project     Project           @relation(fields: [projectId], references: [id])
-  site        Site              @relation(fields: [siteId], references: [id])
-  enquiry     Enquiry           @relation(fields: [enquiryId], references: [id])
-  vendor      Vendor            @relation(fields: [vendorId], references: [id])
-  revisedFrom Quotation?        @relation("QuotationRevision", fields: [revisedFromId], references: [id])
-  revisions   Quotation[]       @relation("QuotationRevision")
-  submittedBy User?             @relation("QuotationSubmittedBy", fields: [submittedById], references: [id])
-  cancelledBy User?             @relation("QuotationCancelledBy", fields: [cancelledById], references: [id])
-  createdBy   User              @relation("QuotationCreatedBy", fields: [createdById], references: [id])
-  updatedBy   User              @relation("QuotationUpdatedBy", fields: [updatedById], references: [id])
+  company     Company               @relation(fields: [companyId], references: [id])
+  project     Project               @relation(fields: [projectId], references: [id])
+  site        Site                  @relation(fields: [siteId], references: [id])
+  enquiry     Enquiry               @relation(fields: [enquiryId], references: [id])
+  vendor      Vendor                @relation(fields: [vendorId], references: [id])
+  revisedFrom Quotation?            @relation("QuotationRevision", fields: [revisedFromId], references: [id])
+  revisions   Quotation[]           @relation("QuotationRevision")
+  submittedBy User?                 @relation("QuotationSubmittedBy", fields: [submittedById], references: [id])
+  cancelledBy User?                 @relation("QuotationCancelledBy", fields: [cancelledById], references: [id])
+  createdBy   User                  @relation("QuotationCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User                  @relation("QuotationUpdatedBy", fields: [updatedById], references: [id])
   lines       QuotationLine[]
   charges     QuotationCharge[]
+  comparisons ComparisonQuotation[]
 
   @@unique([number, revisionNo], map: "quotations_number_revision_key")
   @@index([companyId])
@@ -887,9 +900,10 @@ model QuotationLine {
   makeBrand       String?
   remarks         String?
 
-  quotation   Quotation   @relation(fields: [quotationId], references: [id])
-  enquiryLine EnquiryLine @relation(fields: [enquiryLineId], references: [id])
-  item        Item        @relation(fields: [itemId], references: [id])
+  quotation       Quotation        @relation(fields: [quotationId], references: [id])
+  enquiryLine     EnquiryLine      @relation(fields: [enquiryLineId], references: [id])
+  item            Item             @relation(fields: [itemId], references: [id])
+  comparisonLines ComparisonLine[]
 
   @@unique([quotationId, lineNo])
   @@unique([quotationId, enquiryLineId])
@@ -912,4 +926,89 @@ model QuotationCharge {
 
   @@unique([quotationId, chargeType])
   @@map("quotation_charges")
+}
+
+enum ComparisonStatus {
+  DRAFT
+  FINALISED
+  CANCELLED
+}
+
+/// Comparative statement (PD-050). number CMP/<project>/<FY>/0001 is given on Finalise; null while Draft.
+/// One open (Draft or Finalised) comparison per enquiry (partial unique index in the migration).
+/// Finalise records the compared quotations and closes the enquiry (OQ-65).
+model Comparison {
+  id             String           @id @default(uuid()) @db.Uuid
+  number         String?          @unique
+  fiscalYear     String?
+  companyId      String           @db.Uuid
+  projectId      String           @db.Uuid
+  siteId         String           @db.Uuid
+  enquiryId      String           @db.Uuid
+  comparisonDate DateTime         @db.Date
+  remarks        String?
+  status         ComparisonStatus @default(DRAFT)
+  finalisedAt    DateTime?        @db.Timestamptz(3)
+  finalisedById  String?          @db.Uuid
+  cancelledAt    DateTime?        @db.Timestamptz(3)
+  cancelledById  String?          @db.Uuid
+  cancelRemarks  String?
+  createdAt      DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @db.Timestamptz(3)
+  createdById    String           @db.Uuid
+  updatedById    String           @db.Uuid
+
+  company     Company               @relation(fields: [companyId], references: [id])
+  project     Project               @relation(fields: [projectId], references: [id])
+  site        Site                  @relation(fields: [siteId], references: [id])
+  enquiry     Enquiry               @relation(fields: [enquiryId], references: [id])
+  finalisedBy User?                 @relation("ComparisonFinalisedBy", fields: [finalisedById], references: [id])
+  cancelledBy User?                 @relation("ComparisonCancelledBy", fields: [cancelledById], references: [id])
+  createdBy   User                  @relation("ComparisonCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User                  @relation("ComparisonUpdatedBy", fields: [updatedById], references: [id])
+  lines       ComparisonLine[]
+  quotations  ComparisonQuotation[]
+
+  @@index([companyId])
+  @@index([projectId])
+  @@index([enquiryId])
+  @@index([status])
+  @@map("comparisons")
+}
+
+/// One row per enquiry line. Draft keeps only the chosen vendor and reason; Finalise fills quotationLineId,
+/// netRate and rank together (CHECKs in the migration). Reason required when rank > 1 (OQ-63).
+model ComparisonLine {
+  id               String   @id @default(uuid()) @db.Uuid
+  comparisonId     String   @db.Uuid
+  enquiryLineId    String   @db.Uuid
+  selectedVendorId String?  @db.Uuid
+  reason           String?
+  quotationLineId  String?  @db.Uuid
+  netRate          Decimal? @db.Decimal(18, 4)
+  rank             Int?     @db.SmallInt
+
+  comparison     Comparison     @relation(fields: [comparisonId], references: [id])
+  enquiryLine    EnquiryLine    @relation(fields: [enquiryLineId], references: [id])
+  selectedVendor Vendor?        @relation(fields: [selectedVendorId], references: [id])
+  quotationLine  QuotationLine? @relation(fields: [quotationLineId], references: [id])
+
+  @@unique([comparisonId, enquiryLineId])
+  @@index([enquiryLineId])
+  @@index([selectedVendorId])
+  @@index([quotationLineId])
+  @@map("comparison_lines")
+}
+
+/// The Submitted quotations a Finalised comparison was based on (written at Finalise).
+model ComparisonQuotation {
+  comparisonId String @db.Uuid
+  quotationId  String @db.Uuid
+
+  comparison Comparison @relation(fields: [comparisonId], references: [id])
+  quotation  Quotation  @relation(fields: [quotationId], references: [id])
+
+  @@id([comparisonId, quotationId])
+  @@index([quotationId])
+  @@map("comparison_quotations")
 }

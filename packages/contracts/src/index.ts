@@ -36,3 +36,5 @@ export * from './indents';
 export * from './enquiries';
 
 export * from './quotations';
+
+export * from './comparisons';

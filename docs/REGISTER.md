@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-050 · CQ-110 · OQ-59 · PDEF-041 · CR-003
+# REGISTER — next free: PD-051 · CQ-110 · OQ-67 · PDEF-041 · CR-003
 
 ## Decisions
 
@@ -52,7 +52,8 @@
 | PD-046 | Indent (G-07): header project → site (Location) → store (optional), indent date, required-by date, requested by (text), remarks; lines = approved active items only, required qty, approved qty, purpose, remarks, one line per item; Draft → Pending → Approved / Rejected (edit + resubmit) / Cancelled (from Draft or Rejected); no self-approval; reject/cancel need remarks; number IND/<project>/<FY>/0001 given on Submit, no gaps, per project per FY (document_series table, reused by later documents); project picker lists only the user's assigned projects (auto-picked if one); permissions purchase.indents.manage / .approve checked on the project/site, not GLOBAL-only | APPROVED — built G-07: batch 1 a99f7d6 (CI #64); 2 0ba27be (CI #65); 3a a22fbb1 (CI #66); 3b 32f900a (CI #67); 3c 51113a1 (CI #68); merged to main |
 | PD-047 | Purchase Enquiry (G-08): one project + one site (delivery location); lines from Approved indent lines of that site (approved qty > 0), several indents per enquiry; one indent line once per enquiry but may be in several enquiries; qty ≤ approved qty; 1–20 approved active vendors; enquiry date, quote due date (required, ≥ enquiry date), terms, remarks; Draft → Sent → Closed, Cancel from Draft/Sent (remarks); number ENQ/<project>/<FY>/0001 on Send, no gaps (document_series); no approval (ladder at PO); one print copy per vendor (OQ-52 A), PDF via browser; no email (PD-020); permission purchase.enquiries.manage on project/site | | APPROVED — built G-08: batch 1 4898639 (CI #70); 2 a248a1c (CI #71); 3a cd18ae4; 3b c415ddb (CI #73); PDEF-039 fix 335b9c0 (CI #74); merged to main |
 | PD-048 | New status colour key `sent` (theme.ts, globals.css, status-chip.tsx, terminology) for Sent enquiries | APPROVED — cd18ae4 |
-| PD-049 | Vendor Quotation (G-09): keyed in against a Sent enquiry, only for vendors on it; project/site copied from enquiry; one row per enquiry line (qty from enquiry, read-only), quoted line needs rate (18,4) + GST % (default from item), discount % optional, make/brand; charges Freight / Loading-Unloading / Other with own GST %; header vendor ref, quote date, valid until, delivery days, payment days; totals computed server-side (line round half-up then sum, PD-006); Draft → Submitted → Superseded / Cancelled; number QTN/<project>/<FY>/0001 on first Submit, no gaps; revisions R1, R2 keep number (OQ-54); one Submitted + one Draft per enquiry + vendor (DB-enforced); permission purchase.quotations.manage (not GLOBAL-only) | APPROVED — batch 1 facdeb2 (CI #79); batch 2 API e4039db (CI #80); batch 3a screens pending |
+| PD-049 | Vendor Quotation (G-09): keyed in against a Sent enquiry, only for vendors on it; project/site copied from enquiry; one row per enquiry line (qty from enquiry, read-only), quoted line needs rate (18,4) + GST % (default from item), discount % optional, make/brand; charges Freight / Loading-Unloading / Other with own GST %; header vendor ref, quote date, valid until, delivery days, payment days; totals computed server-side (line round half-up then sum, PD-006); Draft → Submitted → Superseded / Cancelled; number QTN/<project>/<FY>/0001 on first Submit, no gaps; revisions R1, R2 keep number (OQ-54); one Submitted + one Draft per enquiry + vendor (DB-enforced); permission purchase.quotations.manage (not GLOBAL-only) | APPROVED — built G-09: batch 1 facdeb2 (CI #79); 2 e4039db (CI #80); 3a 12362d7 (CI #81); 3b 13bd729 (CI #82); merged to main 13bd729 |
+| PD-050 | Comparison (CS): saved document CMP/<project>/<FY>/0001 given on Finalise; one open per enquiry; Draft stores per-line vendor + reason, grid live from latest Submitted quotations; Finalise records compared quotations, quotation line, net rate, rank and closes the enquiry; rank by net rate (rate less discount, GST excluded), ties share rank; non-L1 needs reason; only Draft cancellable; no approval (approval at PO, PD-008) | APPROVED — G-10 batch 1 |
 
 
 ## Owner questions
@@ -110,6 +111,14 @@
 | OQ-56 | Freight / loading / other charges? | ACCEPTED (default) — header charges Freight, Loading-Unloading, Other (with description), each with amount + GST %, included in grand total |
 | OQ-57 | Excel import of quotations? | ACCEPTED (default) — key-in only in G-09; import later, same pattern as item import |
 | OQ-58 | Quotation rules: (a) quote date not in the future (IST) and not before the enquiry date; (b) create / edit / submit / revise only while the enquiry is Sent, existing quotations untouched after Close/Cancel, Cancel still allowed; (c) a line cannot be quoted if its item is no longer approved and active (OQ-27); (d) number FY from the quote date; (e) saving a Draft replaces its line and charge rows, full before/after in Audit Log | CLOSED — defaults accepted (built in batch 2, e4039db) |
+| OQ-59 | Superseded quotation chip label: "Revised" (existing theme key) or its own "Superseded" chip? | OPEN — default "Revised" |
+| OQ-60 | Comparison is a saved document with number CMP/<project>/<FY>/0001 | APPROVED → PD-050 |
+| OQ-61 | Vendor chosen per line (order may split across vendors) | APPROVED → PD-050 |
+| OQ-62 | Rank by net rate after discount, GST excluded; charges and grand total shown per vendor | APPROVED → PD-050 |
+| OQ-63 | Choosing a vendor that is not L1 requires a reason | APPROVED → PD-050 |
+| OQ-64 | Only latest Submitted quotation per vendor compared; expired valid-until = warning, not excluded | APPROVED → PD-050 |
+| OQ-65 | Finalise closes the enquiry; comparison has no approval (approval at PO, PD-008) | APPROVED → PD-050 |
+| OQ-66 | Can a Finalised comparison be cancelled (e.g. vendor backs out)? Depends on PO rules — decide in G-11 | OPEN — not allowed until G-11 |
 
 
 ## Client questions

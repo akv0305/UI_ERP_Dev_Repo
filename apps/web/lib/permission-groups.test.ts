@@ -76,13 +76,25 @@ describe('buildPermissionGroups', () => {
     });
   });
 
-  it('leaves manage and approve empty for screens without them', () => {
+  it('adds manage only for comparisons', () => {
     const purchase = groups.find((group) => group.labelKey === 'purchase');
     const comparisons = purchase?.rows.find((row) => row.labelKey === 'comparisons');
 
     expect(comparisons).toEqual({
       labelKey: 'comparisons',
       view: 'purchase.comparisons.view',
+      manage: 'purchase.comparisons.manage',
+      approve: null,
+    });
+  });
+
+  it('leaves manage and approve empty for screens without them', () => {
+    const purchase = groups.find((group) => group.labelKey === 'purchase');
+    const orders = purchase?.rows.find((row) => row.labelKey === 'purchaseOrders');
+
+    expect(orders).toEqual({
+      labelKey: 'purchaseOrders',
+      view: 'purchase.purchaseOrders.view',
       manage: null,
       approve: null,
     });
