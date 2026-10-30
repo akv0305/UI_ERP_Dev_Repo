@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-052 · CQ-110 · OQ-67 · PDEF-041 · CR-003
+# REGISTER — next free: PD-053 · CQ-110 · OQ-68 · PDEF-041 · CR-003
 
 ## Decisions
 
@@ -55,6 +55,7 @@
 | PD-049 | Vendor Quotation (G-09): keyed in against a Sent enquiry, only for vendors on it; project/site copied from enquiry; one row per enquiry line (qty from enquiry, read-only), quoted line needs rate (18,4) + GST % (default from item), discount % optional, make/brand; charges Freight / Loading-Unloading / Other with own GST %; header vendor ref, quote date, valid until, delivery days, payment days; totals computed server-side (line round half-up then sum, PD-006); Draft → Submitted → Superseded / Cancelled; number QTN/<project>/<FY>/0001 on first Submit, no gaps; revisions R1, R2 keep number (OQ-54); one Submitted + one Draft per enquiry + vendor (DB-enforced); permission purchase.quotations.manage (not GLOBAL-only) | APPROVED — built G-09: batch 1 facdeb2 (CI #79); 2 e4039db (CI #80); 3a 12362d7 (CI #81); 3b 13bd729 (CI #82); merged to main 13bd729 |
 | PD-050 | Comparison (CS): saved document CMP/<project>/<FY>/0001 given on Finalise; one open per enquiry; Draft stores per-line vendor + reason, grid live from latest Submitted quotations; Finalise records compared quotations, quotation line, net rate, rank and closes the enquiry; rank by net rate (rate less discount, GST excluded), ties share rank; non-L1 needs reason; only Draft cancellable; no approval (approval at PO, PD-008) | APPROVED — G-10 batch 1 af15433 (CI #84); batch 2 API (draft save checks choice only, reasons checked at Finalise; quotation in a Finalised comparison cannot be cancelled) |
 | PD-051 | Comparison draft save checks only that each chosen vendor quoted the line; non-L1 reason and "at least one line" are checked at Finalise (ranks may change while vendors revise). Finalise closes the enquiry with its own audit row. A quotation recorded in a Finalised comparison cannot be cancelled | APPROVED — G-10 batch 2 |
+| PD-052 | Comparison screens (G-10 batch 3a): list, new (enquiry picker → grid), detail, edit; one grid component for form and detail (vendors as columns by code, net rate + L1/L2 badge, expired warning, None column, reason column with "not L1" hint, footer = whole-quotation totals, delivery, payment terms, valid until); comparison screens use their own API error messages before the shared ones (same codes mean quotation errors); new status chip "Finalised" (theme.ts, globals.css, status-chip.tsx, terminology) | PROPOSED |
 
 
 ## Owner questions
@@ -120,6 +121,7 @@
 | OQ-64 | Only latest Submitted quotation per vendor compared; expired valid-until = warning, not excluded | APPROVED → PD-050 |
 | OQ-65 | Finalise closes the enquiry; comparison has no approval (approval at PO, PD-008) | APPROVED → PD-050 |
 | OQ-66 | Can a Finalised comparison be cancelled (e.g. vendor backs out)? Depends on PO rules — decide in G-11 | OPEN — not allowed until G-11 |
+| OQ-67 | New comparison: the "Expired" flags are worked out for today's date when the grid opens; changing the comparison date in the form does not refresh them on screen. The API re-checks with the saved date on Save/Finalise. Recommend: accept for now | OPEN |
 
 
 ## Client questions
