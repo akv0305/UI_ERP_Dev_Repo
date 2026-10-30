@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-053 · CQ-110 · OQ-68 · PDEF-041 · CR-003
+# REGISTER — next free: PD-053 · CQ-110 · OQ-68 · PDEF-042 · CR-003
 
 ## Decisions
 
@@ -177,7 +177,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-038 | Audit Log had no readable entity-type label for Indent (raw "Indent" missing from terminology.auditLog.entityTypes); Enquiry added at the same time | FIXED — G-08 batch 3a |
 | PDEF-039 | G-08 batch 3b: print route saved under apps/web/app/(app)/(print)/ instead of apps/web/app/(print)/, so the print page was wrapped in the app shell | FIXED — 335b9c0 (CI #74) |
 | PDEF-040 | preview.json (G-05b import preview test output with client material-list rows) committed at repo root in a public repo | FIXED — removed from tracking, added to .gitignore; still in Git history (history clean-up only if client requires) |
-
+| PDEF-041 | Comparison save → 500: interactive transaction exceeded Prisma's 5 s default ("expired transaction") because each query round-trips to Neon US East; affected any multi-step write with audit (comparison create/finalise most). Fix: PrismaService transactionOptions maxWait 10 s, timeout 30 s, global | FIXED (pending commit) |
 
 
 ## Change requests

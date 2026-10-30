@@ -73,4 +73,9 @@ describe('quotationFlagsFor', () => {
     expect(quotationFlagsFor(other, { ...base, status: 'DRAFT' }, false).canEdit).toBe(false);
     expect(quotationFlagsFor(viewer, { ...base, status: 'DRAFT' }, false).canEdit).toBe(false);
   });
+  it('no cancel once a finalised comparison has recorded the quotation', () => {
+    expect(quotationFlagsFor(access, { ...base, status: 'SUBMITTED' }, false, true).canCancel).toBe(
+      false,
+    );
+  });
 });

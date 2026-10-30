@@ -1234,6 +1234,7 @@ export const terminology = {
     newTitle: 'New comparison',
     editTitle: 'Edit comparison',
     edit: 'Edit',
+    compareQuotations: 'Compare quotations',
     chooseEnquiryHint: 'Choose a sent enquiry that has submitted quotations.',
     chooseEnquiry: 'Choose an enquiry',
     enquiriesUnavailable: 'Enquiries could not be loaded.',
@@ -1301,6 +1302,20 @@ export const terminology = {
       NOTHING_SELECTED: 'Choose a vendor for at least one line.',
       INVALID_DATE: 'The comparison date cannot be in the future or before the enquiry date.',
     },
+  },
+  comparisonActions: {
+    finalise: 'Finalise',
+    finaliseTitle: 'Finalise this comparison?',
+    finaliseDescription:
+      'The saved vendor choices are recorded, the comparison gets its number and the enquiry is closed, so no more quotations can be entered for it. Unsaved changes on the edit page are not included. This cannot be undone.',
+    finalisedMessage: 'Comparison finalised. The enquiry is now closed.',
+    cancelComparison: 'Cancel comparison',
+    cancelTitle: 'Cancel this comparison?',
+    cancelDescription:
+      'The draft is kept for history but can no longer be used. A new comparison can then be made for the enquiry.',
+    cancelledMessage: 'Comparison cancelled.',
+    remarksLabel: 'Reason for cancelling',
+    remarksRequiredHint: 'Required.',
   },
   permissionActions: {
     view: 'View',

@@ -34,7 +34,10 @@ export interface QuotationFlags {
   canCancel: boolean;
 }
 
-/** hasOpenDraft = a Draft already exists for the same enquiry + vendor. */
+/**
+ * hasOpenDraft = a Draft already exists for the same enquiry + vendor.
+ * inFinalisedComparison = the quotation was recorded by a finalised comparison, so it can no longer be cancelled.
+ */
 export function quotationFlagsFor(
   access: AccessContext,
   quotation: {
@@ -45,6 +48,7 @@ export function quotationFlagsFor(
     enquiry: { status: EnquiryStatus };
   },
   hasOpenDraft: boolean,
+  inFinalisedComparison = false,
 ): QuotationFlags {
   const manage = access.canOn(QUOTATION_MANAGE, quotationTargetOf(quotation));
 
@@ -55,6 +59,7 @@ export function quotationFlagsFor(
       quotation.status === 'SUBMITTED' &&
       quotation.enquiry.status === 'SENT' &&
       !hasOpenDraft,
-    canCancel: manage && CANCELLABLE_QUOTATION_STATUSES.includes(quotation.status),
+    canCancel:
+      manage && CANCELLABLE_QUOTATION_STATUSES.includes(quotation.status) && !inFinalisedComparison,
   };
 }

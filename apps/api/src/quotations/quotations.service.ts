@@ -195,12 +195,18 @@ export class QuotationsService {
       }),
     ]);
     const drafts = await this.openDraftKeys(quotations);
+    const finalised = await this.finalisedQuotationIds(quotations);
 
     return pageOf(
       quotations.map((quotation) =>
         toQuotationResponse(
           quotation,
-          quotationFlagsFor(access, quotation, drafts.has(pairKey(quotation))),
+          quotationFlagsFor(
+            access,
+            quotation,
+            drafts.has(pairKey(quotation)),
+            finalised.has(quotation.id),
+          ),
         ),
       ),
       total,
@@ -211,10 +217,16 @@ export class QuotationsService {
   async get(id: string, access: AccessContext): Promise<QuotationDetailResponse> {
     const quotation = await this.requireVisible(id, access);
     const drafts = await this.openDraftKeys([quotation]);
+    const finalised = await this.finalisedQuotationIds([quotation]);
 
     return toQuotationDetailResponse(
       quotation,
-      quotationFlagsFor(access, quotation, drafts.has(pairKey(quotation))),
+      quotationFlagsFor(
+        access,
+        quotation,
+        drafts.has(pairKey(quotation)),
+        finalised.has(quotation.id),
+      ),
     );
   }
 
@@ -704,10 +716,16 @@ export class QuotationsService {
     access: AccessContext,
   ): Promise<QuotationResponse> {
     const drafts = await this.openDraftKeys([quotation]);
+    const finalised = await this.finalisedQuotationIds([quotation]);
 
     return toQuotationResponse(
       quotation,
-      quotationFlagsFor(access, quotation, drafts.has(pairKey(quotation))),
+      quotationFlagsFor(
+        access,
+        quotation,
+        drafts.has(pairKey(quotation)),
+        finalised.has(quotation.id),
+      ),
     );
   }
 
@@ -731,6 +749,24 @@ export class QuotationsService {
     });
 
     return new Set(drafts.map(pairKey));
+  }
+
+  /** Ids (among submitted rows) recorded by a finalised comparison; such quotations cannot be cancelled. */
+  private async finalisedQuotationIds(
+    rows: readonly { id: string; status: QuotationStatus }[],
+  ): Promise<Set<string>> {
+    const ids = rows.filter((row) => row.status === 'SUBMITTED').map((row) => row.id);
+
+    if (ids.length === 0) {
+      return new Set();
+    }
+
+    const used = await this.prisma.comparisonQuotation.findMany({
+      where: { quotationId: { in: ids }, comparison: { status: 'FINALISED' } },
+      select: { quotationId: true },
+    });
+
+    return new Set(used.map((row) => row.quotationId));
   }
 
   /** A concurrent save can still hit the partial unique indexes (P2002). */

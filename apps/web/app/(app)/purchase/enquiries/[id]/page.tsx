@@ -76,6 +76,14 @@ export default async function EnquiryDetailPage({ params }: { params: Promise<{ 
         </Link>
       </Button>
     ) : null;
+  const compareQuotations =
+    enquiry.status === 'SENT' && permissions.includes('purchase.comparisons.manage') ? (
+      <Button asChild variant="outline">
+        <Link href={`/purchase/comparisons/new?enquiryId=${enquiry.id}`}>
+          {terminology.comparisons.compareQuotations}
+        </Link>
+      </Button>
+    ) : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -88,6 +96,7 @@ export default async function EnquiryDetailPage({ params }: { params: Promise<{ 
             {edit}
             {print}
             {enterQuotation}
+            {compareQuotations}
             <EnquiryActions enquiry={enquiry} />
           </>
         }

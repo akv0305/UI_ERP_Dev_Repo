@@ -11,6 +11,7 @@ import { actorLine } from '../../quotations/_components/quotation-text';
 import { ComparisonGrid } from '../_components/comparison-grid';
 import { ComparisonStatusChip } from '../_components/comparison-status-chip';
 import { chosenCount, comparisonTitle } from '../_components/comparison-text';
+import { ComparisonActions } from './comparison-actions';
 
 const t = terminology.comparisons;
 const notSet = terminology.labels.notSet;
@@ -72,6 +73,7 @@ export default async function ComparisonDetailPage({
           <>
             {history}
             {edit}
+            <ComparisonActions comparison={comparison} />
           </>
         }
       />
