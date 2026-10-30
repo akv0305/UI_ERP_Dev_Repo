@@ -15,6 +15,7 @@ import {
   rateText,
   revisionText,
 } from '../_components/quotation-text';
+import { QuotationActions } from './quotation-actions';
 
 const t = terminology.quotations;
 const notSet = terminology.labels.notSet;
@@ -69,6 +70,7 @@ export default async function QuotationDetailPage({ params }: { params: Promise<
           <>
             {history}
             {edit}
+            <QuotationActions quotation={quotation} />
           </>
         }
       />

@@ -910,6 +910,24 @@ export const terminology = {
     reactivateTitle: 'Reactivate contact',
     reactivateDescription: 'The contact can be used again.',
   },
+  quotationActions: {
+    submit: 'Submit',
+    revise: 'Revise',
+    cancelQuotation: 'Cancel quotation',
+    submitTitle: 'Submit quotation',
+    submitDescription:
+      'The saved version is submitted and locked. Save any changes first. The first submit gives the quotation its number; a submitted revision keeps the number and replaces the earlier submitted one.',
+    reviseTitle: 'Revise quotation',
+    reviseDescription:
+      'A new draft revision is created with the same number. This quotation stays submitted until the revision is submitted.',
+    cancelTitle: 'Cancel quotation',
+    cancelDescription: 'A cancelled quotation cannot be used or reopened. Give the reason.',
+    submittedMessage: 'Quotation submitted.',
+    revisedMessage: 'Draft revision created. Make the changes and save.',
+    cancelledMessage: 'Quotation cancelled.',
+    remarksLabel: 'Remarks',
+    remarksRequiredHint: 'Remarks are required.',
+  },
   indents: {
     subtitle: 'Material requests raised by sites for purchase.',
     searchLabel: 'Search indents',
