@@ -600,6 +600,15 @@ export class QuotationsService {
 
     this.assertCanManage(existing, access);
     this.assertStatus(existing, CANCELLABLE_QUOTATION_STATUSES, NOT_CANCELLABLE);
+    const usedInComparison = await this.prisma.comparisonQuotation.count({
+      where: { quotationId: id, comparison: { status: 'FINALISED' } },
+    });
+
+    if (usedInComparison > 0) {
+      throw invalidQuotationStatus(
+        'This quotation is part of a finalised comparison and cannot be cancelled.',
+      );
+    }
 
     return this.transition(existing, CANCELLABLE_QUOTATION_STATUSES, actorId, access, () =>
       Promise.resolve({
