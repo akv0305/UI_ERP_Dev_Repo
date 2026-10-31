@@ -13,6 +13,7 @@ import { ItemsModule } from './items/items.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuotationsModule } from './quotations/quotations.module';
 import { ProjectsModule } from './projects/projects.module';
+import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { RolesModule } from './roles/roles.module';
 import { SitesModule } from './sites/sites.module';
 import { StatesModule } from './states/states.module';
@@ -44,6 +45,7 @@ import { VendorsModule } from './vendors/vendors.module';
     EnquiriesModule,
     QuotationsModule,
     ComparisonsModule,
+    PurchaseOrdersModule,
   ],
 })
 export class AppModule {}

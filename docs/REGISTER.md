@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-054 · CQ-115 · OQ-85 · PDEF-043 · CR-003
+# REGISTER — next free: PD-054 · CQ-115 · OQ-86 · PDEF-043 · CR-003
 
 ## Decisions
 
@@ -140,6 +140,7 @@
 | OQ-82 | Direct PO: no indent link, no mandatory reason; source fixed at creation | CLOSED — owner yes |
 | OQ-83 | One live PO per comparison + vendor (DB partial unique index); lines removed from it are ordered via a direct PO | CLOSED — owner yes |
 | OQ-84 | Comparison PO lines: (a) while Draft, lines can be removed and re-added — picker lists only comparison lines where this vendor was chosen and not on another live PO; (b) items not in the comparison go on a direct PO; (c) after Submit, change = cancel and re-raise (revision in G-12) | OPEN — proposed |
+| OQ-85 | PO API defaults: (a) PO date not future (IST), comparison PO not before comparison date; (b) GST-registered vendor must have a GST registration chosen; (c) inactive store / vendor GST / contact already saved on a draft may stay, not newly chosen; (d) Submit re-checks against current masters and stops if billing GST, tax type or total would change | OPEN — proposed |
 
 
 ## Client questions
@@ -201,7 +202,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-039 | G-08 batch 3b: print route saved under apps/web/app/(app)/(print)/ instead of apps/web/app/(print)/, so the print page was wrapped in the app shell | FIXED — 335b9c0 (CI #74) |
 | PDEF-040 | preview.json (G-05b import preview test output with client material-list rows) committed at repo root in a public repo | FIXED — removed from tracking, added to .gitignore; still in Git history (history clean-up only if client requires) |
 | PDEF-041 | Comparison save → 500: interactive transaction exceeded Prisma's 5 s default ("expired transaction") because each query round-trips to Neon US East; affected any multi-step write with audit (comparison create/finalise most). Fix: PrismaService transactionOptions maxWait 10 s, timeout 30 s, global | FIXED — 6b62344, CI #87 |
-| PDEF-042 | G-11 batch 2a: purchase-order-math.spec.ts imported describe/expect/it from @jest/globals (repeat of PDEF-036); repo uses Jest globals | FIXED — import line removed |
+| PDEF-042 | G-11 batch 2a: purchase-order-math.spec.ts imported describe/expect/it from @jest/globals (repeat of PDEF-036); repo uses Jest globals | CLOSED — d776c06, CI #90 |
 
 
 ## Change requests
