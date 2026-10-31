@@ -9,6 +9,7 @@ export const ALL_PERMISSIONS = [
   'purchase.comparisons.view',
   'purchase.comparisons.manage',
   'purchase.purchaseOrders.view',
+  'purchase.purchaseOrders.manage',
   'stores.goodsReceipts.view',
   'stores.qualityCheck.view',
   'stores.stock.view',

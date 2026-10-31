@@ -85,6 +85,11 @@ model User {
   finalisedComparisons Comparison[] @relation("ComparisonFinalisedBy")
   cancelledComparisons Comparison[] @relation("ComparisonCancelledBy")
 
+  createdPurchaseOrders   PurchaseOrder[] @relation("PurchaseOrderCreatedBy")
+  updatedPurchaseOrders   PurchaseOrder[] @relation("PurchaseOrderUpdatedBy")
+  submittedPurchaseOrders PurchaseOrder[] @relation("PurchaseOrderSubmittedBy")
+  cancelledPurchaseOrders PurchaseOrder[] @relation("PurchaseOrderCancelledBy")
+
   @@map("users")
 }
 
@@ -261,6 +266,7 @@ model Company {
   enquiries      Enquiry[]
   quotations     Quotation[]
   comparisons    Comparison[]
+  purchaseOrders PurchaseOrder[]
 
   @@map("companies")
 }
@@ -282,11 +288,12 @@ model CompanyGstRegistration {
   createdById      String              @db.Uuid
   updatedById      String              @db.Uuid
 
-  company         Company   @relation(fields: [companyId], references: [id])
-  state           State     @relation(fields: [stateId], references: [id])
-  createdBy       User      @relation("GstRegistrationCreatedBy", fields: [createdById], references: [id])
-  updatedBy       User      @relation("GstRegistrationUpdatedBy", fields: [updatedById], references: [id])
+  company         Company         @relation(fields: [companyId], references: [id])
+  state           State           @relation(fields: [stateId], references: [id])
+  createdBy       User            @relation("GstRegistrationCreatedBy", fields: [createdById], references: [id])
+  updatedBy       User            @relation("GstRegistrationUpdatedBy", fields: [updatedById], references: [id])
   billingProjects Project[]
+  purchaseOrders  PurchaseOrder[]
 
   @@index([companyId])
   @@map("company_gst_registrations")
@@ -318,6 +325,7 @@ model Project {
   enquiries      Enquiry[]
   quotations     Quotation[]
   comparisons    Comparison[]
+  purchaseOrders PurchaseOrder[]
 
   sessionContexts Session[] @relation("SessionCurrentProject")
 
@@ -350,10 +358,11 @@ model Site {
   stores    Store[]
   userRoles UserRole[]
 
-  indents     Indent[]
-  enquiries   Enquiry[]
-  quotations  Quotation[]
-  comparisons Comparison[]
+  indents        Indent[]
+  enquiries      Enquiry[]
+  quotations     Quotation[]
+  comparisons    Comparison[]
+  purchaseOrders PurchaseOrder[]
 
   @@index([projectId])
   @@map("sites")
@@ -370,10 +379,11 @@ model Store {
   createdById String   @db.Uuid
   updatedById String   @db.Uuid
 
-  site      Site     @relation(fields: [siteId], references: [id])
-  createdBy User     @relation("StoreCreatedBy", fields: [createdById], references: [id])
-  updatedBy User     @relation("StoreUpdatedBy", fields: [updatedById], references: [id])
-  indents   Indent[]
+  site           Site            @relation(fields: [siteId], references: [id])
+  createdBy      User            @relation("StoreCreatedBy", fields: [createdById], references: [id])
+  updatedBy      User            @relation("StoreUpdatedBy", fields: [updatedById], references: [id])
+  indents        Indent[]
+  purchaseOrders PurchaseOrder[]
 
   @@index([siteId])
   @@map("stores")
@@ -452,15 +462,16 @@ model Item {
   createdById     String     @db.Uuid
   updatedById     String     @db.Uuid
 
-  category       ItemCategory    @relation(fields: [categoryId], references: [id])
-  unit           Unit            @relation(fields: [unitId], references: [id])
-  submittedBy    User?           @relation("ItemSubmittedBy", fields: [submittedById], references: [id])
-  decidedBy      User?           @relation("ItemDecidedBy", fields: [decidedById], references: [id])
-  createdBy      User            @relation("ItemCreatedBy", fields: [createdById], references: [id])
-  updatedBy      User            @relation("ItemUpdatedBy", fields: [updatedById], references: [id])
-  indentLines    IndentLine[]
-  enquiryLines   EnquiryLine[]
-  quotationLines QuotationLine[]
+  category           ItemCategory        @relation(fields: [categoryId], references: [id])
+  unit               Unit                @relation(fields: [unitId], references: [id])
+  submittedBy        User?               @relation("ItemSubmittedBy", fields: [submittedById], references: [id])
+  decidedBy          User?               @relation("ItemDecidedBy", fields: [decidedById], references: [id])
+  createdBy          User                @relation("ItemCreatedBy", fields: [createdById], references: [id])
+  updatedBy          User                @relation("ItemUpdatedBy", fields: [updatedById], references: [id])
+  indentLines        IndentLine[]
+  enquiryLines       EnquiryLine[]
+  quotationLines     QuotationLine[]
+  purchaseOrderLines PurchaseOrderLine[]
 
   @@index([categoryId])
   @@index([unitId])
@@ -530,6 +541,7 @@ model Vendor {
   enquiries        EnquiryVendor[]
   quotations       Quotation[]
   comparisonLines  ComparisonLine[]
+  purchaseOrders   PurchaseOrder[]
 
   @@index([status])
   @@index([stateId])
@@ -554,10 +566,11 @@ model VendorGstRegistration {
   createdById      String              @db.Uuid
   updatedById      String              @db.Uuid
 
-  vendor    Vendor @relation(fields: [vendorId], references: [id])
-  state     State  @relation(fields: [stateId], references: [id])
-  createdBy User   @relation("VendorGstCreatedBy", fields: [createdById], references: [id])
-  updatedBy User   @relation("VendorGstUpdatedBy", fields: [updatedById], references: [id])
+  vendor         Vendor          @relation(fields: [vendorId], references: [id])
+  state          State           @relation(fields: [stateId], references: [id])
+  createdBy      User            @relation("VendorGstCreatedBy", fields: [createdById], references: [id])
+  updatedBy      User            @relation("VendorGstUpdatedBy", fields: [updatedById], references: [id])
+  purchaseOrders PurchaseOrder[]
 
   @@index([vendorId])
   @@map("vendor_gst_registrations")
@@ -603,9 +616,10 @@ model VendorContact {
   createdById String   @db.Uuid
   updatedById String   @db.Uuid
 
-  vendor    Vendor @relation(fields: [vendorId], references: [id])
-  createdBy User   @relation("VendorContactCreatedBy", fields: [createdById], references: [id])
-  updatedBy User   @relation("VendorContactUpdatedBy", fields: [updatedById], references: [id])
+  vendor         Vendor          @relation(fields: [vendorId], references: [id])
+  createdBy      User            @relation("VendorContactCreatedBy", fields: [createdById], references: [id])
+  updatedBy      User            @relation("VendorContactUpdatedBy", fields: [updatedById], references: [id])
+  purchaseOrders PurchaseOrder[]
 
   @@index([vendorId])
   @@map("vendor_contacts")
@@ -616,6 +630,7 @@ enum DocumentType {
   ENQUIRY
   QUOTATION
   COMPARISON
+  PURCHASE_ORDER
 }
 
 /// Last number used per company / document type / project / financial year (PD-003). The next number
@@ -958,16 +973,17 @@ model Comparison {
   createdById    String           @db.Uuid
   updatedById    String           @db.Uuid
 
-  company     Company               @relation(fields: [companyId], references: [id])
-  project     Project               @relation(fields: [projectId], references: [id])
-  site        Site                  @relation(fields: [siteId], references: [id])
-  enquiry     Enquiry               @relation(fields: [enquiryId], references: [id])
-  finalisedBy User?                 @relation("ComparisonFinalisedBy", fields: [finalisedById], references: [id])
-  cancelledBy User?                 @relation("ComparisonCancelledBy", fields: [cancelledById], references: [id])
-  createdBy   User                  @relation("ComparisonCreatedBy", fields: [createdById], references: [id])
-  updatedBy   User                  @relation("ComparisonUpdatedBy", fields: [updatedById], references: [id])
-  lines       ComparisonLine[]
-  quotations  ComparisonQuotation[]
+  company        Company               @relation(fields: [companyId], references: [id])
+  project        Project               @relation(fields: [projectId], references: [id])
+  site           Site                  @relation(fields: [siteId], references: [id])
+  enquiry        Enquiry               @relation(fields: [enquiryId], references: [id])
+  finalisedBy    User?                 @relation("ComparisonFinalisedBy", fields: [finalisedById], references: [id])
+  cancelledBy    User?                 @relation("ComparisonCancelledBy", fields: [cancelledById], references: [id])
+  createdBy      User                  @relation("ComparisonCreatedBy", fields: [createdById], references: [id])
+  updatedBy      User                  @relation("ComparisonUpdatedBy", fields: [updatedById], references: [id])
+  lines          ComparisonLine[]
+  quotations     ComparisonQuotation[]
+  purchaseOrders PurchaseOrder[]
 
   @@index([companyId])
   @@index([projectId])
@@ -988,10 +1004,11 @@ model ComparisonLine {
   netRate          Decimal? @db.Decimal(18, 4)
   rank             Int?     @db.SmallInt
 
-  comparison     Comparison     @relation(fields: [comparisonId], references: [id])
-  enquiryLine    EnquiryLine    @relation(fields: [enquiryLineId], references: [id])
-  selectedVendor Vendor?        @relation(fields: [selectedVendorId], references: [id])
-  quotationLine  QuotationLine? @relation(fields: [quotationLineId], references: [id])
+  comparison         Comparison          @relation(fields: [comparisonId], references: [id])
+  enquiryLine        EnquiryLine         @relation(fields: [enquiryLineId], references: [id])
+  selectedVendor     Vendor?             @relation(fields: [selectedVendorId], references: [id])
+  quotationLine      QuotationLine?      @relation(fields: [quotationLineId], references: [id])
+  purchaseOrderLines PurchaseOrderLine[]
 
   @@unique([comparisonId, enquiryLineId])
   @@index([enquiryLineId])
@@ -1011,4 +1028,165 @@ model ComparisonQuotation {
   @@id([comparisonId, quotationId])
   @@index([quotationId])
   @@map("comparison_quotations")
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SUBMITTED
+  CANCELLED
+}
+
+enum PurchaseOrderSource {
+  COMPARISON
+  DIRECT
+}
+
+enum PurchaseOrderTaxType {
+  CGST_SGST
+  IGST
+  NONE
+}
+
+enum PurchaseOrderChargeType {
+  FREIGHT
+  LOADING_UNLOADING
+  OTHER
+}
+
+/// Purchase order (PD-053). number PO/<project>/<FY>/0001 is given on the first Submit; null while a first
+/// Draft. Revisions keep the number with revisionNo 1, 2... (OQ-74, G-12). Source COMPARISON carries
+/// comparisonId; DIRECT does not (CHECK). billingGstRegistrationId is copied from the project (OQ-70);
+/// taxType from billing state vs vendor GST state (OQ-71). Totals are computed by the API (PD-006).
+model PurchaseOrder {
+  id                       String               @id @default(uuid()) @db.Uuid
+  number                   String?
+  revisionNo               Int                  @default(0) @db.SmallInt
+  revisedFromId            String?              @db.Uuid
+  fiscalYear               String?
+  source                   PurchaseOrderSource
+  companyId                String               @db.Uuid
+  projectId                String               @db.Uuid
+  siteId                   String               @db.Uuid
+  storeId                  String?              @db.Uuid
+  comparisonId             String?              @db.Uuid
+  vendorId                 String               @db.Uuid
+  vendorGstRegistrationId  String?              @db.Uuid
+  vendorContactId          String?              @db.Uuid
+  billingGstRegistrationId String               @db.Uuid
+  taxType                  PurchaseOrderTaxType
+  poDate                   DateTime             @db.Date
+  subject                  String
+  vendorQuoteRef           String?
+  vendorQuoteDate          DateTime?            @db.Date
+  deliveryDate             DateTime?            @db.Date
+  paymentTermsDays         Int?                 @db.SmallInt
+  remarks                  String?
+  subtotal                 Decimal              @default(0) @db.Decimal(18, 2)
+  chargesAmount            Decimal              @default(0) @db.Decimal(18, 2)
+  cgstTotal                Decimal              @default(0) @db.Decimal(18, 2)
+  sgstTotal                Decimal              @default(0) @db.Decimal(18, 2)
+  igstTotal                Decimal              @default(0) @db.Decimal(18, 2)
+  taxTotal                 Decimal              @default(0) @db.Decimal(18, 2)
+  grandTotal               Decimal              @default(0) @db.Decimal(18, 2)
+  status                   PurchaseOrderStatus  @default(DRAFT)
+  submittedAt              DateTime?            @db.Timestamptz(3)
+  submittedById            String?              @db.Uuid
+  cancelledAt              DateTime?            @db.Timestamptz(3)
+  cancelledById            String?              @db.Uuid
+  cancelRemarks            String?
+  createdAt                DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime             @updatedAt @db.Timestamptz(3)
+  createdById              String               @db.Uuid
+  updatedById              String               @db.Uuid
+
+  company       Company                @relation(fields: [companyId], references: [id])
+  project       Project                @relation(fields: [projectId], references: [id])
+  site          Site                   @relation(fields: [siteId], references: [id])
+  store         Store?                 @relation(fields: [storeId], references: [id])
+  comparison    Comparison?            @relation(fields: [comparisonId], references: [id])
+  vendor        Vendor                 @relation(fields: [vendorId], references: [id])
+  vendorGst     VendorGstRegistration? @relation(fields: [vendorGstRegistrationId], references: [id])
+  vendorContact VendorContact?         @relation(fields: [vendorContactId], references: [id])
+  billingGst    CompanyGstRegistration @relation(fields: [billingGstRegistrationId], references: [id])
+  revisedFrom   PurchaseOrder?         @relation("PurchaseOrderRevision", fields: [revisedFromId], references: [id])
+  revisions     PurchaseOrder[]        @relation("PurchaseOrderRevision")
+  submittedBy   User?                  @relation("PurchaseOrderSubmittedBy", fields: [submittedById], references: [id])
+  cancelledBy   User?                  @relation("PurchaseOrderCancelledBy", fields: [cancelledById], references: [id])
+  createdBy     User                   @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id])
+  updatedBy     User                   @relation("PurchaseOrderUpdatedBy", fields: [updatedById], references: [id])
+  lines         PurchaseOrderLine[]
+  charges       PurchaseOrderCharge[]
+  terms         PurchaseOrderTerm[]
+
+  @@unique([number, revisionNo], map: "purchase_orders_number_revision_key")
+  @@index([companyId])
+  @@index([projectId])
+  @@index([siteId])
+  @@index([comparisonId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([poDate])
+  @@map("purchase_orders")
+}
+
+/// One item per line. comparisonLineId is set on POs from a comparison (one live PO per comparison line,
+/// OQ-77 b, checked by the API). Tax split per line, half-up (PD-006); lineTotal = taxable + GST (CHECK).
+model PurchaseOrderLine {
+  id               String  @id @default(uuid()) @db.Uuid
+  purchaseOrderId  String  @db.Uuid
+  lineNo           Int     @db.SmallInt
+  itemId           String  @db.Uuid
+  comparisonLineId String? @db.Uuid
+  quantity         Decimal @db.Decimal(18, 3)
+  rate             Decimal @db.Decimal(18, 4)
+  discountPercent  Decimal @default(0) @db.Decimal(5, 2)
+  gstRate          Decimal @db.Decimal(5, 2)
+  taxableAmount    Decimal @db.Decimal(18, 2)
+  cgstAmount       Decimal @default(0) @db.Decimal(18, 2)
+  sgstAmount       Decimal @default(0) @db.Decimal(18, 2)
+  igstAmount       Decimal @default(0) @db.Decimal(18, 2)
+  lineTotal        Decimal @db.Decimal(18, 2)
+  remarks          String?
+
+  purchaseOrder  PurchaseOrder   @relation(fields: [purchaseOrderId], references: [id])
+  item           Item            @relation(fields: [itemId], references: [id])
+  comparisonLine ComparisonLine? @relation(fields: [comparisonLineId], references: [id])
+
+  @@unique([purchaseOrderId, lineNo])
+  @@unique([purchaseOrderId, comparisonLineId])
+  @@index([itemId])
+  @@index([comparisonLineId])
+  @@map("purchase_order_lines")
+}
+
+/// Freight, loading/unloading and one other charge per PO, each with its own GST % and split.
+model PurchaseOrderCharge {
+  id              String                  @id @default(uuid()) @db.Uuid
+  purchaseOrderId String                  @db.Uuid
+  chargeType      PurchaseOrderChargeType
+  description     String?
+  amount          Decimal                 @db.Decimal(18, 2)
+  gstRate         Decimal                 @db.Decimal(5, 2)
+  cgstAmount      Decimal                 @default(0) @db.Decimal(18, 2)
+  sgstAmount      Decimal                 @default(0) @db.Decimal(18, 2)
+  igstAmount      Decimal                 @default(0) @db.Decimal(18, 2)
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+
+  @@unique([purchaseOrderId, chargeType])
+  @@map("purchase_order_charges")
+}
+
+/// Terms & conditions rows, printed in sortOrder (OQ-79). Title or text required (CHECK).
+model PurchaseOrderTerm {
+  id              String  @id @default(uuid()) @db.Uuid
+  purchaseOrderId String  @db.Uuid
+  sortOrder       Int     @db.SmallInt
+  title           String?
+  text            String?
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+
+  @@unique([purchaseOrderId, sortOrder])
+  @@map("purchase_order_terms")
 }

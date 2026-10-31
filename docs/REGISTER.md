@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-053 · CQ-110 · OQ-68 · PDEF-042 · CR-003
+# REGISTER — next free: PD-054 · CQ-115 · OQ-84 · PDEF-042 · CR-003
 
 ## Decisions
 
@@ -53,9 +53,10 @@
 | PD-047 | Purchase Enquiry (G-08): one project + one site (delivery location); lines from Approved indent lines of that site (approved qty > 0), several indents per enquiry; one indent line once per enquiry but may be in several enquiries; qty ≤ approved qty; 1–20 approved active vendors; enquiry date, quote due date (required, ≥ enquiry date), terms, remarks; Draft → Sent → Closed, Cancel from Draft/Sent (remarks); number ENQ/<project>/<FY>/0001 on Send, no gaps (document_series); no approval (ladder at PO); one print copy per vendor (OQ-52 A), PDF via browser; no email (PD-020); permission purchase.enquiries.manage on project/site | | APPROVED — built G-08: batch 1 4898639 (CI #70); 2 a248a1c (CI #71); 3a cd18ae4; 3b c415ddb (CI #73); PDEF-039 fix 335b9c0 (CI #74); merged to main |
 | PD-048 | New status colour key `sent` (theme.ts, globals.css, status-chip.tsx, terminology) for Sent enquiries | APPROVED — cd18ae4 |
 | PD-049 | Vendor Quotation (G-09): keyed in against a Sent enquiry, only for vendors on it; project/site copied from enquiry; one row per enquiry line (qty from enquiry, read-only), quoted line needs rate (18,4) + GST % (default from item), discount % optional, make/brand; charges Freight / Loading-Unloading / Other with own GST %; header vendor ref, quote date, valid until, delivery days, payment days; totals computed server-side (line round half-up then sum, PD-006); Draft → Submitted → Superseded / Cancelled; number QTN/<project>/<FY>/0001 on first Submit, no gaps; revisions R1, R2 keep number (OQ-54); one Submitted + one Draft per enquiry + vendor (DB-enforced); permission purchase.quotations.manage (not GLOBAL-only) | APPROVED — built G-09: batch 1 facdeb2 (CI #79); 2 e4039db (CI #80); 3a 12362d7 (CI #81); 3b 13bd729 (CI #82); merged to main 13bd729 |
-| PD-050 | Comparison (CS): saved document CMP/<project>/<FY>/0001 given on Finalise; one open per enquiry; Draft stores per-line vendor + reason, grid live from latest Submitted quotations; Finalise records compared quotations, quotation line, net rate, rank and closes the enquiry; rank by net rate (rate less discount, GST excluded), ties share rank; non-L1 needs reason; only Draft cancellable; no approval (approval at PO, PD-008) | APPROVED — G-10 batch 1 af15433 (CI #84); batch 2 API (draft save checks choice only, reasons checked at Finalise; quotation in a Finalised comparison cannot be cancelled) |
+| PD-050 | Comparison (CS): saved document CMP/<project>/<FY>/0001 given on Finalise; one open per enquiry; Draft stores per-line vendor + reason, grid live from latest Submitted quotations; Finalise records compared quotations, quotation line, net rate, rank and closes the enquiry; rank by net rate (rate less discount, GST excluded), ties share rank; non-L1 needs reason; only Draft cancellable; no approval (approval at PO, PD-008) | APPROVED — built G-10: batch 1 af15433 (CI #84); 2 0d5b3f5 (CI #85); 3a a65b7b9 (CI #86); 3b + PDEF-041 6b62344 (CI #87); merged to main |
 | PD-051 | Comparison draft save checks only that each chosen vendor quoted the line; non-L1 reason and "at least one line" are checked at Finalise (ranks may change while vendors revise). Finalise closes the enquiry with its own audit row. A quotation recorded in a Finalised comparison cannot be cancelled | APPROVED — G-10 batch 2 |
-| PD-052 | Comparison screens (G-10 batch 3a): list, new (enquiry picker → grid), detail, edit; one grid component for form and detail (vendors as columns by code, net rate + L1/L2 badge, expired warning, None column, reason column with "not L1" hint, footer = whole-quotation totals, delivery, payment terms, valid until); comparison screens use their own API error messages before the shared ones (same codes mean quotation errors); new status chip "Finalised" (theme.ts, globals.css, status-chip.tsx, terminology) | PROPOSED |
+| PD-052 | Comparison screens (G-10 batch 3a): list, new (enquiry picker → grid), detail, edit; one grid component for form and detail (vendors as columns by code, net rate + L1/L2 badge, expired warning, None column, reason column with "not L1" hint, footer = whole-quotation totals, delivery, payment terms, valid until); comparison screens use their own API error messages before the shared ones (same codes mean quotation errors); new status chip "Finalised" (theme.ts, globals.css, status-chip.tsx, terminology) | APPROVED |
+| PD-053 | Purchase Order (G-11): source COMPARISON (from a Finalised comparison, one live PO per comparison + vendor, lines carry comparison line, rate/discount/GST % editable with "Quoted" hint) or DIRECT (any approved active items and vendors, no indent link); qty may differ from enquiry qty (hint, ladder controls); header company/project/site/store, billing = project billing GST registration, vendor GST row (none = unregistered), vendor contact, subject, vendor quotation ref + date, delivery date, payment days, remarks, terms rows (defaults from client sample); GST split CGST+SGST same state / IGST different / none unregistered, per line half-up (PD-006); Draft → Submitted → Cancelled (remarks), approval in G-12; number PO/<project>/<FY>/0001 on Submit, no gaps; revision after approval in G-12; permissions purchase.purchaseOrders.view/.manage on project/site; print per client sample | APPROVED — G-11 batch 1 pending |
 
 
 ## Owner questions
@@ -120,9 +121,24 @@
 | OQ-63 | Choosing a vendor that is not L1 requires a reason | APPROVED → PD-050 |
 | OQ-64 | Only latest Submitted quotation per vendor compared; expired valid-until = warning, not excluded | APPROVED → PD-050 |
 | OQ-65 | Finalise closes the enquiry; comparison has no approval (approval at PO, PD-008) | APPROVED → PD-050 |
-| OQ-66 | Can a Finalised comparison be cancelled (e.g. vendor backs out)? Depends on PO rules — decide in G-11 | OPEN — not allowed until G-11 |
-| OQ-67 | New comparison: the "Expired" flags are worked out for today's date when the grid opens; changing the comparison date in the form does not refresh them on screen. The API re-checks with the saved date on Save/Finalise. Recommend: accept for now | OPEN |
-
+| OQ-66 | Can a Finalised comparison be cancelled? | CLOSED — ok: no; cancel that PO and raise a direct PO to another vendor |
+| OQ-67 | New comparison: the "Expired" flags are worked out for today's date when the grid opens; changing the comparison date in the form does not refresh them on screen. The API re-checks with the saved date on Save/Finalise. Recommend: accept for now | CLOSED |
+| OQ-68 | PO source | CLOSED — owner: from a Finalised comparison (one PO per selected vendor) and also direct PO without enquiry (free entry) |
+| OQ-69 | PO qty vs enquiry qty | CLOSED — owner: may be lower or higher (approval ladder controls); hint under qty when it differs from the enquiry qty |
+| OQ-70 | PO header (company/project/site/store from enquiry; billing = project billing GST registration; vendor GST row; payment terms from vendor, editable; delivery date, address, terms, remarks) | CLOSED — ok |
+| OQ-71 | GST split: same state CGST+SGST, different IGST, unregistered none; server-side half-up per line | CLOSED — ok |
+| OQ-72 | PO statuses in G-11: Draft → Submitted → Cancelled (remarks); approval in G-12 | CLOSED — ok |
+| OQ-73 | PO number PO/<project>/<FY>/0001 on Submit, no gaps | CLOSED — ok (sample format UIEPL/xxxx/xxxx/26-27 pending CQ-82, see OQ-81) |
+| OQ-74 | Change after approval = revision, same number, re-approval, old Superseded | CLOSED — ok |
+| OQ-75 | Permissions purchase.orders.view/.manage on project/site; .approve in G-12 | CLOSED — ok |
+| OQ-76 | Direct PO contents | CLOSED — owner: any active approved items and approved vendors; a PO is either Direct or From comparison (see OQ-82) |
+| OQ-77 | PO from comparison: rate/discount/GST % editable with "Quoted" hint; one comparison line on one live PO | CLOSED — ok |
+| OQ-78 | PO print: rate after discount; one tax row per GST rate; charges only if present; amount in words (lakh/crore); final print after approval, earlier preview watermarked | CLOSED — ok |
+| OQ-79 | PO terms: editable rows pre-filled from sample's six clauses; defaults in one config; admin edit later | CLOSED — ok |
+| OQ-80 | PO header extra fields: subject, vendor quotation ref + date, vendor contact | CLOSED — ok |
+| OQ-81 | PO number PO/<project>/<FY>/0001 until CQ-82 answered | CLOSED — ok |
+| OQ-82 | Direct PO: no indent link, no mandatory reason; source fixed at creation | OPEN — awaiting confirm |
+| OQ-83 | One live PO per comparison + vendor (DB partial unique index); lines removed from it are ordered via a direct PO | OPEN — awaiting confirm |
 
 ## Client questions
 
@@ -139,6 +155,11 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | CQ-107 | Material List: Group names in Sheet1 differ from "Abstrct" sheet — "Oil & Lubricants" vs "Lubricants & Oil"; not in Abstract: Water Supply & Plumbing (105), Tools (57), Shuttering material (15), Safety Items (14), Structural steel (6); probable typos "Safety material" (1), "Shutting Material" (1). Client to confirm final category list before import | OPEN — client |
 | CQ-108 | Who approves a new vendor (VP like items, Purchase Manager, or no approval)? | OPEN — client |
 | CQ-109 | Does the client have an existing vendor list (Excel) to import? | OPEN — client |
+| CQ-110 | PO sample: what is the "xxx xxx xxx" line under the grand total (prepared-by name, signatory name, other)? | OPEN — client |
+| CQ-111 | PO print date: sample uses dots (xx.xx.xxxx); system standard is DD-MM-YYYY (PD-014). Accept dashes? | OPEN — client |
+| CQ-112 | Confirm default PO terms wording (Taxes, Payment terms, Delivery, Transportation "inclusive", quote PO No. in invoice, Unloading by us with prior intimation) and whether other clauses are needed | OPEN — client |
+| CQ-113 | PO signature block: print signatory name/designation (e.g. final approver from the ladder) or blank "Authorised Signatory" only? | OPEN — client |
+| CQ-114 | "Sign the duplicate copy": print two copies marked ORIGINAL / DUPLICATE? | OPEN — client |
 
 ## Defects
 
@@ -177,7 +198,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-038 | Audit Log had no readable entity-type label for Indent (raw "Indent" missing from terminology.auditLog.entityTypes); Enquiry added at the same time | FIXED — G-08 batch 3a |
 | PDEF-039 | G-08 batch 3b: print route saved under apps/web/app/(app)/(print)/ instead of apps/web/app/(print)/, so the print page was wrapped in the app shell | FIXED — 335b9c0 (CI #74) |
 | PDEF-040 | preview.json (G-05b import preview test output with client material-list rows) committed at repo root in a public repo | FIXED — removed from tracking, added to .gitignore; still in Git history (history clean-up only if client requires) |
-| PDEF-041 | Comparison save → 500: interactive transaction exceeded Prisma's 5 s default ("expired transaction") because each query round-trips to Neon US East; affected any multi-step write with audit (comparison create/finalise most). Fix: PrismaService transactionOptions maxWait 10 s, timeout 30 s, global | FIXED (pending commit) |
+| PDEF-041 | Comparison save → 500: interactive transaction exceeded Prisma's 5 s default ("expired transaction") because each query round-trips to Neon US East; affected any multi-step write with audit (comparison create/finalise most). Fix: PrismaService transactionOptions maxWait 10 s, timeout 30 s, global | FIXED — 6b62344, CI #87 |
 
 
 ## Change requests

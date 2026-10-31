@@ -18,7 +18,13 @@ export const INDENT_ERROR_CODES = [
 export type IndentErrorCode = (typeof INDENT_ERROR_CODES)[number];
 
 /** Document types that take a number from document_series (PD-003). */
-export const DOCUMENT_TYPES = ['INDENT', 'ENQUIRY', 'QUOTATION', 'COMPARISON'] as const;
+export const DOCUMENT_TYPES = [
+  'INDENT',
+  'ENQUIRY',
+  'QUOTATION',
+  'COMPARISON',
+  'PURCHASE_ORDER',
+] as const;
 
 export const DocumentType = z.enum(DOCUMENT_TYPES);
 
