@@ -418,3 +418,115 @@ export const PagedPurchaseOrdersResponse = z.object({
 });
 
 export type PagedPurchaseOrdersResponse = z.infer<typeof PagedPurchaseOrdersResponse>;
+
+// ---------- Option lists for the purchase order form ----------
+
+/** Projects / sites / stores where the user holds purchase.purchaseOrders.manage ("CODE  Name" labels). */
+export const PurchaseOrderFormOptionsResponse = z.object({
+  projects: z.array(z.object({ id: z.uuid(), label: z.string(), companyId: z.uuid() })),
+  sites: z.array(z.object({ id: z.uuid(), label: z.string(), projectId: z.uuid() })),
+  stores: z.array(z.object({ id: z.uuid(), label: z.string(), siteId: z.uuid() })),
+});
+
+export type PurchaseOrderFormOptionsResponse = z.infer<typeof PurchaseOrderFormOptionsResponse>;
+
+export const PurchaseOrderSearchQuery = z.object({
+  search: z.string().trim().max(120).optional(),
+});
+
+export type PurchaseOrderSearchQuery = z.infer<typeof PurchaseOrderSearchQuery>;
+
+/** Finalised comparisons in scope; vendors = chosen on at least one line, no live PO yet (OQ-83). */
+export const PurchaseOrderComparisonOptionsResponse = z.object({
+  comparisons: z.array(
+    z.object({
+      id: z.uuid(),
+      label: z.string(),
+      vendors: z.array(z.object({ id: z.uuid(), label: z.string() })),
+    }),
+  ),
+});
+
+export type PurchaseOrderComparisonOptionsResponse = z.infer<
+  typeof PurchaseOrderComparisonOptionsResponse
+>;
+
+/** Approved, active vendors. */
+export const PurchaseOrderVendorOptionsResponse = z.object({
+  vendors: z.array(z.object({ id: z.uuid(), label: z.string() })),
+});
+
+export type PurchaseOrderVendorOptionsResponse = z.infer<typeof PurchaseOrderVendorOptionsResponse>;
+
+/** Approved, active items; defaultGstRate from the item master (may be blank, CQ-99). */
+export const PurchaseOrderItemOptionsResponse = z.object({
+  items: z.array(z.object({ item: EnquiryItemSummary, defaultGstRate: z.string().nullable() })),
+});
+
+export type PurchaseOrderItemOptionsResponse = z.infer<typeof PurchaseOrderItemOptionsResponse>;
+
+export const PurchaseOrderVendorDetailsQuery = z.object({
+  vendorId: z.uuid(),
+  siteId: z.uuid(),
+});
+
+export type PurchaseOrderVendorDetailsQuery = z.infer<typeof PurchaseOrderVendorDetailsQuery>;
+
+/**
+ * Active GST registrations and contacts of one vendor. taxType = what the PO would get with that
+ * registration against the project's billing GST (OQ-71); null when the project has no billing GST.
+ * No registration chosen = NONE (unregistered vendor).
+ */
+export const PurchaseOrderVendorDetails = z.object({
+  vendor: z.object({ id: z.uuid(), code: z.string(), legalName: z.string() }),
+  billingGstin: z.string().nullable(),
+  paymentTermsDays: z.number().int().nullable(),
+  gstRegistrations: z.array(
+    z.object({
+      id: z.uuid(),
+      gstin: z.string(),
+      /** "36 Telangana" */
+      state: z.string(),
+      taxType: PurchaseOrderTaxType.nullable(),
+    }),
+  ),
+  contacts: z.array(
+    z.object({
+      id: z.uuid(),
+      name: z.string(),
+      phone: z.string().nullable(),
+      isPrimary: z.boolean(),
+    }),
+  ),
+});
+
+export type PurchaseOrderVendorDetails = z.infer<typeof PurchaseOrderVendorDetails>;
+
+export const PurchaseOrderComparisonFormQuery = z.object({
+  comparisonId: z.uuid(),
+  vendorId: z.uuid(),
+});
+
+export type PurchaseOrderComparisonFormQuery = z.infer<typeof PurchaseOrderComparisonFormQuery>;
+
+/** Prefill for a PO from a comparison: the lines where this vendor was chosen. */
+export const PurchaseOrderComparisonFormResponse = z.object({
+  comparison: z.object({ id: z.uuid(), number: z.string(), comparisonDate: z.string() }),
+  enquiry: z.object({ id: z.uuid(), number: z.string() }),
+  project: IndentScopeSummary,
+  site: IndentScopeSummary,
+  vendor: PurchaseOrderVendorDetails,
+  vendorQuoteRef: z.string().nullable(),
+  vendorQuoteDate: z.string().nullable(),
+  lines: z.array(
+    z.object({
+      comparisonLineId: z.uuid(),
+      item: EnquiryItemSummary,
+      reference: PurchaseOrderLineReference,
+    }),
+  ),
+});
+
+export type PurchaseOrderComparisonFormResponse = z.infer<
+  typeof PurchaseOrderComparisonFormResponse
+>;
