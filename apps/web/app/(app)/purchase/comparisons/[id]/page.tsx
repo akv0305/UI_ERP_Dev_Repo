@@ -20,6 +20,10 @@ function scopeLabel(scope: { code: string; name: string }): string {
   return codeName(scope.code, scope.name);
 }
 
+function createPoLabel(vendorCode: string): string {
+  return `${terminology.purchaseOrders.workflow.createFor} ${vendorCode}`;
+}
+
 export default async function ComparisonDetailPage({
   params,
 }: {
@@ -63,6 +67,23 @@ export default async function ComparisonDetailPage({
       <Link href={`/purchase/comparisons/${comparison.id}/edit`}>{t.edit}</Link>
     </Button>
   ) : null;
+  // One button per vendor chosen on at least one line (OQ-83). A vendor that already has a
+  // live PO gets the "cannot be ordered" message on the new-PO page.
+  const orderVendors =
+    comparison.status === 'FINALISED' && permissions.includes('purchase.purchaseOrders.manage')
+      ? comparison.vendors.filter((column) =>
+          comparison.lines.some((line) => line.selectedVendorId === column.vendor.id),
+        )
+      : [];
+  const createOrders = orderVendors.map((column) => (
+    <Button key={column.vendor.id} asChild>
+      <Link
+        href={`/purchase/purchase-orders/new?comparisonId=${comparison.id}&vendorId=${column.vendor.id}`}
+      >
+        {createPoLabel(column.vendor.code)}
+      </Link>
+    </Button>
+  ));
 
   return (
     <div className="flex flex-col gap-4">
@@ -73,6 +94,7 @@ export default async function ComparisonDetailPage({
           <>
             {history}
             {edit}
+            {createOrders}
             <ComparisonActions comparison={comparison} />
           </>
         }

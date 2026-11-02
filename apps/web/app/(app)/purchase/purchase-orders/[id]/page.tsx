@@ -15,6 +15,7 @@ import {
   referenceHint,
   termText,
 } from '../_components/purchase-order-text';
+import { PurchaseOrderActions } from './purchase-order-actions';
 
 const t = terminology.purchaseOrders;
 const notSet = terminology.labels.notSet;
@@ -89,6 +90,7 @@ export default async function PurchaseOrderDetailPage({
           <>
             {history}
             {edit}
+            <PurchaseOrderActions purchaseOrder={po} />
           </>
         }
       />

@@ -1054,6 +1054,21 @@ export const terminology = {
     addTerm: 'Add term',
     removeTerm: 'Remove term',
     totalsHint: 'Preview only. The saved amounts are calculated by the server.',
+    workflow: {
+      submit: 'Submit',
+      submitTitle: 'Submit purchase order',
+      submitDescription:
+        'The purchase order gets its number and can no longer be edited. To change it later, cancel it and raise a new one.',
+      submittedMessage: 'Purchase order submitted.',
+      cancel: 'Cancel PO',
+      cancelTitle: 'Cancel purchase order',
+      cancelDescription:
+        'The purchase order is cancelled and kept for history. Its comparison lines can then be ordered on a new purchase order. Give the reason.',
+      cancelledMessage: 'Purchase order cancelled.',
+      remarksLabel: 'Remarks',
+      remarksRequiredHint: 'Required.',
+      createFor: 'Create PO:',
+    },
     apiErrors: {
       INVALID_STATUS: 'Only draft purchase orders can be changed. Reload the page.',
       INVALID_COMPARISON:
