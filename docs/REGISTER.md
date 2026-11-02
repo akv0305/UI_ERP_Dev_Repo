@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-054 · CQ-115 · OQ-86 · PDEF-043 · CR-003
+# REGISTER — next free: PD-054 · CQ-115 · OQ-86 · PDEF-044 · CR-003
 
 ## Decisions
 
@@ -56,7 +56,7 @@
 | PD-050 | Comparison (CS): saved document CMP/<project>/<FY>/0001 given on Finalise; one open per enquiry; Draft stores per-line vendor + reason, grid live from latest Submitted quotations; Finalise records compared quotations, quotation line, net rate, rank and closes the enquiry; rank by net rate (rate less discount, GST excluded), ties share rank; non-L1 needs reason; only Draft cancellable; no approval (approval at PO, PD-008) | APPROVED — built G-10: batch 1 af15433 (CI #84); 2 0d5b3f5 (CI #85); 3a a65b7b9 (CI #86); 3b + PDEF-041 6b62344 (CI #87); merged to main |
 | PD-051 | Comparison draft save checks only that each chosen vendor quoted the line; non-L1 reason and "at least one line" are checked at Finalise (ranks may change while vendors revise). Finalise closes the enquiry with its own audit row. A quotation recorded in a Finalised comparison cannot be cancelled | APPROVED — G-10 batch 2 |
 | PD-052 | Comparison screens (G-10 batch 3a): list, new (enquiry picker → grid), detail, edit; one grid component for form and detail (vendors as columns by code, net rate + L1/L2 badge, expired warning, None column, reason column with "not L1" hint, footer = whole-quotation totals, delivery, payment terms, valid until); comparison screens use their own API error messages before the shared ones (same codes mean quotation errors); new status chip "Finalised" (theme.ts, globals.css, status-chip.tsx, terminology) | APPROVED |
-| PD-053 | Purchase Order (G-11): source COMPARISON (from a Finalised comparison, one live PO per comparison + vendor, lines carry comparison line, rate/discount/GST % editable with "Quoted" hint) or DIRECT (any approved active items and vendors, no indent link); qty may differ from enquiry qty (hint, ladder controls); header company/project/site/store, billing = project billing GST registration, vendor GST row (none = unregistered), vendor contact, subject, vendor quotation ref + date, delivery date, payment days, remarks, terms rows (defaults from client sample); GST split CGST+SGST same state / IGST different / none unregistered, per line half-up (PD-006); Draft → Submitted → Cancelled (remarks), approval in G-12; number PO/<project>/<FY>/0001 on Submit, no gaps; revision after approval in G-12; permissions purchase.purchaseOrders.view/.manage on project/site; print per client sample | APPROVED — G-11 batch 1 3e1dba8 (CI #89); batch 2a pending |
+| PD-053 | Purchase Order (G-11): source COMPARISON (from a Finalised comparison, one live PO per comparison + vendor, lines carry comparison line, rate/discount/GST % editable with "Quoted" hint) or DIRECT (any approved active items and vendors, no indent link); qty may differ from enquiry qty (hint, ladder controls); header company/project/site/store, billing = project billing GST registration, vendor GST row (none = unregistered), vendor contact, subject, vendor quotation ref + date, delivery date, payment days, remarks, terms rows (defaults from client sample); GST split CGST+SGST same state / IGST different / none unregistered, per line half-up (PD-006); Draft → Submitted → Cancelled (remarks), approval in G-12; number PO/<project>/<FY>/0001 on Submit, no gaps; revision after approval in G-12; permissions purchase.purchaseOrders.view/.manage on project/site; print per client sample | APPROVED — G-11 batch 1 3e1dba8 (CI #89); 2a d776c06 (CI #90); 2b 1f37edd (CI #91); 2c d9e54fd (CI #92); 3a pending |
 
 
 ## Owner questions
@@ -139,8 +139,8 @@
 | OQ-81 | PO number PO/<project>/<FY>/0001 until CQ-82 answered | CLOSED — ok |
 | OQ-82 | Direct PO: no indent link, no mandatory reason; source fixed at creation | CLOSED — owner yes |
 | OQ-83 | One live PO per comparison + vendor (DB partial unique index); lines removed from it are ordered via a direct PO | CLOSED — owner yes |
-| OQ-84 | Comparison PO lines: (a) while Draft, lines can be removed and re-added — picker lists only comparison lines where this vendor was chosen and not on another live PO; (b) items not in the comparison go on a direct PO; (c) after Submit, change = cancel and re-raise (revision in G-12) | OPEN — proposed |
-| OQ-85 | PO API defaults: (a) PO date not future (IST), comparison PO not before comparison date; (b) GST-registered vendor must have a GST registration chosen; (c) inactive store / vendor GST / contact already saved on a draft may stay, not newly chosen; (d) Submit re-checks against current masters and stops if billing GST, tax type or total would change | OPEN — proposed |
+| OQ-84 | Comparison PO lines: (a) while Draft, lines can be removed and re-added — picker lists only comparison lines where this vendor was chosen and not on another live PO; (b) items not in the comparison go on a direct PO; (c) after Submit, change = cancel and re-raise (revision in G-12) | CLOSED — owner ok (built 2b/2c) |
+| OQ-85 | PO API defaults: (a) PO date not future (IST), comparison PO not before comparison date; (b) GST-registered vendor must have a GST registration chosen; (c) inactive store / vendor GST / contact already saved on a draft may stay, not newly chosen; (d) Submit re-checks against current masters and stops if billing GST, tax type or total would change | CLOSED — owner ok (built 2b/2c) |
 
 
 ## Client questions
@@ -203,6 +203,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-040 | preview.json (G-05b import preview test output with client material-list rows) committed at repo root in a public repo | FIXED — removed from tracking, added to .gitignore; still in Git history (history clean-up only if client requires) |
 | PDEF-041 | Comparison save → 500: interactive transaction exceeded Prisma's 5 s default ("expired transaction") because each query round-trips to Neon US East; affected any multi-step write with audit (comparison create/finalise most). Fix: PrismaService transactionOptions maxWait 10 s, timeout 30 s, global | FIXED — 6b62344, CI #87 |
 | PDEF-042 | G-11 batch 2a: purchase-order-math.spec.ts imported describe/expect/it from @jest/globals (repeat of PDEF-036); repo uses Jest globals | CLOSED — d776c06, CI #90 |
+| PDEF-043 | Audit Log had no readable entity-type labels for Comparison and PurchaseOrder (terminology.auditLog.entityTypes stopped at Quotation; contracts already had both) | FIXED — G-11 batch 3a |
 
 
 ## Change requests
@@ -229,4 +230,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | G-05b-2a | Import and bulk approve API | DONE — 05210c8 + 120c503, CI #49 |
 | G-05b-2b | Import screen (upload, summary, unmatched pickers, editable grid, Check again, Import, results, Import from Excel button) | DONE — 860f8ca, CI #50; scroll fix PDEF-031 |
 | G-11-1 | PO contracts, schema, migration 20261031121444_purchase_orders | DONE — 3e1dba8, CI #89 |
-| G-11-2a | PO errors, rules, GST math (CGST/SGST/IGST split) + tests, mapper | PENDING |
+| G-11-2a | PO errors, rules, GST math (CGST/SGST/IGST split) + tests, mapper | DONE — d776c06, CI #90 |
+| G-11-2b | PO service, controller, module (list, detail, create, edit, submit, cancel) | DONE — 1f37edd, CI #91 |
+| G-11-2c | PO option lists (form, comparison, comparison-form, vendor, vendor-details, item) | DONE — d9e54fd, CI #92 |
+| G-11-3a | PO list + detail screens, status chip, PDEF-043 | PENDING |
