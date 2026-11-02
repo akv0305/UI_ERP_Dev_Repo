@@ -65,6 +65,12 @@ export default async function PurchaseOrderDetailPage({
     </Button>
   ) : null;
 
+  const edit = po.canEdit ? (
+    <Button asChild variant="outline">
+      <Link href={`/purchase/purchase-orders/${po.id}/edit`}>{t.edit}</Link>
+    </Button>
+  ) : null;
+
   const gstTotals = splitGst
     ? [
         { label: t.totalCgst, value: formatINR(po.cgstTotal) },
@@ -79,7 +85,12 @@ export default async function PurchaseOrderDetailPage({
       <PageHeader
         title={purchaseOrderTitle(po)}
         subtitle={codeName(po.vendor.code, po.vendor.legalName)}
-        actions={history}
+        actions={
+          <>
+            {history}
+            {edit}
+          </>
+        }
       />
       <section className="rounded-lg border border-border bg-surface p-(--card-padding)">
         <h2 className="mb-3 text-sm font-semibold text-foreground">{t.sectionStatus}</h2>

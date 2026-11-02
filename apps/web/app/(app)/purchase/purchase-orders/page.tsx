@@ -41,5 +41,11 @@ export default async function PurchaseOrdersPage({
     return <ErrorState description={terminology.purchaseOrders.loadError} />;
   }
 
-  return <PurchaseOrdersListClient data={result.data} query={query} />;
+  return (
+    <PurchaseOrdersListClient
+      data={result.data}
+      query={query}
+      canManage={permissions.includes('purchase.purchaseOrders.manage')}
+    />
+  );
 }

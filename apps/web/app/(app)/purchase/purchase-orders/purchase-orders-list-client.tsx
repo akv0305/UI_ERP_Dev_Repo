@@ -22,6 +22,7 @@ import {
   PurchaseOrderStatusChip,
 } from './_components/purchase-order-status-chip';
 import { purchaseOrderTitle } from './_components/purchase-order-text';
+import { Button } from '@/components/ui/button';
 
 const t = terminology.purchaseOrders;
 
@@ -90,9 +91,14 @@ const filterFields: FilterField[] = [
 export interface PurchaseOrdersListClientProps {
   data: PagedPurchaseOrdersResponse;
   query: PurchaseOrderListQuery;
+  canManage: boolean;
 }
 
-export function PurchaseOrdersListClient({ data, query }: PurchaseOrdersListClientProps) {
+export function PurchaseOrdersListClient({
+  data,
+  query,
+  canManage,
+}: PurchaseOrdersListClientProps) {
   const list = useMasterList({
     basePath: '/purchase/purchase-orders',
     query,
@@ -107,7 +113,17 @@ export function PurchaseOrdersListClient({ data, query }: PurchaseOrdersListClie
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title={terminology.nav.purchaseOrders} subtitle={t.subtitle} />
+      <PageHeader
+        title={terminology.nav.purchaseOrders}
+        subtitle={t.subtitle}
+        actions={
+          canManage ? (
+            <Button type="button" onClick={() => list.router.push('/purchase/purchase-orders/new')}>
+              {t.newPurchaseOrder}
+            </Button>
+          ) : null
+        }
+      />
       <FilterBar
         fields={filterFields}
         value={list.filters}

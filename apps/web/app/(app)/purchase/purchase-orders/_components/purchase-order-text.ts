@@ -1,4 +1,8 @@
-import type { PurchaseOrderLineResponse, PurchaseOrderTermResponse } from '@uie/contracts';
+import type {
+  PurchaseOrderLineReference,
+  PurchaseOrderLineResponse,
+  PurchaseOrderTermResponse,
+} from '@uie/contracts';
 import { terminology } from '@/config/terminology';
 import { formatQty } from '@/lib/format';
 import { rateText } from '../../quotations/_components/quotation-text';
@@ -24,12 +28,14 @@ export function termText(term: PurchaseOrderTermResponse): string {
 }
 
 /**
- * Shows only the comparison values that differ from the PO line (OQ-69, OQ-77).
- * Number() is used only to compare for display; all amounts are calculated by the API (PD-006).
+ * The comparison values that differ from the PO line (OQ-69, OQ-77).
+ * Number() only compares for display; amounts are calculated by the API (PD-006).
  */
-export function referenceHint(line: PurchaseOrderLineResponse): string | null {
-  const reference = line.reference;
-
+export function differenceHint(
+  reference: PurchaseOrderLineReference | null,
+  line: { quantity: string; rate: string; discountPercent: string; gstRate: string },
+  decimalPlaces: number,
+): string | null {
   if (reference === null) {
     return null;
   }
@@ -37,9 +43,7 @@ export function referenceHint(line: PurchaseOrderLineResponse): string | null {
   const parts: string[] = [];
 
   if (Number(reference.enquiryQuantity) !== Number(line.quantity)) {
-    parts.push(
-      `${t.hintEnquiryQty} ${formatQty(reference.enquiryQuantity, line.item.decimalPlaces)}`,
-    );
+    parts.push(`${t.hintEnquiryQty} ${formatQty(reference.enquiryQuantity, decimalPlaces)}`);
   }
 
   if (Number(reference.quotedRate) !== Number(line.rate)) {
@@ -55,4 +59,22 @@ export function referenceHint(line: PurchaseOrderLineResponse): string | null {
   }
 
   return parts.length === 0 ? null : parts.join(t.hintSeparator);
+}
+
+export function referenceHint(line: PurchaseOrderLineResponse): string | null {
+  return differenceHint(line.reference, line, line.item.decimalPlaces);
+}
+
+export function gstOptionLabel(registration: { gstin: string; state: string }): string {
+  return `${registration.gstin}${t.hintSeparator}${registration.state}`;
+}
+
+export function contactLabel(contact: { name: string; phone: string | null }): string {
+  return contact.phone === null
+    ? contact.name
+    : `${contact.name}${t.hintSeparator}${contact.phone}`;
+}
+
+export function lineError(index: number, message: string): string {
+  return `${t.linePrefix} ${index + 1}: ${message}`;
 }
