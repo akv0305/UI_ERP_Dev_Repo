@@ -224,6 +224,8 @@ export type PurchaseOrderFormMode =
       kind: 'edit';
       purchaseOrder: PurchaseOrderDetailResponse;
       vendor: PurchaseOrderVendorDetails;
+      /** Comparison PO only: every line chosen for this vendor (PDEF-044); null for direct. */
+      comparison: PurchaseOrderComparisonFormResponse | null;
     };
 
 interface LineMeta {
@@ -292,21 +294,28 @@ function primaryContactId(details: PurchaseOrderVendorDetails): string {
   return details.contacts.find((contact) => contact.isPrimary)?.id ?? NONE;
 }
 
+type PrefillLine = PurchaseOrderComparisonFormResponse['lines'][number];
+
+/** A comparison line not on the PO starts from the enquiry qty and the quoted values. */
+function rowFromPrefill(line: PrefillLine): ComparisonRow {
+  return {
+    comparisonLineId: line.comparisonLineId,
+    item: line.item,
+    reference: line.reference,
+    quantity: line.reference.enquiryQuantity,
+    rate: line.reference.quotedRate,
+    discountPercent: line.reference.quotedDiscountPercent,
+    gstRate: line.reference.quotedGstRate,
+  };
+}
+
 function comparisonRowsOf(mode: PurchaseOrderFormMode): ComparisonRow[] {
   if (mode.kind === 'comparison') {
-    return mode.prefill.lines.map((line) => ({
-      comparisonLineId: line.comparisonLineId,
-      item: line.item,
-      reference: line.reference,
-      quantity: line.reference.enquiryQuantity,
-      rate: line.reference.quotedRate,
-      discountPercent: line.reference.quotedDiscountPercent,
-      gstRate: line.reference.quotedGstRate,
-    }));
+    return mode.prefill.lines.map(rowFromPrefill);
   }
 
   if (mode.kind === 'edit') {
-    return mode.purchaseOrder.lines
+    const saved: ComparisonRow[] = mode.purchaseOrder.lines
       .filter((line) => line.comparisonLineId !== null)
       .map((line) => ({
         comparisonLineId: line.comparisonLineId ?? '',
@@ -317,6 +326,14 @@ function comparisonRowsOf(mode: PurchaseOrderFormMode): ComparisonRow[] {
         discountPercent: line.discountPercent,
         gstRate: line.gstRate,
       }));
+    const savedIds = new Set(saved.map((row) => row.comparisonLineId));
+
+    // Lines removed in an earlier save can be added back (OQ-86 a, PDEF-044).
+    const removed = (mode.comparison?.lines ?? [])
+      .filter((line) => !savedIds.has(line.comparisonLineId))
+      .map(rowFromPrefill);
+
+    return [...saved, ...removed];
   }
 
   return [];
@@ -355,10 +372,15 @@ function defaultsOf(
       storeId: po.store?.id ?? NONE,
       vendorId: po.vendor.id,
       // The response carries GSTIN and contact name, not ids (OQ-86 b).
-      vendorGstRegistrationId:
-        vendor.gstRegistrations.find((row) => row.gstin === po.vendorGstin)?.id ?? '',
-      vendorContactId:
-        vendor.contacts.find((contact) => contact.name === po.vendorContactName)?.id ?? NONE,
+      // Saved ids, kept while still offered in the lists (OQ-86 b, PDEF-044).
+      vendorGstRegistrationId: vendor.gstRegistrations.some(
+        (row) => row.id === po.vendorGstRegistrationId,
+      )
+        ? (po.vendorGstRegistrationId ?? '')
+        : '',
+      vendorContactId: vendor.contacts.some((contact) => contact.id === po.vendorContactId)
+        ? (po.vendorContactId ?? NONE)
+        : NONE,
       poDate: po.poDate,
       subject: po.subject,
       vendorQuoteRef: po.vendorQuoteRef ?? '',

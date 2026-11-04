@@ -365,7 +365,9 @@ export const PurchaseOrderResponse = z.object({
   comparison: z.object({ id: z.uuid(), number: z.string() }).nullable(),
   enquiry: z.object({ id: z.uuid(), number: z.string() }).nullable(),
   vendor: z.object({ id: z.uuid(), code: z.string(), legalName: z.string() }),
+  vendorGstRegistrationId: z.uuid().nullable(),
   vendorGstin: z.string().nullable(),
+  vendorContactId: z.uuid().nullable(),
   vendorContactName: z.string().nullable(),
   billingGstin: z.string(),
   taxType: PurchaseOrderTaxType,
@@ -505,6 +507,8 @@ export type PurchaseOrderVendorDetails = z.infer<typeof PurchaseOrderVendorDetai
 export const PurchaseOrderComparisonFormQuery = z.object({
   comparisonId: z.uuid(),
   vendorId: z.uuid(),
+  /** Set by the edit screen: this PO is not counted as "another live PO" (PDEF-044). */
+  purchaseOrderId: z.uuid().optional(),
 });
 
 export type PurchaseOrderComparisonFormQuery = z.infer<typeof PurchaseOrderComparisonFormQuery>;

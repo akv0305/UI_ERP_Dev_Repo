@@ -220,7 +220,13 @@ export class PurchaseOrderOptionsService {
           },
         },
         purchaseOrders: {
-          where: { vendorId: query.vendorId, status: { not: 'CANCELLED' }, revisedFromId: null },
+          where: {
+            vendorId: query.vendorId,
+            status: { not: 'CANCELLED' },
+            revisedFromId: null,
+            // The PO being edited is not "another" live PO (PDEF-044).
+            ...(query.purchaseOrderId === undefined ? {} : { id: { not: query.purchaseOrderId } }),
+          },
           select: { id: true },
         },
       },

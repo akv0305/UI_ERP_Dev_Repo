@@ -100,7 +100,9 @@ export function toPurchaseOrderResponse(
         ? null
         : { id: comparison.enquiry.id, number: comparison.enquiry.number ?? '' },
     vendor: purchaseOrder.vendor,
+    vendorGstRegistrationId: purchaseOrder.vendorGstRegistrationId,
     vendorGstin: purchaseOrder.vendorGst?.gstin ?? null,
+    vendorContactId: purchaseOrder.vendorContactId,
     vendorContactName: purchaseOrder.vendorContact?.name ?? null,
     billingGstin: purchaseOrder.billingGst.gstin,
     taxType: purchaseOrder.taxType,

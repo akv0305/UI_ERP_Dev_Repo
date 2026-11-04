@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-054 · CQ-115 · OQ-87 · PDEF-044 · CR-003
+# REGISTER — next free: PD-055 · CQ-132 · OQ-103 · PDEF-045 · CR-003
 
 ## Decisions
 
@@ -8,12 +8,12 @@
 | PD-002 | Stack: Next.js, TS, Tailwind, shadcn/ui, PostgreSQL, Prisma | APPROVED |
 | PD-003 | Numbering: series per company/docType/project?/FY; number taken in same transaction (SELECT…FOR UPDATE); drafts unnumbered | APPROVED |
 | PD-004 | Audit: append-only event per write, same transaction; approved docs immutable; change = revision + re-approval | APPROVED (audit trail built G-04a) |
-| PD-005 | Planning view computed from ledger per WBS node × item; recursive roll-up | APPROVED, provisional |
+| PD-005 | Planning view computed from ledger per WBS node × item; recursive roll-up | APPROVED, provisional — WBS sample received (structure only, no quantities/budgets); planned-vs-actual needs CQ-118, else actuals only |
 | PD-006 | Money (18,2), qty (18,3). Additions: rate (18,4), UOM factor (18,6), tax % (5,2), round each line half-up then sum, arithmetic server-side | APPROVED; additions PROPOSED |
 | PD-007 | (retired — see PD-017) | RETIRED |
-| PD-008 | Approval ladder: ≤2L PM-Purchase · 2–10L VP · 10–25L VP→ED · 25–50L VP+ED→FD · >50L VP+ED→MD. Configurable | APPROVED; CQ-22,23,24 open |
+| PD-008 | Approval ladder (owner correction 04-11-2026, cumulative, strictly sequential): ≤2L PM · >2L–10L PM→VP · >10L–25L PM→VP→ED · >25L–50L PM→VP→ED→FD · >50L PM→VP→ED→FD→MD. Configurable | APPROVED; design PD-054; CQ-22,23,24, CQ-127–131 open |
 | PD-009 | QC: PM accepts → stock; rejects → rejected-material return | APPROVED; CQ-45,78 open |
-| PD-010 | Indent is the only requisition document in Phase A | APPROVED; OQ-08 open |
+| PD-010 | Indent is the only requisition document in Phase A | APPROVED; OQ-08 → proposed answer in OQ-89 (indent lines tagged with WBS element), awaiting CQ-117 |
 | PD-011 | Multi-company/SPV/JV: companyId on business tables, user access per company/project, enforced in API | APPROVED |
 | PD-012 | 3-tier: Next.js web → NestJS API → PostgreSQL | APPROVED |
 | PD-013 | Structural master fields only until client samples arrive | APPROVED in principle; G-04 fields = PD-031 |
@@ -48,7 +48,7 @@
 | PD-042 | Item Excel import/export: upload → editable preview grid → import → results; no file stored (5 MB / 2,000 rows) · header detection (first 10 rows, Description + Unit + Group required) · unit/category matched by normalised spelling, unmatched = red with DB pick list + "apply to all rows with this spelling" · no auto-create of units/categories · duplicates (vs DB and within file) red, imported only if edited, else skipped · similar-item check = yellow warning (OQ-30 C: same category + same size + same numbers, similarity ≥ 0.85), imported as written unless corrected · "Check again" re-validates on API · Ready + yellow rows created in one transaction as Pending approval · bulk approve (max 200) · export in import layout · exceljs (MIT) · no migration | APPROVED — batch 1 G-05b |
 | PD-043 | Shared item catalogue access: items view at any scope; items manage/approve GLOBAL only | APPROVED — 4cd0a8a, CI #55 |
 | PD-044 | Vendor master (G-06): VEN-0001 no gaps; legal/trade name, type, PAN, Udyam+MSME category, address, payment terms, credit limit; GST rows, bank accounts, contacts; Draft→Pending→Approved; view any scope, manage/approve GLOBAL only | APPROVED — built G-06: batch 1 f1f3e4e (CI #57); 2a a9257b8 (CI #58); 2b 059a4f4 (CI #59); 3a 0c419fd (CI #60); 3b 946b5a3 (CI #61); merged to main |
-| PD-045 | Build order (owner, 20-10-2026): finish G-06 Vendors → Purchase → approval matrix/ladder (PD-008) → Stores → customer samples → HR Employee Master → Hostinger deploy test (PD-022) | APPROVED |
+| PD-045 | Build order (owner, 20-10-2026): finish G-06 Vendors → Purchase → approval matrix/ladder (PD-008) → Stores → customer samples → HR Employee Master → Hostinger deploy test (PD-022). Revision (owner, 04-11-2026, OQ-87): PDEF-044 → G-12 approval ladder → G-13 WBS Master + G-14 Employee Master (after client answers) → PO print → Stores → deploy test | APPROVED; revision PROPOSED (OQ-87) |
 | PD-046 | Indent (G-07): header project → site (Location) → store (optional), indent date, required-by date, requested by (text), remarks; lines = approved active items only, required qty, approved qty, purpose, remarks, one line per item; Draft → Pending → Approved / Rejected (edit + resubmit) / Cancelled (from Draft or Rejected); no self-approval; reject/cancel need remarks; number IND/<project>/<FY>/0001 given on Submit, no gaps, per project per FY (document_series table, reused by later documents); project picker lists only the user's assigned projects (auto-picked if one); permissions purchase.indents.manage / .approve checked on the project/site, not GLOBAL-only | APPROVED — built G-07: batch 1 a99f7d6 (CI #64); 2 0ba27be (CI #65); 3a a22fbb1 (CI #66); 3b 32f900a (CI #67); 3c 51113a1 (CI #68); merged to main |
 | PD-047 | Purchase Enquiry (G-08): one project + one site (delivery location); lines from Approved indent lines of that site (approved qty > 0), several indents per enquiry; one indent line once per enquiry but may be in several enquiries; qty ≤ approved qty; 1–20 approved active vendors; enquiry date, quote due date (required, ≥ enquiry date), terms, remarks; Draft → Sent → Closed, Cancel from Draft/Sent (remarks); number ENQ/<project>/<FY>/0001 on Send, no gaps (document_series); no approval (ladder at PO); one print copy per vendor (OQ-52 A), PDF via browser; no email (PD-020); permission purchase.enquiries.manage on project/site | | APPROVED — built G-08: batch 1 4898639 (CI #70); 2 a248a1c (CI #71); 3a cd18ae4; 3b c415ddb (CI #73); PDEF-039 fix 335b9c0 (CI #74); merged to main |
 | PD-048 | New status colour key `sent` (theme.ts, globals.css, status-chip.tsx, terminology) for Sent enquiries | APPROVED — cd18ae4 |
@@ -56,7 +56,8 @@
 | PD-050 | Comparison (CS): saved document CMP/<project>/<FY>/0001 given on Finalise; one open per enquiry; Draft stores per-line vendor + reason, grid live from latest Submitted quotations; Finalise records compared quotations, quotation line, net rate, rank and closes the enquiry; rank by net rate (rate less discount, GST excluded), ties share rank; non-L1 needs reason; only Draft cancellable; no approval (approval at PO, PD-008) | APPROVED — built G-10: batch 1 af15433 (CI #84); 2 0d5b3f5 (CI #85); 3a a65b7b9 (CI #86); 3b + PDEF-041 6b62344 (CI #87); merged to main |
 | PD-051 | Comparison draft save checks only that each chosen vendor quoted the line; non-L1 reason and "at least one line" are checked at Finalise (ranks may change while vendors revise). Finalise closes the enquiry with its own audit row. A quotation recorded in a Finalised comparison cannot be cancelled | APPROVED — G-10 batch 2 |
 | PD-052 | Comparison screens (G-10 batch 3a): list, new (enquiry picker → grid), detail, edit; one grid component for form and detail (vendors as columns by code, net rate + L1/L2 badge, expired warning, None column, reason column with "not L1" hint, footer = whole-quotation totals, delivery, payment terms, valid until); comparison screens use their own API error messages before the shared ones (same codes mean quotation errors); new status chip "Finalised" (theme.ts, globals.css, status-chip.tsx, terminology) | APPROVED |
-| PD-053 | Purchase Order (G-11): source COMPARISON (from a Finalised comparison, one live PO per comparison + vendor, lines carry comparison line, rate/discount/GST % editable with "Quoted" hint) or DIRECT (any approved active items and vendors, no indent link); qty may differ from enquiry qty (hint, ladder controls); header company/project/site/store, billing = project billing GST registration, vendor GST row (none = unregistered), vendor contact, subject, vendor quotation ref + date, delivery date, payment days, remarks, terms rows (defaults from client sample); GST split CGST+SGST same state / IGST different / none unregistered, per line half-up (PD-006); Draft → Submitted → Cancelled (remarks), approval in G-12; number PO/<project>/<FY>/0001 on Submit, no gaps; revision after approval in G-12; permissions purchase.purchaseOrders.view/.manage on project/site; print per client sample | APPROVED — G-11 batch 1 3e1dba8 (CI #89); 2a d776c06 (CI #90); 2b 1f37edd (CI #91); 2c d9e54fd (CI #92); 3a 4a18d20 (CI #93); 3b b1b4f93 (CI #94); 3c-A pending; print pending |
+| PD-053 | Purchase Order (G-11): source COMPARISON (from a Finalised comparison, one live PO per comparison + vendor, lines carry comparison line, rate/discount/GST % editable with "Quoted" hint) or DIRECT (any approved active items and vendors, no indent link); qty may differ from enquiry qty (hint, ladder controls); header company/project/site/store, billing = project billing GST registration, vendor GST row (none = unregistered), vendor contact, subject, vendor quotation ref + date, delivery date, payment days, remarks, terms rows (defaults from client sample); GST split CGST+SGST same state / IGST different / none unregistered, per line half-up (PD-006); Draft → Submitted → Cancelled (remarks), approval in G-12; number PO/<project>/<FY>/0001 on Submit, no gaps; revision after approval in G-12; permissions purchase.purchaseOrders.view/.manage on project/site; print per client sample | APPROVED — G-11 batch 1 3e1dba8 (CI #89); 2a d776c06 (CI #90); 2b 1f37edd (CI #91); 2c d9e54fd (CI #92); 3a 4a18d20 (CI #93); 3b b1b4f93 (CI #94); 3c-A c2a96e4 (CI #96), merged to main; PDEF-044 pending; print pending |
+| PD-054 | Approval workflows (G-12): Administration → Approval Workflows (administration.approvalWorkflows.manage, GLOBAL); per document type (PO first); ordered levels = role + "applies when value above" (L1 PM ₹0, L2 VP ₹2,00,000, L3 ED ₹10,00,000, L4 FD ₹25,00,000, L5 MD ₹50,00,000); cumulative strictly sequential (PD-008 corrected); level 1 always applies, amounts non-decreasing, each role once; versioned, in-flight POs keep their route. Route levels fixed at Submit; approver per level resolved when the PO reaches it (PD-037 findUsersWithRoleCovering): one holder = shown read-only, several = the submitter/previous approver picks one; maker picks only the next level. Route panel shows done/current/later levels with names or warnings. OQ-98 b: maker holding level-1 role = level 1 approved at Submit (≤₹2L → Approved). OQ-94 c / OQ-100 b: same person on several levels (adjacent or not) approves once, other levels "same approver". Maker never approves above level 1 (OQ-95). Reject → remarks → back to maker, route restarts. No active holder / chosen approver deactivated or role removed → level On hold, in-app notification to maker + admins; one new holder = auto-assigned, several = admin picks; admin "Route to higher level" (ED/FD/MD, reason required). Revisions start a new route (OQ-74). In-app only (PD-020, PD-023); full audit | APPROVED |
 
 
 ## Owner questions
@@ -114,7 +115,7 @@
 | OQ-56 | Freight / loading / other charges? | ACCEPTED (default) — header charges Freight, Loading-Unloading, Other (with description), each with amount + GST %, included in grand total |
 | OQ-57 | Excel import of quotations? | ACCEPTED (default) — key-in only in G-09; import later, same pattern as item import |
 | OQ-58 | Quotation rules: (a) quote date not in the future (IST) and not before the enquiry date; (b) create / edit / submit / revise only while the enquiry is Sent, existing quotations untouched after Close/Cancel, Cancel still allowed; (c) a line cannot be quoted if its item is no longer approved and active (OQ-27); (d) number FY from the quote date; (e) saving a Draft replaces its line and charge rows, full before/after in Audit Log | CLOSED — defaults accepted (built in batch 2, e4039db) |
-| OQ-59 | Superseded quotation chip label: "Revised" (existing theme key) or its own "Superseded" chip? | OPEN — default "Revised" |
+| OQ-59 | Superseded quotation chip label: "Revised" (existing theme key) or its own "Superseded" chip? | CLOSED — owner: "Revised" |
 | OQ-60 | Comparison is a saved document with number CMP/<project>/<FY>/0001 | APPROVED → PD-050 |
 | OQ-61 | Vendor chosen per line (order may split across vendors) | APPROVED → PD-050 |
 | OQ-62 | Rank by net rate after discount, GST excluded; charges and grand total shown per vendor | APPROVED → PD-050 |
@@ -141,7 +142,23 @@
 | OQ-83 | One live PO per comparison + vendor (DB partial unique index); lines removed from it are ordered via a direct PO | CLOSED — owner yes |
 | OQ-84 | Comparison PO lines: (a) while Draft, lines can be removed and re-added — picker lists only comparison lines where this vendor was chosen and not on another live PO; (b) items not in the comparison go on a direct PO; (c) after Submit, change = cancel and re-raise (revision in G-12) | CLOSED — owner ok (built 2b/2c) |
 | OQ-85 | PO API defaults: (a) PO date not future (IST), comparison PO not before comparison date; (b) GST-registered vendor must have a GST registration chosen; (c) inactive store / vendor GST / contact already saved on a draft may stay, not newly chosen; (d) Submit re-checks against current masters and stops if billing GST, tax type or total would change | CLOSED — owner ok (built 2b/2c) |
-| OQ-86 | Editing a comparison PO: (a) lines removed in an earlier save cannot be added back (comparison-form refuses a vendor with a live PO); (b) PO response has vendor GSTIN/contact name, not ids, so edit matches by GSTIN and contact name. Proposal for 3c: comparison-form accepts purchaseOrderId to exclude itself; response adds vendorGstRegistrationId and vendorContactId (contract only, no migration) | OPEN — awaiting owner |
+| OQ-86 | Editing a comparison PO: (a) lines removed in an earlier save cannot be added back; (b) edit matches vendor GST/contact by GSTIN and name | CLOSED — (a) removed lines can be added back; (b) ids added to PO response (PDEF-044). |
+| OQ-87 | Build order: PDEF-044 → G-12 approval ladder → G-13 WBS + G-14 Employee (after client answers) → PO print → Stores → deploy test | OPEN — owner direction 04-11-2026 (ladder next); confirm |
+| OQ-88 | Public dev repo holds client data (PO format with GSTIN, material list, preview.json in history); employee master is personal data (DPDP Act 2023). Options: make dev repo private, or keep client files out of Git (client-inputs/ ignored) | OPEN — recommend: employee file never committed; decide on repo privacy |
+| OQ-89 | WBS defaults: WBS per project, imported from Excel in client layout; code unique per project, parent must exist, child code need not start with parent code; level from parent, no fixed limit; leading "- " stripped; Account Head / Cost Type / Classification stored as text (no finance module); indent lines tagged with a lowest-level WBS element (answers OQ-08); deactivate only; template library later | OPEN — waits for CQ-115–121 |
+| OQ-90 | Employee master defaults: Emp Code as given by client (unique, immutable), name, designation (Designation master), work location (Head Office / project site), DOJ, email (domain rule OQ-91), phone, status Active/Left + leaving date, optional link to login user; Excel import; no statutory HR fields in Phase A; approvals role-based (PD-037/PD-054), designation display only; indent "Requested by" becomes employee picker (OQ-44) | OPEN — waits for CQ-122–126 |
+| OQ-91 | Employee email domain: "Official email domain" on Company master (UIEPL = uniqueinfraengineers.in; SPV/JV own), employee email must end with @<company domain>, case-insensitive, API-enforced; also applies to login users linked to an employee, not to unlinked users | CLOSED — owner ok |
+| OQ-92 | Approval level approver = role resolved on PO's project/company/global | CLOSED — owner: roles only, no named users; submitter picks when several holders (PD-054) |
+| OQ-93 | Meaning of "VP+ED" | CLOSED — owner: cumulative strictly sequential ladder PM→VP→ED→FD→MD (PD-008 corrected) |
+| OQ-94 | Same person holding two roles in one route (e.g. VP and ED): (a) not allowed — each level a different person, Submit refused if impossible (recommended); (b) allowed, approves twice; (c) allowed, one approval counts for both | OPEN — awaiting owner |
+| OQ-95 | Rejection returns PO to maker (edit → resubmit, route restarts at level 1); maker never approves own PO; maker being only holder of a level's role blocks Submit | CLOSED — owner ok (exception question OQ-98) |
+| OQ-96 | Workflow edits create a new version with effective date; pending POs keep their route | CLOSED — owner ok |
+| OQ-97 | Delegation: approver sets delegate + date range, delegate must hold the level's role, "on behalf of" recorded; admin may reassign a pending level | CLOSED — owner ok |
+| OQ-98 | Maker is the Purchase Manager: (a) strict — another PM must approve level 1; (b) maker's own Submit counts as level-1 (PM) approval, recorded "submitted by PM"; higher levels still need others | OPEN — awaiting owner |
+| OQ-99 | Chosen approver deactivated / loses role while pending | CLOSED — level On hold + notification to maker and admins until a holder exists (one = auto, several = admin picks); emergency: admin routes to a higher role (ED/FD/MD) with reason |
+| OQ-100 | Same approver on non-adjacent levels | CLOSED — (b) one approval covers all levels held by that person |
+| OQ-101 | Admin routes a level to a higher role that is also a later level in the route — one approval covers both? | CLOSED — yes |
+| OQ-102 | Current approver also holds the next level's role — that level auto-completes even if other holders exist? | CLOSED — yes |
 
 
 ## Client questions
@@ -164,6 +181,23 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | CQ-112 | Confirm default PO terms wording (Taxes, Payment terms, Delivery, Transportation "inclusive", quote PO No. in invoice, Unloading by us with prior intimation) and whether other clauses are needed | OPEN — client |
 | CQ-113 | PO signature block: print signatory name/designation (e.g. final approver from the ladder) or blank "Authorised Signatory" only? | OPEN — client |
 | CQ-114 | "Sign the duplicate copy": print two copies marked ORIGINAL / DUPLICATE? | OPEN — client |
+| CQ-115 | WBS Master sample: company template (projects copy verticals) or one project's WBS? Is WBS defined per project? | OPEN — client |
+| CQ-116 | WBS sample: rows .02–.06 give parent "UIEPL-INFRA", which does not exist (top row is "UIEPL-INFRA-2026"). Correct parent = UIEPL-INFRA-2026? | OPEN — client |
+| CQ-117 | Which WBS level receives indents / issues — lowest level (level 4) only, or any level? | OPEN — client |
+| CQ-118 | Planned quantities / budget per WBS element × item (BOQ): will they be provided? Needed for planned vs actual; without them only actuals are shown | OPEN — client |
+| CQ-119 | Account Head, Cost Type, Statutory/Schedule Classification: fixed lists or free text? Used later by accounts? | OPEN — client |
+| CQ-120 | Who creates WBS codes for new projects; may elements be renamed / moved after indents are booked to them? | OPEN — client |
+| CQ-121 | WBS typos to confirm: "Primary Structural Tunnel Support Support" (.05.03), "Liasoning" (.01.01) | OPEN — client |
+| CQ-122 | Employee Master: full list as Excel (all locations / sites), not a screenshot | OPEN — client |
+| CQ-123 | Emp Code UIEPL/HO/###: directors have no code — assign codes? New joiners: client gives code, or system gives next number per location? | OPEN — client |
+| CQ-124 | Extra employee fields: department, work location / site, phone, reporting manager, date of leaving? | OPEN — client |
+| CQ-125 | Ladder roles (PM-Purchase, VP, ED, FD, MD) vs sample designations (Director, Director (HR & Admin), Director (Technical), Executive Director, AVP, GM(F&A), DGM-Fin.): who acts as VP, FD, MD? | OPEN — client |
+| CQ-126 | SPV / JV employees: same master under own company, own code series? | OPEN — client |
+| CQ-127 | Approval value basis: PO grand total incl. GST, or value before GST? | OPEN — client (default: grand total incl. GST) |
+| CQ-128 | Band edges: exactly ₹2,00,000 / ₹10L / ₹25L / ₹50L fall in the lower band (≤)? | OPEN — client (default: yes) |
+| CQ-129 | Original process statement mentions a "final GM signature": still needed after the ladder, or replaced by PD-008? | OPEN — client |
+| CQ-130 | Same bands for every company / SPV / JV and every project? | OPEN — client (default: yes, per-company override possible) |
+| CQ-131 | Reminder / escalation if an approver does not act within N days? Who covers approvers on leave? | OPEN — client (default: reminder on Home only, delegation by approver) |
 
 ## Defects
 
@@ -205,6 +239,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-041 | Comparison save → 500: interactive transaction exceeded Prisma's 5 s default ("expired transaction") because each query round-trips to Neon US East; affected any multi-step write with audit (comparison create/finalise most). Fix: PrismaService transactionOptions maxWait 10 s, timeout 30 s, global | FIXED — 6b62344, CI #87 |
 | PDEF-042 | G-11 batch 2a: purchase-order-math.spec.ts imported describe/expect/it from @jest/globals (repeat of PDEF-036); repo uses Jest globals | CLOSED — d776c06, CI #90 |
 | PDEF-043 | Audit Log had no readable entity-type labels for Comparison and PurchaseOrder (terminology.auditLog.entityTypes stopped at Quotation; contracts already had both) | FIXED — G-11 batch 3a |
+| PDEF-044 | Comparison PO edit could not add back lines removed in an earlier save (edit screen only had the saved lines; comparison-form refused the vendor because the edited PO counted as live); edit matched vendor GST/contact by GSTIN/name | FIXED — comparison-form accepts purchaseOrderId (ignored in live-PO check), edit page loads all chosen lines; PO response adds vendorGstRegistrationId, vendorContactId; no migration |
 
 
 ## Change requests
@@ -236,4 +271,5 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | G-11-2c | PO option lists (form, comparison, comparison-form, vendor, vendor-details, item) | DONE — d9e54fd, CI #92 |
 | G-11-3a | PO list + detail screens, status chip, PDEF-043 | DONE — 4a18d20, CI #93 |
 | G-11-3b | PO new/edit form (comparison + direct), chooser, live CGST/SGST/IGST preview, Edit button | DONE — b1b4f93, CI #94 |
-| G-11-3c-A | PO Submit / Cancel buttons; "Create PO: <vendor>" on finalised comparison | PENDING |
+| G-11-3c-A | PO Submit / Cancel buttons; "Create PO: <vendor>" on finalised comparison | DONE — c2a96e4, CI #96; merged to main |
+

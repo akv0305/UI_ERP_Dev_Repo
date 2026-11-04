@@ -34,9 +34,9 @@ Browser always calls /api/* on the web origin; Next.js rewrites forward to API_B
 
 ## Scope — Phase A
 
-In: Administration & platform, shared UI framework, Purchase, Stores, Planning (WBS),
-and only the masters these consume.
-Later (Phase 1, not now): HR, Plant & Machinery, Subcontract, portals, purchase invoice
+In: Administration & platform (incl. Approval Workflows, PD-054), shared UI framework, Purchase, Stores,
+Planning (WBS), Employee Master (PD-045), and only the masters these consume.
+Later (Phase 1, not now): HR beyond Employee Master, Plant & Machinery, Subcontract, portals, purchase invoice
 capture, Tally export, site returns/transfers/adjustments, dashboards, DPR.
 Out (Phase 2 per proposal): tender, finance & accounting, client RA billing, real estate,
 customer portal, live statutory integrations, advanced analytics.

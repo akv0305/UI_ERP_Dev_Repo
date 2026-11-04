@@ -1,4 +1,5 @@
 import {
+  PurchaseOrderComparisonFormResponse,
   PurchaseOrderDetailResponse,
   PurchaseOrderFormOptionsResponse,
   PurchaseOrderVendorDetails,
@@ -51,7 +52,9 @@ export default async function EditPurchaseOrderPage({
     );
   }
 
-  const [options, vendor] = await Promise.all([
+  const comparisonId = po.data.comparison?.id ?? null;
+
+  const [options, vendor, comparison] = await Promise.all([
     apiGet('/api/purchase-orders/form-options', PurchaseOrderFormOptionsResponse),
     apiGet(
       `/api/purchase-orders/vendor-details?${buildQueryString({
@@ -60,6 +63,17 @@ export default async function EditPurchaseOrderPage({
       })}`,
       PurchaseOrderVendorDetails,
     ),
+    // All lines chosen for this vendor, so removed lines can be added back (PDEF-044).
+    comparisonId === null
+      ? Promise.resolve(null)
+      : apiGet(
+          `/api/purchase-orders/comparison-form?${buildQueryString({
+            comparisonId,
+            vendorId: po.data.vendor.id,
+            purchaseOrderId: po.data.id,
+          })}`,
+          PurchaseOrderComparisonFormResponse,
+        ),
   ]);
 
   if (options.kind === 'forbidden' || vendor.kind === 'forbidden') {
@@ -78,7 +92,13 @@ export default async function EditPurchaseOrderPage({
     <div className="flex flex-col gap-4">
       {header}
       <PurchaseOrderForm
-        mode={{ kind: 'edit', purchaseOrder: po.data, vendor: vendor.data }}
+        mode={{
+          kind: 'edit',
+          purchaseOrder: po.data,
+          vendor: vendor.data,
+          // If the comparison lines cannot be loaded, only the saved lines are offered (as before).
+          comparison: comparison !== null && comparison.kind === 'ok' ? comparison.data : null,
+        }}
         formOptions={options.data}
       />
     </div>
