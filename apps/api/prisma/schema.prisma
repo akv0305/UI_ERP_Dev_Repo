@@ -90,6 +90,16 @@ model User {
   submittedPurchaseOrders PurchaseOrder[] @relation("PurchaseOrderSubmittedBy")
   cancelledPurchaseOrders PurchaseOrder[] @relation("PurchaseOrderCancelledBy")
 
+  createdApprovalWorkflows   ApprovalWorkflow[]   @relation("ApprovalWorkflowCreatedBy")
+  approvalStepsToApprove     ApprovalStep[]       @relation("ApprovalStepApprover")
+  assignedApprovalSteps      ApprovalStep[]       @relation("ApprovalStepAssignedBy")
+  decidedApprovalSteps       ApprovalStep[]       @relation("ApprovalStepDecidedBy")
+  approvalDelegations        ApprovalDelegation[] @relation("ApprovalDelegationUser")
+  delegatedApprovals         ApprovalDelegation[] @relation("ApprovalDelegationDelegate")
+  createdApprovalDelegations ApprovalDelegation[] @relation("ApprovalDelegationCreatedBy")
+  updatedApprovalDelegations ApprovalDelegation[] @relation("ApprovalDelegationUpdatedBy")
+  notifications              Notification[]
+
   @@map("users")
 }
 
@@ -102,8 +112,11 @@ model Role {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  users       UserRole[]
-  permissions RolePermission[]
+  users               UserRole[]
+  permissions         RolePermission[]
+  approvalLevels      ApprovalWorkflowLevel[]
+  approvalSteps       ApprovalStep[]          @relation("ApprovalStepRole")
+  routedApprovalSteps ApprovalStep[]          @relation("ApprovalStepRoutedRole")
 
   @@map("roles")
 }
@@ -261,12 +274,13 @@ model Company {
   userRoles        UserRole[]
   sessionContexts  Session[]                @relation("SessionCurrentCompany")
 
-  documentSeries DocumentSeries[]
-  indents        Indent[]
-  enquiries      Enquiry[]
-  quotations     Quotation[]
-  comparisons    Comparison[]
-  purchaseOrders PurchaseOrder[]
+  documentSeries    DocumentSeries[]
+  indents           Indent[]
+  enquiries         Enquiry[]
+  quotations        Quotation[]
+  comparisons       Comparison[]
+  purchaseOrders    PurchaseOrder[]
+  approvalWorkflows ApprovalWorkflow[]
 
   @@map("companies")
 }
@@ -1033,7 +1047,10 @@ model ComparisonQuotation {
 enum PurchaseOrderStatus {
   DRAFT
   SUBMITTED
+  APPROVED
+  REJECTED
   CANCELLED
+  SUPERSEDED
 }
 
 enum PurchaseOrderSource {
@@ -1094,29 +1111,37 @@ model PurchaseOrder {
   cancelledAt              DateTime?            @db.Timestamptz(3)
   cancelledById            String?              @db.Uuid
   cancelRemarks            String?
-  createdAt                DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt                DateTime             @updatedAt @db.Timestamptz(3)
-  createdById              String               @db.Uuid
-  updatedById              String               @db.Uuid
+  approvalWorkflowId       String?              @db.Uuid
+  approvalCycle            Int                  @default(0) @db.SmallInt
+  approvedAt               DateTime?            @db.Timestamptz(3)
+  supersededAt             DateTime?            @db.Timestamptz(3)
 
-  company       Company                @relation(fields: [companyId], references: [id])
-  project       Project                @relation(fields: [projectId], references: [id])
-  site          Site                   @relation(fields: [siteId], references: [id])
-  store         Store?                 @relation(fields: [storeId], references: [id])
-  comparison    Comparison?            @relation(fields: [comparisonId], references: [id])
-  vendor        Vendor                 @relation(fields: [vendorId], references: [id])
-  vendorGst     VendorGstRegistration? @relation(fields: [vendorGstRegistrationId], references: [id])
-  vendorContact VendorContact?         @relation(fields: [vendorContactId], references: [id])
-  billingGst    CompanyGstRegistration @relation(fields: [billingGstRegistrationId], references: [id])
-  revisedFrom   PurchaseOrder?         @relation("PurchaseOrderRevision", fields: [revisedFromId], references: [id])
-  revisions     PurchaseOrder[]        @relation("PurchaseOrderRevision")
-  submittedBy   User?                  @relation("PurchaseOrderSubmittedBy", fields: [submittedById], references: [id])
-  cancelledBy   User?                  @relation("PurchaseOrderCancelledBy", fields: [cancelledById], references: [id])
-  createdBy     User                   @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id])
-  updatedBy     User                   @relation("PurchaseOrderUpdatedBy", fields: [updatedById], references: [id])
-  lines         PurchaseOrderLine[]
-  charges       PurchaseOrderCharge[]
-  terms         PurchaseOrderTerm[]
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  createdById String   @db.Uuid
+  updatedById String   @db.Uuid
+
+  company          Company                @relation(fields: [companyId], references: [id])
+  project          Project                @relation(fields: [projectId], references: [id])
+  site             Site                   @relation(fields: [siteId], references: [id])
+  store            Store?                 @relation(fields: [storeId], references: [id])
+  comparison       Comparison?            @relation(fields: [comparisonId], references: [id])
+  vendor           Vendor                 @relation(fields: [vendorId], references: [id])
+  vendorGst        VendorGstRegistration? @relation(fields: [vendorGstRegistrationId], references: [id])
+  vendorContact    VendorContact?         @relation(fields: [vendorContactId], references: [id])
+  billingGst       CompanyGstRegistration @relation(fields: [billingGstRegistrationId], references: [id])
+  revisedFrom      PurchaseOrder?         @relation("PurchaseOrderRevision", fields: [revisedFromId], references: [id])
+  revisions        PurchaseOrder[]        @relation("PurchaseOrderRevision")
+  submittedBy      User?                  @relation("PurchaseOrderSubmittedBy", fields: [submittedById], references: [id])
+  cancelledBy      User?                  @relation("PurchaseOrderCancelledBy", fields: [cancelledById], references: [id])
+  createdBy        User                   @relation("PurchaseOrderCreatedBy", fields: [createdById], references: [id])
+  updatedBy        User                   @relation("PurchaseOrderUpdatedBy", fields: [updatedById], references: [id])
+  lines            PurchaseOrderLine[]
+  charges          PurchaseOrderCharge[]
+  terms            PurchaseOrderTerm[]
+  approvalWorkflow ApprovalWorkflow?      @relation(fields: [approvalWorkflowId], references: [id], onDelete: Restrict)
+  approvalSteps    ApprovalStep[]
+  notifications    Notification[]
 
   @@unique([number, revisionNo], map: "purchase_orders_number_revision_key")
   @@index([companyId])
@@ -1189,4 +1214,149 @@ model PurchaseOrderTerm {
 
   @@unique([purchaseOrderId, sortOrder])
   @@map("purchase_order_terms")
+}
+
+enum ApprovalDocumentType {
+  PURCHASE_ORDER
+}
+
+enum ApprovalStepStatus {
+  WAITING
+  PENDING
+  ON_HOLD
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
+enum ApprovalDecision {
+  APPROVED
+  SAME_APPROVER
+  MAKER_SUBMIT
+  REJECTED
+}
+
+enum NotificationKind {
+  APPROVAL_PENDING
+  APPROVAL_ON_HOLD
+  APPROVER_NEEDED
+  PURCHASE_ORDER_APPROVED
+  PURCHASE_ORDER_REJECTED
+}
+
+/// Approval workflow version (PD-054). Saving creates a new version; one current per document type + company
+/// (companyId null = all companies). Version key and "one current" index are NULLS NOT DISTINCT (migration).
+model ApprovalWorkflow {
+  id           String               @id @default(uuid()) @db.Uuid
+  documentType ApprovalDocumentType
+  companyId    String?              @db.Uuid
+  version      Int                  @db.SmallInt
+  isCurrent    Boolean              @default(true)
+  remarks      String?
+  createdAt    DateTime             @default(now()) @db.Timestamptz(3)
+  createdById  String               @db.Uuid
+
+  company        Company?                @relation(fields: [companyId], references: [id])
+  createdBy      User                    @relation("ApprovalWorkflowCreatedBy", fields: [createdById], references: [id])
+  levels         ApprovalWorkflowLevel[]
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([documentType, companyId, version], map: "approval_workflows_version_key")
+  @@index([companyId])
+  @@map("approval_workflows")
+}
+
+/// Ordered level: applies when the value is above minAmount; level 1 amount 0; maker tick level 1 only (CHECK).
+model ApprovalWorkflowLevel {
+  id                    String  @id @default(uuid()) @db.Uuid
+  workflowId            String  @db.Uuid
+  levelNo               Int     @db.SmallInt
+  roleId                String  @db.Uuid
+  minAmount             Decimal @db.Decimal(18, 2)
+  makerCountsAsApproved Boolean @default(false)
+
+  workflow ApprovalWorkflow @relation(fields: [workflowId], references: [id])
+  role     Role             @relation(fields: [roleId], references: [id])
+
+  @@unique([workflowId, levelNo])
+  @@unique([workflowId, roleId])
+  @@index([roleId])
+  @@map("approval_workflow_levels")
+}
+
+/// One level of one PO's route in one submit cycle. Levels are fixed at Submit; the approver is set when the
+/// PO reaches the level (PD-054). At most one Pending / On hold step per PO (partial unique index).
+model ApprovalStep {
+  id              String             @id @default(uuid()) @db.Uuid
+  purchaseOrderId String             @db.Uuid
+  cycleNo         Int                @db.SmallInt
+  levelNo         Int                @db.SmallInt
+  roleId          String             @db.Uuid
+  minAmount       Decimal            @db.Decimal(18, 2)
+  status          ApprovalStepStatus @default(WAITING)
+  approverId      String?            @db.Uuid
+  assignedAt      DateTime?          @db.Timestamptz(3)
+  assignedById    String?            @db.Uuid
+  routedRoleId    String?            @db.Uuid
+  routeReason     String?
+  decision        ApprovalDecision?
+  decidedAt       DateTime?          @db.Timestamptz(3)
+  decidedById     String?            @db.Uuid
+  remarks         String?
+  createdAt       DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime           @updatedAt @db.Timestamptz(3)
+
+  purchaseOrder PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id])
+  role          Role           @relation("ApprovalStepRole", fields: [roleId], references: [id])
+  routedRole    Role?          @relation("ApprovalStepRoutedRole", fields: [routedRoleId], references: [id])
+  approver      User?          @relation("ApprovalStepApprover", fields: [approverId], references: [id])
+  assignedBy    User?          @relation("ApprovalStepAssignedBy", fields: [assignedById], references: [id])
+  decidedBy     User?          @relation("ApprovalStepDecidedBy", fields: [decidedById], references: [id])
+  notifications Notification[]
+
+  @@unique([purchaseOrderId, cycleNo, levelNo])
+  @@index([approverId, status])
+  @@map("approval_steps")
+}
+
+/// Approver away: delegate acts "on behalf of" between the dates (OQ-97).
+model ApprovalDelegation {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  delegateId  String   @db.Uuid
+  fromDate    DateTime @db.Date
+  toDate      DateTime @db.Date
+  remarks     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  createdById String   @db.Uuid
+  updatedById String   @db.Uuid
+
+  user      User @relation("ApprovalDelegationUser", fields: [userId], references: [id])
+  delegate  User @relation("ApprovalDelegationDelegate", fields: [delegateId], references: [id])
+  createdBy User @relation("ApprovalDelegationCreatedBy", fields: [createdById], references: [id])
+  updatedBy User @relation("ApprovalDelegationUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([userId])
+  @@index([delegateId])
+  @@map("approval_delegations")
+}
+
+/// In-app bell item (PD-023, PD-020). Text comes from terminology by kind.
+model Notification {
+  id              String           @id @default(uuid()) @db.Uuid
+  userId          String           @db.Uuid
+  kind            NotificationKind
+  purchaseOrderId String?          @db.Uuid
+  approvalStepId  String?          @db.Uuid
+  createdAt       DateTime         @default(now()) @db.Timestamptz(3)
+  readAt          DateTime?        @db.Timestamptz(3)
+
+  user          User           @relation(fields: [userId], references: [id])
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  approvalStep  ApprovalStep?  @relation(fields: [approvalStepId], references: [id])
+
+  @@index([userId, readAt])
+  @@map("notifications")
 }

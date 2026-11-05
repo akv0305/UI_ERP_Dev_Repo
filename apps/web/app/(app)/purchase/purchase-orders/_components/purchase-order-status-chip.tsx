@@ -6,7 +6,10 @@ import { ALL_VALUE } from '@/lib/list-params';
 const STATUS_KEYS: Record<PurchaseOrderStatus, StatusKey> = {
   DRAFT: 'draft',
   SUBMITTED: 'submitted',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
   CANCELLED: 'cancelled',
+  SUPERSEDED: 'revised',
 };
 
 export function PurchaseOrderStatusChip({ status }: { status: PurchaseOrderStatus }) {

@@ -33,6 +33,7 @@ export const ALL_PERMISSIONS = [
   'administration.rolesAndPermissions.view',
   'administration.rolesAndPermissions.manage',
   'administration.approvalMatrix.view',
+  'administration.approvalMatrix.manage',
   'administration.numberSeries.view',
   'administration.auditLog.view',
   'administration.systemHealth.view',

@@ -34,8 +34,18 @@ export const MAX_PURCHASE_ORDER_LINES = 200;
 export const MAX_PURCHASE_ORDER_CHARGES = 3;
 export const MAX_PURCHASE_ORDER_TERMS = 20;
 
-/** G-11 statuses (OQ-72). Approved / Rejected / Superseded are added with the approval ladder (G-12). */
-export const PURCHASE_ORDER_STATUSES = ['DRAFT', 'SUBMITTED', 'CANCELLED'] as const;
+/**
+ * SUBMITTED = waiting for approval (PD-054). REJECTED goes back to the maker for edit + resubmit.
+ * SUPERSEDED = an approved PO replaced by an approved revision (OQ-74).
+ */
+export const PURCHASE_ORDER_STATUSES = [
+  'DRAFT',
+  'SUBMITTED',
+  'APPROVED',
+  'REJECTED',
+  'CANCELLED',
+  'SUPERSEDED',
+] as const;
 
 export const PurchaseOrderStatus = z.enum(PURCHASE_ORDER_STATUSES);
 
