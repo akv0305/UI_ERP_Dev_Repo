@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-056 · CQ-132 · OQ-106 · PDEF-045 · CR-003
+# REGISTER — next free: PD-056 · CQ-132 · OQ-109 · PDEF-045 · CR-003
 
 ## Decisions
 
@@ -58,7 +58,7 @@
 | PD-052 | Comparison screens (G-10 batch 3a): list, new (enquiry picker → grid), detail, edit; one grid component for form and detail (vendors as columns by code, net rate + L1/L2 badge, expired warning, None column, reason column with "not L1" hint, footer = whole-quotation totals, delivery, payment terms, valid until); comparison screens use their own API error messages before the shared ones (same codes mean quotation errors); new status chip "Finalised" (theme.ts, globals.css, status-chip.tsx, terminology) | APPROVED |
 | PD-053 | Purchase Order (G-11): source COMPARISON (from a Finalised comparison, one live PO per comparison + vendor, lines carry comparison line, rate/discount/GST % editable with "Quoted" hint) or DIRECT (any approved active items and vendors, no indent link); qty may differ from enquiry qty (hint, ladder controls); header company/project/site/store, billing = project billing GST registration, vendor GST row (none = unregistered), vendor contact, subject, vendor quotation ref + date, delivery date, payment days, remarks, terms rows (defaults from client sample); GST split CGST+SGST same state / IGST different / none unregistered, per line half-up (PD-006); Draft → Submitted → Cancelled (remarks), approval in G-12; number PO/<project>/<FY>/0001 on Submit, no gaps; revision after approval in G-12; permissions purchase.purchaseOrders.view/.manage on project/site; print per client sample | APPROVED — G-11 batch 1 3e1dba8 (CI #89); 2a d776c06 (CI #90); 2b 1f37edd (CI #91); 2c d9e54fd (CI #92); 3a 4a18d20 (CI #93); 3b b1b4f93 (CI #94); 3c-A c2a96e4 (CI #96), merged to main; PDEF-044 fixed; print pending |
 | PD-054 | Approval workflows (G-12): Administration → Approval Workflows (administration.approvalWorkflows.manage, GLOBAL); per document type (PO first); ordered levels = role + "applies when value above" (L1 PM ₹0, L2 VP ₹2,00,000, L3 ED ₹10,00,000, L4 FD ₹25,00,000, L5 MD ₹50,00,000); cumulative strictly sequential (PD-008 corrected); level 1 always applies, amounts non-decreasing, each role once; versioned, in-flight POs keep their route. Route levels fixed at Submit; approver per level resolved when the PO reaches it (PD-037 findUsersWithRoleCovering): one holder = shown read-only, several = the submitter/previous approver picks one; maker picks only the next level. Route panel shows done/current/later levels with names or warnings. OQ-98 b: maker holding level-1 role = level 1 approved at Submit (≤₹2L → Approved). OQ-94 c / OQ-100 b: same person on several levels (adjacent or not) approves once, other levels "same approver". Maker never approves above level 1 (OQ-95). Reject → remarks → back to maker, route restarts. No active holder / chosen approver deactivated or role removed → level On hold, in-app notification to maker + admins; one new holder = auto-assigned, several = admin picks; admin "Route to higher level" (ED/FD/MD, reason required). Revisions start a new route (OQ-74). In-app only (PD-020, PD-023); full audit | APPROVED |
-| PD-055 | G-12 data model: approval_workflows (versioned, one current per document type + company, null company = all, NULLS NOT DISTINCT), approval_workflow_levels (role, "above" amount, maker tick level 1 only), approval_steps (route per PO per submit cycle; Waiting/Pending/On hold/Approved/Rejected/Closed; decision Approved/Same approver/Maker submit/Rejected; admin route-to-higher role + reason; one open step per PO), approval_delegations, notifications (in-app; text from terminology); PO statuses + Approved/Rejected/Superseded (Submitted = pending approval), approvalWorkflowId, approvalCycle, approvedAt, supersededAt; permission administration.approvalMatrix.manage (existing Approval matrix screen, replaces "approvalWorkflows" in PD-054); two migrations (enum values, then CHECKs) | PROPOSED — G-12 batch 1 |
+| PD-055 | G-12 data model: approval_workflows (versioned, one current per document type + company, null company = all, NULLS NOT DISTINCT), approval_workflow_levels (role, "above" amount, maker tick level 1 only), approval_steps (route per PO per submit cycle; Waiting/Pending/On hold/Approved/Rejected/Closed; decision Approved/Same approver/Maker submit/Rejected; admin route-to-higher role + reason; one open step per PO), approval_delegations, notifications (in-app; text from terminology); PO statuses + Approved/Rejected/Superseded (Submitted = pending approval), approvalWorkflowId, approvalCycle, approvedAt, supersededAt; permission administration.approvalMatrix.manage (existing Approval matrix screen, replaces "approvalWorkflows" in PD-054); two migrations (enum values, then CHECKs) | APPROVED — batch 1 afbc609 (CI #98); part-2 migration po_status_checks in batch 2a |
 
 
 ## Owner questions
@@ -160,9 +160,12 @@
 | OQ-100 | Same approver on non-adjacent levels | CLOSED — (b) one approval covers all levels held by that person |
 | OQ-101 | Admin routes a level to a higher role that is also a later level in the route — one approval covers both? | CLOSED — yes |
 | OQ-102 | Current approver also holds the next level's role — that level auto-completes even if other holders exist? | CLOSED — yes |
-| OQ-103 | Approver access: authority comes from holding the level's role (no separate purchase.purchaseOrders.approve permission, OQ-92); the assigned/past approver can open that PO even without purchase.purchaseOrders.view on its site | OPEN — default yes |
-| OQ-104 | POs already Submitted before G-12 have no route: stay Submitted with note "Submitted before approval workflows", can only be cancelled and re-raised | OPEN — default yes (dev data only) |
-| OQ-105 | Workflow scope: one workflow for all companies, optional override per company (CQ-130); no workflow set up = Submit refused with "No approval workflow for purchase orders" | OPEN — default yes |
+| OQ-103 | Approver access: authority comes from holding the level's role (no separate purchase.purchaseOrders.approve permission, OQ-92); the assigned/past approver can open that PO even without purchase.purchaseOrders.view on its site | CLOSED — yes (05-11-2026) |
+| OQ-104 | POs already Submitted before G-12 have no route: stay Submitted with note "Submitted before approval workflows", can only be cancelled and re-raised | CLOSED (05-11-2026) — no workflow configured → Submit disabled with note + API refuses; Submitted test POs from before G-12 left as is (no route; new POs used for ladder testing) |
+| OQ-105 | Workflow scope: one workflow for all companies, optional override per company (CQ-130); no workflow set up = Submit refused with "No approval workflow for purchase orders" | CLOSED — yes (05-11-2026) |
+| OQ-106 | Administrator cannot approve any PO and cannot be an approval level; Administrator may only re-route a pending step (another holder of the role, or a higher role with reason) when the approver has left. A user holding ADMINISTRATOR + another role approves only as that other role | CLOSED — owner 05-11-2026 |
+| OQ-107 | Workflow change takes effect immediately on save (no effective-date column); future-dated versions only if the client asks | CLOSED — (a) owner 05-11-2026 |
+| OQ-108 | Rejected PO resubmitted after a workflow change uses the version current at resubmission | CLOSED — yes (05-11-2026) |
 
 
 ## Client questions
@@ -246,6 +249,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-044 | Comparison PO edit could not add back lines removed in an earlier save (edit screen only had the saved lines; comparison-form refused the vendor because the edited PO counted as live); edit matched vendor GST/contact by GSTIN/name | FIXED — comparison-form accepts purchaseOrderId (ignored in live-PO check), edit page loads all chosen lines; PO response adds vendorGstRegistrationId, vendorContactId; no migration |
 
 
+
 ## Change requests
 
 | ID | Change | Status |
@@ -277,3 +281,13 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | G-11-3b | PO new/edit form (comparison + direct), chooser, live CGST/SGST/IGST preview, Edit button | DONE — b1b4f93, CI #94 |
 | G-11-3c-A | PO Submit / Cancel buttons; "Create PO: <vendor>" on finalised comparison | DONE — c2a96e4, CI #96; merged to main |
 
+## Build plan — G-12 (PD-054, PD-055)
+
+| Batch | Scope | Status |
+| --- | --- | --- |
+| G-12 b1 | Contracts, schema, migration po_approval_workflows | DONE — afbc609, CI #98 |
+| G-12 b2a | Migration po_status_checks (status CHECK for Approved/Rejected/Superseded + approval CHECK); Approval matrix API (/api/approval-workflows): list current, get any version, form-options (active roles excl. ADMINISTRATOR, active companies), save = new version, old kept not current, immediate (OQ-107 a), audit; error WORKFLOW_CHANGED | IN PROGRESS |
+| G-12 b2b | Submit: no workflow → refused (OQ-104); route fixed from current workflow (company override else all companies), levels whose amount is below PO value; approver pick when several holders; approve/reject; maker submit (OQ-98 b); same approver (OQ-94 c, OQ-100–102); Administrator never approves (OQ-106) | PLANNED |
+| G-12 b2c | On hold (OQ-99), admin re-route (another holder / higher role, OQ-106), delegation (OQ-97), in-app notifications | PLANNED |
+| G-12 b3 | Screens: Approval matrix; route panel + disabled Submit note on PO; bell + Home approvals list | PLANNED |
+| G-12 merge | ff-merge dev/G-12 to main after browser test | PLANNED |

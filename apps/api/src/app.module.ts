@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AccessModule } from './access/access.module';
+import { ApprovalWorkflowsModule } from './approval-workflows/approval-workflows.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { CompaniesModule } from './companies/companies.module';
@@ -46,6 +47,7 @@ import { VendorsModule } from './vendors/vendors.module';
     QuotationsModule,
     ComparisonsModule,
     PurchaseOrdersModule,
+    ApprovalWorkflowsModule,
   ],
 })
 export class AppModule {}

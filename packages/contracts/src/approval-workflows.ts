@@ -34,6 +34,7 @@ export const APPROVAL_WORKFLOW_ERROR_CODES = [
   'INVALID_ROLE',
   'INVALID_COMPANY',
   'INVALID_LEVELS',
+  'WORKFLOW_CHANGED',
 ] as const;
 export type ApprovalWorkflowErrorCode = (typeof APPROVAL_WORKFLOW_ERROR_CODES)[number];
 
@@ -165,3 +166,12 @@ export const ApprovalWorkflowListResponse = z.object({
 });
 
 export type ApprovalWorkflowListResponse = z.infer<typeof ApprovalWorkflowListResponse>;
+/** Pick lists for the Approval matrix form: active roles except ADMINISTRATOR (OQ-106), active companies. */
+export const ApprovalWorkflowFormOptionsResponse = z.object({
+  roles: z.array(ApprovalRoleSummary),
+  companies: z.array(IndentScopeSummary),
+});
+
+export type ApprovalWorkflowFormOptionsResponse = z.infer<
+  typeof ApprovalWorkflowFormOptionsResponse
+>;
