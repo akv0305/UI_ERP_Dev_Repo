@@ -5,12 +5,21 @@ import { indentTargetOf, type IndentTarget } from '../indents/indent-rules';
 export const PURCHASE_ORDER_VIEW: Permission = 'purchase.purchaseOrders.view';
 export const PURCHASE_ORDER_MANAGE: Permission = 'purchase.purchaseOrders.manage';
 
-/** Only a draft may be edited or submitted. */
-export const EDITABLE_PURCHASE_ORDER_STATUSES: readonly PurchaseOrderStatus[] = ['DRAFT'];
+/** Draft, or Rejected for correction and resubmit (OQ-111). */
+export const EDITABLE_PURCHASE_ORDER_STATUSES: readonly PurchaseOrderStatus[] = [
+  'DRAFT',
+  'REJECTED',
+];
 
-/** Draft or submitted POs may be cancelled (OQ-72). */
+/** Until final approval; never once Approved (OQ-111, OQ-112). */
 export const CANCELLABLE_PURCHASE_ORDER_STATUSES: readonly PurchaseOrderStatus[] = [
   'DRAFT',
+  'SUBMITTED',
+  'REJECTED',
+];
+
+/** Waiting for approval (PD-054). */
+export const AWAITING_APPROVAL_PURCHASE_ORDER_STATUSES: readonly PurchaseOrderStatus[] = [
   'SUBMITTED',
 ];
 

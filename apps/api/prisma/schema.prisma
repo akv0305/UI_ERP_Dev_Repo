@@ -1220,6 +1220,12 @@ enum ApprovalDocumentType {
   PURCHASE_ORDER
 }
 
+/// Which PO value the route compares with the level amounts (OQ-109).
+enum ApprovalAmountBasis {
+  NET_AMOUNT
+  GRAND_TOTAL
+}
+
 enum ApprovalStepStatus {
   WAITING
   PENDING
@@ -1253,6 +1259,7 @@ model ApprovalWorkflow {
   version      Int                  @db.SmallInt
   isCurrent    Boolean              @default(true)
   remarks      String?
+  amountBasis  ApprovalAmountBasis  @default(NET_AMOUNT)
   createdAt    DateTime             @default(now()) @db.Timestamptz(3)
   createdById  String               @db.Uuid
 

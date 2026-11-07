@@ -50,6 +50,7 @@ export function toApprovalWorkflowResponse(
         : required(lookups.companies, workflow.companyId, 'Company'),
     version: workflow.version,
     isCurrent: workflow.isCurrent,
+    amountBasis: workflow.amountBasis,
     remarks: workflow.remarks,
     createdAt: workflow.createdAt.toISOString(),
     createdBy: required(lookups.users, workflow.createdById, 'User'),
@@ -73,6 +74,7 @@ export function toApprovalWorkflowAuditSnapshot(
     company: response.company?.code ?? null,
     version: response.version,
     isCurrent: response.isCurrent,
+    amountBasis: response.amountBasis,
     remarks: response.remarks,
     levels: response.levels.map((level) => ({
       levelNo: level.levelNo,

@@ -5,6 +5,8 @@ import {
   PURCHASE_ORDER_NUMBER_PREFIX,
   fiscalYearOf,
   formatDocumentNumber,
+  type ApprovalRouteResponse,
+  type ApprovePurchaseOrderRequest,
   type CancelPurchaseOrderRequest,
   type CreatePurchaseOrderRequest,
   type PagedPurchaseOrdersResponse,
@@ -13,6 +15,8 @@ import {
   type PurchaseOrderResponse,
   type PurchaseOrderStatus,
   type PurchaseOrderTaxType,
+  type RejectPurchaseOrderRequest,
+  type SubmitPurchaseOrderRequest,
   type UpdatePurchaseOrderRequest,
 } from '@uie/contracts';
 import type { AccessContext } from '../access/access-context';
@@ -23,6 +27,7 @@ import { isoDateOf } from '../indents/indents.mapper';
 import { isUniqueViolation, notFound, pageOf, toDateOnly } from '../masters/master-helpers';
 import { forbidden, idFilter } from '../masters/scope';
 import { PrismaService } from '../prisma/prisma.service';
+import { PurchaseOrderApprovalsService } from '../purchase-order-approvals/purchase-order-approvals.service';
 import {
   billingGstMissing,
   duplicatePurchaseOrder,
@@ -40,6 +45,7 @@ import {
 } from './purchase-order-errors';
 import { pricePurchaseOrder, taxTypeFor, type PricedPurchaseOrder } from './purchase-order-math';
 import {
+  AWAITING_APPROVAL_PURCHASE_ORDER_STATUSES,
   CANCELLABLE_PURCHASE_ORDER_STATUSES,
   EDITABLE_PURCHASE_ORDER_STATUSES,
   PURCHASE_ORDER_MANAGE,
@@ -61,13 +67,15 @@ import {
 const ENTITY = 'Purchase order';
 const CHANGED_BY_SOMEONE_ELSE =
   'This purchase order was changed by someone else. Reload and try again.';
-const NOT_EDITABLE = 'Only a draft purchase order can be changed or submitted.';
-const NOT_CANCELLABLE = 'Only a draft or submitted purchase order can be cancelled.';
+const NOT_EDITABLE = 'Only a draft or rejected purchase order can be changed or submitted.';
+const NOT_CANCELLABLE = 'Only a draft, submitted or rejected purchase order can be cancelled.';
+const NOT_AWAITING = 'This purchase order is not waiting for approval.';
+const DATE_LOCKED = 'The PO date cannot change once the purchase order has a number.';
 const LIVE_PO_EXISTS =
   'This vendor already has a live purchase order for this comparison. Open it, or cancel it first.';
 const NOT_FINALISED = 'Purchase orders can be made only from a finalised comparison.';
 const TAX_CHANGED =
-  'Billing or vendor GST details changed since this draft was saved. Open the draft, check the amounts and save it again.';
+  'Billing or vendor GST details changed since this purchase order was saved. Open it, check the amounts and save it again.';
 
 type Tx = Prisma.TransactionClient;
 
@@ -205,6 +213,7 @@ export class PurchaseOrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly approvals: PurchaseOrderApprovalsService,
   ) {}
 
   async list(
@@ -275,8 +284,12 @@ export class PurchaseOrdersService {
     );
   }
 
-  async get(id: string, access: AccessContext): Promise<PurchaseOrderDetailResponse> {
-    const purchaseOrder = await this.requireVisible(id, access);
+  async get(
+    id: string,
+    access: AccessContext,
+    viewerId: string,
+  ): Promise<PurchaseOrderDetailResponse> {
+    const purchaseOrder = await this.requireVisible(id, access, viewerId);
 
     return toPurchaseOrderDetailResponse(
       purchaseOrder,
@@ -356,6 +369,11 @@ export class PurchaseOrdersService {
     this.assertCanManage(existing, access);
     this.assertStatus(existing, EDITABLE_PURCHASE_ORDER_STATUSES, NOT_EDITABLE);
 
+    // OQ-116: once numbered (a rejected PO), the PO date stays as first submitted.
+    if (existing.number !== null && request.poDate !== isoDateOf(existing.poDate)) {
+      throw invalidPurchaseOrderDate(DATE_LOCKED);
+    }
+
     const scope = await this.scopeOf(existing);
     const prepared = await this.prepare(scope, request, existing);
 
@@ -382,8 +400,16 @@ export class PurchaseOrdersService {
     );
   }
 
-  /** Re-checks the saved draft against today's masters (OQ-85 d), then takes the number (PD-003). */
-  async submit(id: string, actorId: string, access: AccessContext): Promise<PurchaseOrderResponse> {
+  /**
+   * Re-checks the saved PO against today's masters (OQ-85 d), takes the number on first Submit
+   * (PD-003; a rejected PO keeps it, OQ-111) and fixes the approval route (PD-054).
+   */
+  async submit(
+    id: string,
+    request: SubmitPurchaseOrderRequest,
+    actorId: string,
+    access: AccessContext,
+  ): Promise<PurchaseOrderResponse> {
     const existing = await this.requireVisible(id, access);
 
     this.assertCanManage(existing, access);
@@ -400,12 +426,28 @@ export class PurchaseOrdersService {
       throw invalidPurchaseOrderLines(TAX_CHANGED);
     }
 
+    const plan = await this.approvals.planSubmit(existing, actorId, request.nextApproverId);
+
     return this.transition(
       existing,
       EDITABLE_PURCHASE_ORDER_STATUSES,
       actorId,
       access,
       async (tx) => {
+        const now = new Date();
+        const approval = {
+          status: plan.finished ? ('APPROVED' as const) : ('SUBMITTED' as const),
+          approvalWorkflowId: plan.workflowId,
+          approvalCycle: plan.cycleNo,
+          approvedAt: plan.finished ? now : null,
+          submittedAt: now,
+          submittedById: actorId,
+        };
+
+        if (existing.number !== null) {
+          return approval;
+        }
+
         const fiscalYear = fiscalYearOf(isoDateOf(existing.poDate));
         const next = await takeNextNumber(tx, {
           companyId: existing.companyId,
@@ -415,7 +457,7 @@ export class PurchaseOrdersService {
         });
 
         return {
-          status: 'SUBMITTED',
+          ...approval,
           number: formatDocumentNumber(
             PURCHASE_ORDER_NUMBER_PREFIX,
             existing.project.code,
@@ -424,10 +466,9 @@ export class PurchaseOrdersService {
             PURCHASE_ORDER_NUMBER_DIGITS,
           ),
           fiscalYear,
-          submittedAt: new Date(),
-          submittedById: actorId,
         };
       },
+      (tx) => this.approvals.writeSubmit(tx, existing.id, plan, actorId),
     );
   }
 
@@ -442,14 +483,79 @@ export class PurchaseOrdersService {
     this.assertCanManage(existing, access);
     this.assertStatus(existing, CANCELLABLE_PURCHASE_ORDER_STATUSES, NOT_CANCELLABLE);
 
-    return this.transition(existing, CANCELLABLE_PURCHASE_ORDER_STATUSES, actorId, access, () =>
-      Promise.resolve({
-        status: 'CANCELLED' as const,
-        cancelledAt: new Date(),
-        cancelledById: actorId,
-        cancelRemarks: request.remarks,
-      }),
+    return this.transition(
+      existing,
+      CANCELLABLE_PURCHASE_ORDER_STATUSES,
+      actorId,
+      access,
+      () =>
+        Promise.resolve({
+          status: 'CANCELLED' as const,
+          cancelledAt: new Date(),
+          cancelledById: actorId,
+          cancelRemarks: request.remarks,
+        }),
+      (tx) => this.approvals.closeOpenSteps(tx, existing),
     );
+  }
+
+  /** Current approver only; assigns the next level or makes the PO Approved (PD-054). */
+  async approve(
+    id: string,
+    request: ApprovePurchaseOrderRequest,
+    actorId: string,
+    access: AccessContext,
+  ): Promise<PurchaseOrderResponse> {
+    const existing = await this.requireVisible(id, access, actorId);
+
+    this.assertStatus(existing, AWAITING_APPROVAL_PURCHASE_ORDER_STATUSES, NOT_AWAITING);
+
+    const plan = await this.approvals.planApprove(existing, actorId, request.nextApproverId);
+
+    return this.transition(
+      existing,
+      AWAITING_APPROVAL_PURCHASE_ORDER_STATUSES,
+      actorId,
+      access,
+      () =>
+        Promise.resolve(
+          plan.finished ? { status: 'APPROVED' as const, approvedAt: new Date() } : {},
+        ),
+      (tx) => this.approvals.writeApprove(tx, existing, plan, actorId, request.remarks),
+    );
+  }
+
+  /** Current approver only; back to the maker for edit and resubmit (OQ-95, OQ-111). */
+  async reject(
+    id: string,
+    request: RejectPurchaseOrderRequest,
+    actorId: string,
+    access: AccessContext,
+  ): Promise<PurchaseOrderResponse> {
+    const existing = await this.requireVisible(id, access, actorId);
+
+    this.assertStatus(existing, AWAITING_APPROVAL_PURCHASE_ORDER_STATUSES, NOT_AWAITING);
+
+    const plan = await this.approvals.planReject(existing, actorId);
+
+    return this.transition(
+      existing,
+      AWAITING_APPROVAL_PURCHASE_ORDER_STATUSES,
+      actorId,
+      access,
+      () => Promise.resolve({ status: 'REJECTED' as const }),
+      (tx) => this.approvals.writeReject(tx, existing, plan, actorId, request.remarks),
+    );
+  }
+
+  async approvalRoute(
+    id: string,
+    access: AccessContext,
+    viewerId: string,
+  ): Promise<ApprovalRouteResponse> {
+    const existing = await this.requireVisible(id, access, viewerId);
+
+    return this.approvals.route(existing, viewerId);
   }
 
   private async scopeForCreate(
@@ -773,24 +879,33 @@ export class PurchaseOrdersService {
     }
   }
 
-  /** Out-of-scope purchase orders do not exist as far as the caller can tell: 404, never 403. */
+  /**
+   * Out-of-scope purchase orders do not exist as far as the caller can tell: 404, never 403.
+   * An assigned or past approver may open the PO without PO view permission (OQ-103).
+   */
   private async requireVisible(
     id: string,
     access: AccessContext,
+    viewerId?: string,
   ): Promise<PurchaseOrderWithDetails> {
     const purchaseOrder = await this.prisma.purchaseOrder.findUnique({
       where: { id },
       include: purchaseOrderDetailInclude,
     });
 
-    if (
-      purchaseOrder === null ||
-      !canSeePurchaseOrder(access, purchaseOrderTargetOf(purchaseOrder))
-    ) {
+    if (purchaseOrder === null) {
       throw notFound(ENTITY);
     }
 
-    return purchaseOrder;
+    if (canSeePurchaseOrder(access, purchaseOrderTargetOf(purchaseOrder))) {
+      return purchaseOrder;
+    }
+
+    if (viewerId !== undefined && (await this.approvals.isOnRoute(purchaseOrder.id, viewerId))) {
+      return purchaseOrder;
+    }
+
+    throw notFound(ENTITY);
   }
 
   private assertCanManage(purchaseOrder: PurchaseOrderWithDetails, access: AccessContext): void {

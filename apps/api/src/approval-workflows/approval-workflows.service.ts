@@ -140,6 +140,7 @@ export class ApprovalWorkflowsService {
             version: (previous?.version ?? 0) + 1,
             isCurrent: true,
             remarks: request.remarks,
+            amountBasis: request.amountBasis,
             createdById: actorId,
           },
         });

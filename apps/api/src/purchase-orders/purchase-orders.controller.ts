@@ -12,13 +12,17 @@ import {
   Req,
 } from '@nestjs/common';
 import {
+  ApprovePurchaseOrderRequest,
   CancelPurchaseOrderRequest,
   CreatePurchaseOrderRequest,
   PurchaseOrderComparisonFormQuery,
   PurchaseOrderListQuery,
   PurchaseOrderSearchQuery,
   PurchaseOrderVendorDetailsQuery,
+  RejectPurchaseOrderRequest,
+  SubmitPurchaseOrderRequest,
   UpdatePurchaseOrderRequest,
+  type ApprovalRouteResponse,
   type PagedPurchaseOrdersResponse,
   type PurchaseOrderComparisonFormResponse,
   type PurchaseOrderComparisonOptionsResponse,
@@ -104,13 +108,21 @@ export class PurchaseOrdersController {
     return this.options.itemOptions(query);
   }
 
+  /** No route permission: the service allows view/manage on the site, or the PO's approvers (OQ-103). */
   @Get(':id')
-  @RequirePermissions('purchase.purchaseOrders.view')
   get(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() request: Request,
   ): Promise<PurchaseOrderDetailResponse> {
-    return this.purchaseOrders.get(id, accessOf(request));
+    return this.purchaseOrders.get(id, accessOf(request), actorIdOf(request));
+  }
+
+  @Get(':id/approval-route')
+  approvalRoute(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() request: Request,
+  ): Promise<ApprovalRouteResponse> {
+    return this.purchaseOrders.approvalRoute(id, accessOf(request), actorIdOf(request));
   }
 
   @Post()
@@ -137,9 +149,31 @@ export class PurchaseOrdersController {
   @RequirePermissions('purchase.purchaseOrders.manage')
   submit(
     @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(SubmitPurchaseOrderRequest)) body: SubmitPurchaseOrderRequest,
     @Req() request: Request,
   ): Promise<PurchaseOrderResponse> {
-    return this.purchaseOrders.submit(id, actorIdOf(request), accessOf(request));
+    return this.purchaseOrders.submit(id, body, actorIdOf(request), accessOf(request));
+  }
+
+  /** Authority comes from being the assigned approver, not a permission (OQ-92, OQ-103). */
+  @Post(':id/approve')
+  @HttpCode(HttpStatus.OK)
+  approve(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(ApprovePurchaseOrderRequest)) body: ApprovePurchaseOrderRequest,
+    @Req() request: Request,
+  ): Promise<PurchaseOrderResponse> {
+    return this.purchaseOrders.approve(id, body, actorIdOf(request), accessOf(request));
+  }
+
+  @Post(':id/reject')
+  @HttpCode(HttpStatus.OK)
+  reject(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(RejectPurchaseOrderRequest)) body: RejectPurchaseOrderRequest,
+    @Req() request: Request,
+  ): Promise<PurchaseOrderResponse> {
+    return this.purchaseOrders.reject(id, body, actorIdOf(request), accessOf(request));
   }
 
   @Post(':id/cancel')

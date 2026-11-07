@@ -54,6 +54,18 @@ export const purchaseOrderDetailInclude = {
   },
   charges: { orderBy: { chargeType: 'asc' } },
   terms: { orderBy: { sortOrder: 'asc' } },
+  approvalSteps: {
+    orderBy: [{ cycleNo: 'asc' }, { levelNo: 'asc' }],
+    select: {
+      cycleNo: true,
+      levelNo: true,
+      status: true,
+      decision: true,
+      remarks: true,
+      role: { select: { code: true } },
+      approver: { select: { displayName: true } },
+    },
+  },
 } satisfies Prisma.PurchaseOrderInclude;
 
 export type PurchaseOrderWithRelations = Prisma.PurchaseOrderGetPayload<{
@@ -248,6 +260,18 @@ export function toPurchaseOrderAuditSnapshot(
     taxTotal: purchaseOrder.taxTotal.toFixed(2),
     grandTotal: purchaseOrder.grandTotal.toFixed(2),
     cancelRemarks: purchaseOrder.cancelRemarks,
+    approvalCycle: purchaseOrder.approvalCycle,
+    approvedAt: purchaseOrder.approvedAt?.toISOString() ?? null,
+    approvalSteps: purchaseOrder.approvalSteps
+      .filter((step) => step.cycleNo === purchaseOrder.approvalCycle)
+      .map((step) => ({
+        levelNo: step.levelNo,
+        role: step.role.code,
+        status: step.status,
+        approver: step.approver?.displayName ?? null,
+        decision: step.decision,
+        remarks: step.remarks,
+      })),
     lines: purchaseOrder.lines.map((line) => ({
       lineNo: line.lineNo,
       item: line.item.code,

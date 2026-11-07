@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-056 · CQ-132 · OQ-109 · PDEF-045 · CR-003
+# REGISTER — next free: PD-056 · CQ-132 · OQ-117 · PDEF-045 · CR-003
 
 ## Decisions
 
@@ -166,6 +166,14 @@
 | OQ-106 | Administrator cannot approve any PO and cannot be an approval level; Administrator may only re-route a pending step (another holder of the role, or a higher role with reason) when the approver has left. A user holding ADMINISTRATOR + another role approves only as that other role | CLOSED — owner 05-11-2026 |
 | OQ-107 | Workflow change takes effect immediately on save (no effective-date column); future-dated versions only if the client asks | CLOSED — (a) owner 05-11-2026 |
 | OQ-108 | Rejected PO resubmitted after a workflow change uses the version current at resubmission | CLOSED — yes (05-11-2026) |
+| OQ-109 | PO approval route compares which value? | CLOSED 06-11-2026 — Net amount = lines after discount, excl. GST and charges (PO `subtotal`). One setting per workflow version: amountBasis NET_AMOUNT (default) / GRAND_TOTAL; versions are immutable so the PO's version records the basis used |
+| OQ-110 | Can a role holder without PO view permission approve? | CLOSED 06-11-2026 — Yes, per OQ-103: approver candidates = active holders of the level role on the PO's project (GLOBAL/COMPANY/PROJECT); being on the PO's route (assigned or past approver) grants view of that PO, no separate purchase.purchaseOrders.view needed. None → Submit/Approve refused (OQ-104) |
+| OQ-111 | Rejected PO handling | CLOSED 06-11-2026 — Maker may edit (status stays REJECTED while editing, DB check needs number) or cancel with remarks; resubmit keeps the same number, starts a new cycle from level 1, uses the current workflow version and new value |
+| OQ-112 | Cancel / change during and after approval | CLOSED 06-11-2026 — Submitted: cancellable with remarks until final approval; open steps Closed, current approver notified. Approved: no edit, no cancel in G-12; later change = revision (PD-045) and cancel of approved PO = request approved by highest approver, blocked after GRN (with Stores). Rejected: see OQ-111. Client may change later |
+| OQ-113 | Same approver holds next level's role | CLOSED 06-11-2026 — Next level auto-recorded SAME_APPROVER (OQ-94 c), even if others hold that role |
+| OQ-114 | Notification read API | CLOSED 06-11-2026 — 2b only writes notification rows; read / mark-read API with the bell in batch 3 |
+| OQ-115 | No approval matrix saved | CLOSED 06-11-2026 — Submit refused: "No approval matrix is set up for purchase orders. Ask the administrator." |
+| OQ-116 | Rejected PO edited before resubmit: can the PO date change? | CLOSED 06-11-2026 — No. PO date locked once the PO has a number; edit of a Rejected PO with a different date refused (INVALID_DATE). Number, FY and date stay as first submitted |
 
 
 ## Client questions
@@ -249,7 +257,6 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-044 | Comparison PO edit could not add back lines removed in an earlier save (edit screen only had the saved lines; comparison-form refused the vendor because the edited PO counted as live); edit matched vendor GST/contact by GSTIN/name | FIXED — comparison-form accepts purchaseOrderId (ignored in live-PO check), edit page loads all chosen lines; PO response adds vendorGstRegistrationId, vendorContactId; no migration |
 
 
-
 ## Change requests
 
 | ID | Change | Status |
@@ -285,9 +292,8 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 
 | Batch | Scope | Status |
 | --- | --- | --- |
-| G-12 b1 | Contracts, schema, migration po_approval_workflows | DONE — afbc609, CI #98 |
-| G-12 b2a | Migration po_status_checks (status CHECK for Approved/Rejected/Superseded + approval CHECK); Approval matrix API (/api/approval-workflows): list current, get any version, form-options (active roles excl. ADMINISTRATOR, active companies), save = new version, old kept not current, immediate (OQ-107 a), audit; error WORKFLOW_CHANGED | IN PROGRESS |
-| G-12 b2b | Submit: no workflow → refused (OQ-104); route fixed from current workflow (company override else all companies), levels whose amount is below PO value; approver pick when several holders; approve/reject; maker submit (OQ-98 b); same approver (OQ-94 c, OQ-100–102); Administrator never approves (OQ-106) | PLANNED |
-| G-12 b2c | On hold (OQ-99), admin re-route (another holder / higher role, OQ-106), delegation (OQ-97), in-app notifications | PLANNED |
+| G-12 b2a | Migration po_status_checks (status CHECK for Approved/Rejected/Superseded + approval CHECK); Approval matrix API (/api/approval-workflows): list current, get any version, form-options (active roles excl. ADMINISTRATOR, active companies), save = new version, old kept not current, immediate (OQ-107 a), audit; error WORKFLOW_CHANGED | DONE — f2be738 (CI #99) |
+| G-12 b2b | Migration amountBasis on approval_workflows (NET_AMOUNT default / GRAND_TOTAL, OQ-109); Submit: no workflow → refused (OQ-104, OQ-115); route fixed from current workflow (company override else all companies, OQ-105, OQ-108), levels whose amount is below the PO value on the version's basis; approver = active role holder on PO's project (OQ-103, OQ-110), pick when several; route membership grants view of that PO; maker submit (OQ-98 b); same approver (OQ-94 c, OQ-113); Administrator never approves (OQ-106); approve/reject (remarks); Rejected editable + resubmit same number, date locked (OQ-111, OQ-116); cancel Draft/Submitted/Rejected, closes open steps (OQ-112); notification rows only (OQ-114) | PLANNED |
+| G-12 b2c | On hold (OQ-99), admin re-route (another holder / higher role, OQ-106), delegation (OQ-97); NotificationKind PURCHASE_ORDER_CANCELLED + notify current approver on cancel (OQ-112) | PLANNED |
 | G-12 b3 | Screens: Approval matrix; route panel + disabled Submit note on PO; bell + Home approvals list | PLANNED |
 | G-12 merge | ff-merge dev/G-12 to main after browser test | PLANNED |

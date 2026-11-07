@@ -56,4 +56,5 @@ Every item, screen and action is shown only with its permission code.
 4. DB changes: `prisma migrate dev --create-only` first → owner sends SQL → Claude approves → apply.
 5. Green + browser test OK → commit, push dev/G-xx, send SHA → Claude reviews at
    raw.githubusercontent.com/akv0305/UI_ERP_Dev_Repo/<sha>/<path> → git merge --ff-only into main, push.
-Keep source files under ~300 lines (review tooling truncates long files).
+Long files: if Claude cannot read a whole file, it asks the owner for the needed sections (Select-String output) instead of guessing.
+

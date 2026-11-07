@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { IndentActorSummary, IndentScopeSummary } from './indents';
 import { QUOTATION_AMOUNT_PATTERN } from './quotations';
-import { OptionalText } from './validators';
+import { OptionalText, optional } from './validators';
 
 /** Documents that go through an approval workflow (PD-054). Purchase orders first. */
 export const APPROVAL_DOCUMENT_TYPES = ['PURCHASE_ORDER'] as const;
@@ -29,6 +29,11 @@ export const APPROVAL_DECISIONS = [
 ] as const;
 export const ApprovalDecision = z.enum(APPROVAL_DECISIONS);
 export type ApprovalDecision = z.infer<typeof ApprovalDecision>;
+
+/** Which PO value the route compares with the level amounts (OQ-109). NET_AMOUNT = lines after discount, excl. GST and charges. */
+export const APPROVAL_AMOUNT_BASES = ['NET_AMOUNT', 'GRAND_TOTAL'] as const;
+export const ApprovalAmountBasis = z.enum(APPROVAL_AMOUNT_BASES);
+export type ApprovalAmountBasis = z.infer<typeof ApprovalAmountBasis>;
 
 export const APPROVAL_WORKFLOW_ERROR_CODES = [
   'INVALID_ROLE',
@@ -85,6 +90,8 @@ export const SaveApprovalWorkflowRequest = z
     /** null = all companies; a company id = override for that company (CQ-130). */
     companyId: z.uuid().nullable(),
     remarks: OptionalText(300),
+    /** One setting per version (OQ-109); old versions keep theirs. */
+    amountBasis: ApprovalAmountBasis.default('NET_AMOUNT'),
     levels: z.array(ApprovalWorkflowLevelInput).min(1).max(MAX_APPROVAL_LEVELS),
   })
   .superRefine((value, ctx) => {
@@ -152,6 +159,7 @@ export const ApprovalWorkflowResponse = z.object({
   company: IndentScopeSummary.nullable(),
   version: z.number().int(),
   isCurrent: z.boolean(),
+  amountBasis: ApprovalAmountBasis,
   remarks: z.string().nullable(),
   /** The version applies to documents submitted from this time (OQ-96). */
   createdAt: z.string(),
@@ -175,3 +183,72 @@ export const ApprovalWorkflowFormOptionsResponse = z.object({
 export type ApprovalWorkflowFormOptionsResponse = z.infer<
   typeof ApprovalWorkflowFormOptionsResponse
 >;
+
+// ---------- Purchase order approval (G-12 batch 2b) ----------
+
+export const PURCHASE_ORDER_APPROVAL_ERROR_CODES = [
+  'NO_APPROVAL_WORKFLOW',
+  'NO_APPROVER',
+  'APPROVER_REQUIRED',
+  'INVALID_APPROVER',
+  'NOT_YOUR_STEP',
+] as const;
+export type PurchaseOrderApprovalErrorCode = (typeof PURCHASE_ORDER_APPROVAL_ERROR_CODES)[number];
+
+/** A missing body counts as {}. */
+const bodyOrEmpty = (value: unknown): unknown => value ?? {};
+
+/** nextApproverId is needed only when the next level has several holders (PD-054). */
+export const SubmitPurchaseOrderRequest = z.preprocess(
+  bodyOrEmpty,
+  z.object({ nextApproverId: optional(z.uuid()) }),
+);
+export type SubmitPurchaseOrderRequest = z.infer<typeof SubmitPurchaseOrderRequest>;
+
+export const ApprovePurchaseOrderRequest = z.preprocess(
+  bodyOrEmpty,
+  z.object({ remarks: OptionalText(500), nextApproverId: optional(z.uuid()) }),
+);
+export type ApprovePurchaseOrderRequest = z.infer<typeof ApprovePurchaseOrderRequest>;
+
+export const RejectPurchaseOrderRequest = z.object({ remarks: z.string().trim().min(1).max(500) });
+export type RejectPurchaseOrderRequest = z.infer<typeof RejectPurchaseOrderRequest>;
+
+export const ApprovalRouteStepResponse = z.object({
+  levelNo: z.number().int(),
+  role: ApprovalRoleSummary,
+  minAmount: z.string(),
+  status: ApprovalStepStatus,
+  approver: IndentActorSummary.nullable(),
+  decision: ApprovalDecision.nullable(),
+  decidedAt: z.string().nullable(),
+  remarks: z.string().nullable(),
+});
+export type ApprovalRouteStepResponse = z.infer<typeof ApprovalRouteStepResponse>;
+
+export const ApprovalRouteNextLevel = z.object({
+  levelNo: z.number().int(),
+  role: ApprovalRoleSummary,
+  /** Who may be chosen; the maker is never one. One candidate = assigned automatically. */
+  candidates: z.array(IndentActorSummary),
+});
+export type ApprovalRouteNextLevel = z.infer<typeof ApprovalRouteNextLevel>;
+
+export const ApprovalRouteResponse = z.object({
+  /** True for Draft / Rejected: the levels Submit would create now. */
+  preview: z.boolean(),
+  workflow: z
+    .object({ id: z.uuid(), version: z.number().int(), amountBasis: ApprovalAmountBasis })
+    .nullable(),
+  /** PO value compared with the level amounts (OQ-109). */
+  amount: z.string().nullable(),
+  cycleNo: z.number().int(),
+  steps: z.array(ApprovalRouteStepResponse),
+  /** Level that Submit (or the current approver's Approve) will assign next. */
+  next: ApprovalRouteNextLevel.nullable(),
+  /** Why Submit / Approve cannot go ahead now (no matrix, nobody holds a role). */
+  problem: z.string().nullable(),
+  /** The viewer is the current approver and may approve or reject. */
+  canDecide: z.boolean(),
+});
+export type ApprovalRouteResponse = z.infer<typeof ApprovalRouteResponse>;

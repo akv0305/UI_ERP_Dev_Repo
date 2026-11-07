@@ -21,6 +21,7 @@ function workflowRow(overrides: Record<string, unknown> = {}) {
     companyId: null,
     version: 1,
     isCurrent: true,
+    amountBasis: 'NET_AMOUNT',
     remarks: null,
     createdAt: new Date('2026-11-05T10:00:00Z'),
     createdById: ACTOR,
@@ -73,6 +74,7 @@ const request = {
   documentType: 'PURCHASE_ORDER' as const,
   companyId: null,
   remarks: null,
+  amountBasis: 'NET_AMOUNT' as const,
   levels: [
     { roleId: PM_ROLE, minAmount: '0', makerCountsAsApproved: true },
     { roleId: VP_ROLE, minAmount: '200000', makerCountsAsApproved: false },
@@ -142,6 +144,15 @@ describe('ApprovalWorkflowsService.save', () => {
       'auditEvent.create',
     ]);
     expect(recorder.audit().map((event) => event.action)).toEqual(['UPDATE', 'CREATE']);
+  });
+  it('stores the chosen amount basis on the new version (OQ-109)', async () => {
+    const { tx, service } = setup();
+
+    await service.save({ ...request, amountBasis: 'GRAND_TOTAL' }, ACTOR);
+
+    expect(tx.approvalWorkflow.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ amountBasis: 'GRAND_TOTAL' }),
+    });
   });
 
   it('refuses an inactive role with INVALID_ROLE and writes nothing', async () => {
