@@ -23,8 +23,14 @@ export const AWAITING_APPROVAL_PURCHASE_ORDER_STATUSES: readonly PurchaseOrderSt
   'SUBMITTED',
 ];
 
-/** Not cancelled: counts as the one live PO per comparison + vendor (OQ-83). */
-export const LIVE_PURCHASE_ORDER_STATUSES: readonly PurchaseOrderStatus[] = ['DRAFT', 'SUBMITTED'];
+/** Every status except Cancelled holds the one live PO per comparison + vendor (OQ-83, DB index). */
+export const LIVE_PURCHASE_ORDER_STATUSES: readonly PurchaseOrderStatus[] = [
+  'DRAFT',
+  'SUBMITTED',
+  'APPROVED',
+  'REJECTED',
+  'SUPERSEDED',
+];
 
 /** Checked against the PO's site, like indents. */
 export function purchaseOrderTargetOf(purchaseOrder: {

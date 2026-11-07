@@ -152,6 +152,13 @@ function previewStep(level: RouteLevel): ApprovalRouteStepResponse {
   };
 }
 
+/** Approvers already recorded as Approved in the loaded cycle (OQ-100 b). */
+function approverIdsOf(steps: readonly StepRow[]): string[] {
+  return steps.flatMap((row) =>
+    row.status === 'APPROVED' && row.approverId !== null ? [row.approverId] : [],
+  );
+}
+
 /**
  * PO approval route (PD-054): planned outside the transaction (holder lookups), written inside the
  * PO's own transaction through PurchaseOrdersService.transition.
@@ -235,7 +242,7 @@ export class PurchaseOrderApprovalsService {
         levels: remaining,
         holders,
         makerId: po.submittedById ?? '',
-        previousApproverId: actorId,
+        approvedByIds: [actorId, ...approverIdsOf(steps)],
         chosenApproverId,
         projectCode: po.project.code,
       }),
@@ -368,9 +375,11 @@ export class PurchaseOrderApprovalsService {
       const makerId = po.submittedById ?? '';
       const remaining = steps.filter((row) => row.levelNo > current.levelNo).map(levelOfStep);
       const holders = await this.holdersFor(remaining, po.projectId);
-      // The first later level the viewer does not hold themselves (those are recorded as same approver).
+      // The first later level not held by the viewer or an earlier approver (those are recorded as same approver, OQ-100 b).
+      const approved = new Set([viewerId, ...approverIdsOf(steps)]);
       const target = remaining.find(
-        (level) => !candidatesFor(level, holders, makerId).some((holder) => holder.id === viewerId),
+        (level) =>
+          !candidatesFor(level, holders, makerId).some((holder) => approved.has(holder.id)),
       );
 
       if (target !== undefined) {

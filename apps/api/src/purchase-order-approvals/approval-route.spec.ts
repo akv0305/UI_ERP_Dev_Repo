@@ -151,7 +151,7 @@ describe('advance', () => {
       levels,
       holders: holders({ 3: ['vp1'], 4: ['fd1'] }),
       makerId: 'pm1',
-      previousApproverId: 'vp1',
+      approvedByIds: ['vp1'],
     });
 
     expect(result).toEqual({
@@ -171,8 +171,41 @@ describe('advance', () => {
         levels: [],
         holders: holders({}),
         makerId: 'pm1',
-        previousApproverId: 'vp1',
+        approvedByIds: ['vp1'],
       }),
     ).toEqual({ ok: true, changes: [], finished: true });
+  });
+  it('lets an earlier approver cover a later, non-adjacent level (OQ-100 b)', () => {
+    const levels = applicableLevels(LADDER, '3000000.00').slice(3);
+    const result = advance({
+      ...base,
+      levels,
+      holders: holders({ 4: ['vp1', 'fd1'] }),
+      makerId: 'pm1',
+      approvedByIds: ['ed1', 'vp1'],
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      finished: true,
+      changes: [{ levelNo: 4, status: 'APPROVED', decision: 'SAME_APPROVER', approverId: 'vp1' }],
+    });
+  });
+
+  it('never counts the maker as an earlier approver above level 1', () => {
+    const levels = applicableLevels(LADDER, '500000.00').slice(1);
+    const result = advance({
+      ...base,
+      levels,
+      holders: holders({ 2: ['pm1', 'vp1'] }),
+      makerId: 'pm1',
+      approvedByIds: ['pm1'],
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      finished: false,
+      changes: [{ levelNo: 2, status: 'PENDING', decision: null, approverId: 'vp1' }],
+    });
   });
 });

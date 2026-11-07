@@ -44,8 +44,11 @@ export interface AdvanceInput {
   holders: HoldersByLevel;
   /** Submitter of the PO: never an approver above level 1 (PD-054). */
   makerId: string;
-  /** Who approved just before: also covers a following level whose role they hold (OQ-94 c, OQ-113). */
-  previousApproverId: string | null;
+  /**
+   * Everyone who already approved in this cycle, including the current approver: covers any later
+   * level whose role they hold, adjacent or not (OQ-94 c, OQ-100 b, OQ-113).
+   */
+  approvedByIds: readonly string[];
   chosenApproverId: string | null;
   projectCode: string;
 }
@@ -112,20 +115,21 @@ function pick(
   );
 }
 
-/** Moves along the levels: same-approver levels are recorded, the first other level is assigned. */
+/** Moves along the levels: levels held by an earlier approver are recorded, the first other level is assigned. */
 export function advance(input: AdvanceInput): AdvanceResult {
   const changes: StepChange[] = [];
-  const previous = input.previousApproverId;
+  const approved = new Set(input.approvedByIds);
 
   for (const level of input.levels) {
     const candidates = candidatesFor(level, input.holders, input.makerId);
+    const same = candidates.find((holder) => approved.has(holder.id));
 
-    if (previous !== null && candidates.some((holder) => holder.id === previous)) {
+    if (same !== undefined) {
       changes.push({
         levelNo: level.levelNo,
         status: 'APPROVED',
         decision: 'SAME_APPROVER',
-        approverId: previous,
+        approverId: same.id,
       });
       continue;
     }
@@ -154,7 +158,7 @@ export function advance(input: AdvanceInput): AdvanceResult {
  * (OQ-98 b). Every level still to approve needs a holder other than the maker, else Submit is
  * refused (OQ-104).
  */
-export function planSubmit(input: Omit<AdvanceInput, 'previousApproverId'>): AdvanceResult {
+export function planSubmit(input: Omit<AdvanceInput, 'approvedByIds'>): AdvanceResult {
   const [first, ...rest] = input.levels;
 
   if (first === undefined) {
@@ -172,7 +176,7 @@ export function planSubmit(input: Omit<AdvanceInput, 'previousApproverId'>): Adv
     }
   }
 
-  const result = advance({ ...input, levels: toResolve, previousApproverId: null });
+  const result = advance({ ...input, levels: toResolve, approvedByIds: [] });
 
   if (!result.ok || !makerApproves) {
     return result;
