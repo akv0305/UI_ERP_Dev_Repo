@@ -14,7 +14,7 @@ import { auditActionFor } from '../audit/audit-action';
 import { AuditService } from '../audit/audit.service';
 import { ApiError } from '../common/errors/api-error';
 import { PrismaService } from '../prisma/prisma.service';
-import type { PurchaseOrderApprovalsService } from '../purchase-order-approvals/purchase-order-approvals.service';
+import { PurchaseOrderApprovalsService } from '../purchase-order-approvals/purchase-order-approvals.service';
 
 const roleInclude = {
   permissions: true,
