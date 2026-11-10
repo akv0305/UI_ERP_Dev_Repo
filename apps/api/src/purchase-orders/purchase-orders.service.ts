@@ -15,7 +15,9 @@ import {
   type PurchaseOrderResponse,
   type PurchaseOrderStatus,
   type PurchaseOrderTaxType,
+  type ReassignApproverRequest,
   type RejectPurchaseOrderRequest,
+  type RouteToHigherRoleRequest,
   type SubmitPurchaseOrderRequest,
   type UpdatePurchaseOrderRequest,
 } from '@uie/contracts';
@@ -51,6 +53,7 @@ import {
   PURCHASE_ORDER_MANAGE,
   PURCHASE_ORDER_VIEW,
   canSeePurchaseOrder,
+  isAdministrator,
   purchaseOrderFlagsFor,
   purchaseOrderTargetOf,
 } from './purchase-order-rules';
@@ -495,7 +498,7 @@ export class PurchaseOrdersService {
           cancelledById: actorId,
           cancelRemarks: request.remarks,
         }),
-      (tx) => this.approvals.closeOpenSteps(tx, existing),
+      (tx) => this.approvals.closeOpenSteps(tx, existing, actorId),
     );
   }
 
@@ -548,6 +551,60 @@ export class PurchaseOrdersService {
     );
   }
 
+  /** Administrator only: another holder takes the open level (OQ-97, OQ-118, OQ-119). */
+  async reassignApprover(
+    id: string,
+    request: ReassignApproverRequest,
+    actorId: string,
+    access: AccessContext,
+  ): Promise<PurchaseOrderResponse> {
+    const existing = await this.requireVisible(id, access);
+
+    if (!isAdministrator(access)) {
+      throw forbidden();
+    }
+
+    this.assertStatus(existing, AWAITING_APPROVAL_PURCHASE_ORDER_STATUSES, NOT_AWAITING);
+
+    const plan = await this.approvals.planReassign(existing, request);
+
+    return this.transition(
+      existing,
+      AWAITING_APPROVAL_PURCHASE_ORDER_STATUSES,
+      actorId,
+      access,
+      () => Promise.resolve({}),
+      (tx) => this.approvals.writeReassign(tx, existing, plan, actorId),
+    );
+  }
+
+  /** Administrator only, On hold level: route to a higher role with a reason (OQ-99, OQ-119). */
+  async routeToHigherRole(
+    id: string,
+    request: RouteToHigherRoleRequest,
+    actorId: string,
+    access: AccessContext,
+  ): Promise<PurchaseOrderResponse> {
+    const existing = await this.requireVisible(id, access);
+
+    if (!isAdministrator(access)) {
+      throw forbidden();
+    }
+
+    this.assertStatus(existing, AWAITING_APPROVAL_PURCHASE_ORDER_STATUSES, NOT_AWAITING);
+
+    const plan = await this.approvals.planRouteHigher(existing, request);
+
+    return this.transition(
+      existing,
+      AWAITING_APPROVAL_PURCHASE_ORDER_STATUSES,
+      actorId,
+      access,
+      () => Promise.resolve({}),
+      (tx) => this.approvals.writeReassign(tx, existing, plan, actorId),
+    );
+  }
+
   async approvalRoute(
     id: string,
     access: AccessContext,
@@ -555,7 +612,7 @@ export class PurchaseOrdersService {
   ): Promise<ApprovalRouteResponse> {
     const existing = await this.requireVisible(id, access, viewerId);
 
-    return this.approvals.route(existing, viewerId);
+    return this.approvals.route(existing, viewerId, isAdministrator(access));
   }
 
   private async scopeForCreate(

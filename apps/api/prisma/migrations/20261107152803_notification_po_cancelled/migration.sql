@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "NotificationKind" ADD VALUE 'PURCHASE_ORDER_CANCELLED';

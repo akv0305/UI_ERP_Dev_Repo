@@ -1248,6 +1248,7 @@ enum NotificationKind {
   APPROVER_NEEDED
   PURCHASE_ORDER_APPROVED
   PURCHASE_ORDER_REJECTED
+  PURCHASE_ORDER_CANCELLED
 }
 
 /// Approval workflow version (PD-054). Saving creates a new version; one current per document type + company

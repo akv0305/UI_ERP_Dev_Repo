@@ -19,6 +19,7 @@ import { auditActionFor } from '../audit/audit-action';
 import { AuditService } from '../audit/audit.service';
 import { ApiError } from '../common/errors/api-error';
 import { PrismaService } from '../prisma/prisma.service';
+import { PurchaseOrderApprovalsService } from '../purchase-order-approvals/purchase-order-approvals.service';
 import {
   toUserAuditSnapshot,
   toUserResponse,
@@ -61,6 +62,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
     private readonly audit: AuditService,
+    private readonly approvals: PurchaseOrderApprovalsService,
   ) {}
 
   async list(query: UserListQuery): Promise<PagedUsersResponse> {
@@ -283,6 +285,8 @@ export class UsersService {
           data: { revokedAt: new Date() },
         });
       }
+      // Open approval levels may lose or gain an approver (OQ-99, OQ-117).
+      await this.approvals.reconcileOpenSteps(tx, actorId, { userId: id });
 
       await this.audit.record(tx, {
         actorUserId: actorId,

@@ -3,6 +3,7 @@ import { ALL_PERMISSIONS } from '@uie/contracts';
 import { AuditService } from '../audit/audit.service';
 import { ApiError } from '../common/errors/api-error';
 import type { PrismaService } from '../prisma/prisma.service';
+import type { PurchaseOrderApprovalsService } from '../purchase-order-approvals/purchase-order-approvals.service';
 import { RolesService } from './roles.service';
 
 const ROLE_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
@@ -58,10 +59,17 @@ function setup() {
   tx.role.update.mockImplementation(async () => roleRow());
   tx.role.create.mockImplementation(async () => roleRow());
 
+  const approvals = { reconcileOpenSteps: jest.fn() };
+
   return {
     prisma,
     tx,
-    service: new RolesService(prisma as unknown as PrismaService, new AuditService()),
+    approvals,
+    service: new RolesService(
+      prisma as unknown as PrismaService,
+      new AuditService(),
+      approvals as unknown as PurchaseOrderApprovalsService,
+    ),
   };
 }
 

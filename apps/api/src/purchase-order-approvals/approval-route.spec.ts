@@ -2,6 +2,7 @@ import {
   advance,
   applicableLevels,
   planSubmit,
+  reconcileStep,
   type Holder,
   type HoldersByLevel,
   type RouteLevel,
@@ -206,6 +207,62 @@ describe('advance', () => {
       ok: true,
       finished: false,
       changes: [{ levelNo: 2, status: 'PENDING', decision: null, approverId: 'vp1' }],
+    });
+  });
+  it('puts a level on hold at Approve when nobody can take it (OQ-117)', () => {
+    const levels = applicableLevels(LADDER, '1500000.00').slice(2);
+
+    expect(
+      advance({
+        ...base,
+        levels,
+        holders: holders({}),
+        makerId: 'pm1',
+        approvedByIds: ['vp1'],
+        holdWhenNoApprover: true,
+      }),
+    ).toEqual({
+      ok: true,
+      finished: false,
+      changes: [{ levelNo: 3, status: 'ON_HOLD', decision: null, approverId: null }],
+    });
+  });
+});
+describe('reconcileStep (OQ-99, OQ-117)', () => {
+  const list = (ids: string[]) => ids.map((id) => ({ id, displayName: id }));
+
+  it('keeps a pending approver who still qualifies', () => {
+    expect(
+      reconcileStep({ status: 'PENDING', approverId: 'vp1' }, list(['vp1', 'vp2']), 'pm1'),
+    ).toEqual({ kind: 'KEEP' });
+  });
+
+  it('assigns the only remaining holder', () => {
+    expect(reconcileStep({ status: 'PENDING', approverId: 'vp1' }, list(['vp2']), 'pm1')).toEqual({
+      kind: 'ASSIGN',
+      approverId: 'vp2',
+    });
+    expect(reconcileStep({ status: 'ON_HOLD', approverId: null }, list(['ed1']), 'pm1')).toEqual({
+      kind: 'ASSIGN',
+      approverId: 'ed1',
+    });
+  });
+
+  it('puts on hold when several or none remain, and waits while still so', () => {
+    expect(
+      reconcileStep({ status: 'PENDING', approverId: 'vp1' }, list(['vp2', 'vp3']), 'pm1'),
+    ).toEqual({ kind: 'HOLD' });
+    expect(reconcileStep({ status: 'PENDING', approverId: 'vp1' }, list([]), 'pm1')).toEqual({
+      kind: 'HOLD',
+    });
+    expect(
+      reconcileStep({ status: 'ON_HOLD', approverId: null }, list(['vp2', 'vp3']), 'pm1'),
+    ).toEqual({ kind: 'WAIT' });
+  });
+
+  it('never assigns the maker', () => {
+    expect(reconcileStep({ status: 'ON_HOLD', approverId: null }, list(['pm1']), 'pm1')).toEqual({
+      kind: 'WAIT',
     });
   });
 });

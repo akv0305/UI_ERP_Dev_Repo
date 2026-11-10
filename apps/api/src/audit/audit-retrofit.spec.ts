@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import { ALL_PERMISSIONS } from '@uie/contracts';
 import type { PasswordService } from '../auth/password.service';
+import type { PurchaseOrderApprovalsService } from '../purchase-order-approvals/purchase-order-approvals.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import { RolesService } from '../roles/roles.service';
 import { UsersService } from '../users/users.service';
@@ -129,14 +130,21 @@ function setup() {
 
   const audit = new AuditService();
   const passwords = { hash: jest.fn(async () => 'NEW-SECRET-HASH') };
+  // Approval re-checks (OQ-99, OQ-117) are covered by their own specs; here they only need to run.
+  const approvals = { reconcileOpenSteps: jest.fn(async () => undefined) };
   const users = new UsersService(
     prisma as unknown as PrismaService,
     passwords as unknown as PasswordService,
     audit,
+    approvals as unknown as PurchaseOrderApprovalsService,
   );
-  const roles = new RolesService(prisma as unknown as PrismaService, audit);
+  const roles = new RolesService(
+    prisma as unknown as PrismaService,
+    audit,
+    approvals as unknown as PurchaseOrderApprovalsService,
+  );
 
-  return { prisma, tx, committed, users, roles };
+  return { prisma, tx, committed, users, roles, approvals };
 }
 
 function auditRows(committed: Write[]): Record<string, unknown>[] {

@@ -21,10 +21,11 @@ export type HoldersByLevel = ReadonlyMap<number, readonly Holder[]>;
 
 export interface StepChange {
   levelNo: number;
-  status: 'APPROVED' | 'PENDING';
+  status: 'APPROVED' | 'PENDING' | 'ON_HOLD';
   /** Set on APPROVED changes made without a separate decision. */
   decision: 'SAME_APPROVER' | 'MAKER_SUBMIT' | null;
-  approverId: string;
+  /** null only for ON_HOLD. */
+  approverId: string | null;
 }
 
 export type RouteProblemCode = 'NO_APPROVER' | 'APPROVER_REQUIRED' | 'INVALID_APPROVER';
@@ -51,6 +52,8 @@ export interface AdvanceInput {
   approvedByIds: readonly string[];
   chosenApproverId: string | null;
   projectCode: string;
+  /** At Approve: a level nobody can take goes On hold instead of failing (OQ-117). Submit still refuses (OQ-104). */
+  holdWhenNoApprover?: boolean;
 }
 
 /** NET_AMOUNT = lines after discount, excl. GST and charges (OQ-109). */
@@ -133,6 +136,11 @@ export function advance(input: AdvanceInput): AdvanceResult {
       });
       continue;
     }
+    if (candidates.length === 0 && input.holdWhenNoApprover === true) {
+      changes.push({ levelNo: level.levelNo, status: 'ON_HOLD', decision: null, approverId: null });
+
+      return { ok: true, changes, finished: false };
+    }
 
     const picked = pick(level, candidates, input.chosenApproverId, input.projectCode);
 
@@ -195,4 +203,30 @@ export function planSubmit(input: Omit<AdvanceInput, 'approvedByIds'>): AdvanceR
       ...result.changes,
     ],
   };
+}
+export type ReconcileAction =
+  { kind: 'KEEP' } | { kind: 'WAIT' } | { kind: 'HOLD' } | { kind: 'ASSIGN'; approverId: string };
+
+/**
+ * An open level after holders changed (OQ-99, OQ-117): a still-qualified approver keeps it; otherwise
+ * exactly one candidate is assigned, and several or none leave it On hold for the Administrator.
+ */
+export function reconcileStep(
+  step: { status: 'PENDING' | 'ON_HOLD'; approverId: string | null },
+  holders: readonly Holder[],
+  makerId: string,
+): ReconcileAction {
+  const candidates = holders.filter((holder) => holder.id !== makerId);
+
+  if (step.status === 'PENDING' && candidates.some((holder) => holder.id === step.approverId)) {
+    return { kind: 'KEEP' };
+  }
+
+  const [only] = candidates;
+
+  if (candidates.length === 1 && only !== undefined) {
+    return { kind: 'ASSIGN', approverId: only.id };
+  }
+
+  return step.status === 'PENDING' ? { kind: 'HOLD' } : { kind: 'WAIT' };
 }

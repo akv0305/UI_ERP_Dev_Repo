@@ -1,4 +1,4 @@
-import type { Permission, PurchaseOrderStatus } from '@uie/contracts';
+import { ADMINISTRATOR_ROLE_CODE, type Permission, type PurchaseOrderStatus } from '@uie/contracts';
 import type { AccessContext } from '../access/access-context';
 import { indentTargetOf, type IndentTarget } from '../indents/indent-rules';
 
@@ -44,6 +44,16 @@ export function purchaseOrderTargetOf(purchaseOrder: {
 /** Visible with view or manage over the PO's site. */
 export function canSeePurchaseOrder(access: AccessContext, target: IndentTarget): boolean {
   return access.canOn(PURCHASE_ORDER_VIEW, target) || access.canOn(PURCHASE_ORDER_MANAGE, target);
+}
+
+/** Holds the Administrator role (OQ-118): may reassign or re-route an open approval level, never approve (OQ-106). */
+export function isAdministrator(access: AccessContext): boolean {
+  return access.assignments.some(
+    (assignment) =>
+      assignment.scopeType === 'GLOBAL' &&
+      assignment.role.code === ADMINISTRATOR_ROLE_CODE &&
+      assignment.role.isActive,
+  );
 }
 
 export interface PurchaseOrderFlags {

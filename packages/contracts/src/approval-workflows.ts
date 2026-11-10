@@ -214,6 +214,21 @@ export type ApprovePurchaseOrderRequest = z.infer<typeof ApprovePurchaseOrderReq
 export const RejectPurchaseOrderRequest = z.object({ remarks: z.string().trim().min(1).max(500) });
 export type RejectPurchaseOrderRequest = z.infer<typeof RejectPurchaseOrderRequest>;
 
+/** Administrator only: another holder of the level's role takes a Pending / On hold level (OQ-97, OQ-119). */
+export const ReassignApproverRequest = z.object({
+  approverId: z.uuid(),
+  remarks: z.string().trim().min(1).max(500),
+});
+export type ReassignApproverRequest = z.infer<typeof ReassignApproverRequest>;
+
+/** Administrator only, On hold level: a role from a later level of the PO's workflow version (OQ-99, OQ-119). */
+export const RouteToHigherRoleRequest = z.object({
+  roleId: z.uuid(),
+  approverId: z.uuid(),
+  reason: z.string().trim().min(1).max(500),
+});
+export type RouteToHigherRoleRequest = z.infer<typeof RouteToHigherRoleRequest>;
+
 export const ApprovalRouteStepResponse = z.object({
   levelNo: z.number().int(),
   role: ApprovalRoleSummary,
@@ -223,6 +238,9 @@ export const ApprovalRouteStepResponse = z.object({
   decision: ApprovalDecision.nullable(),
   decidedAt: z.string().nullable(),
   remarks: z.string().nullable(),
+  /** Set when the Administrator routed an On hold level to a higher role (OQ-119). */
+  routedRole: ApprovalRoleSummary.nullable(),
+  routeReason: z.string().nullable(),
 });
 export type ApprovalRouteStepResponse = z.infer<typeof ApprovalRouteStepResponse>;
 
@@ -233,6 +251,22 @@ export const ApprovalRouteNextLevel = z.object({
   candidates: z.array(IndentActorSummary),
 });
 export type ApprovalRouteNextLevel = z.infer<typeof ApprovalRouteNextLevel>;
+export const ApprovalRouteHigherRole = z.object({
+  role: ApprovalRoleSummary,
+  candidates: z.array(IndentActorSummary),
+});
+export type ApprovalRouteHigherRole = z.infer<typeof ApprovalRouteHigherRole>;
+
+/** What the Administrator can do on the open level (OQ-118, OQ-119). */
+export const ApprovalRouteAdminActions = z.object({
+  levelNo: z.number().int(),
+  status: ApprovalStepStatus,
+  /** Holders of the level's (or routed) role, except the maker and the current approver. */
+  candidates: z.array(IndentActorSummary),
+  /** On hold only: roles of later levels of the PO's workflow version, with their holders. */
+  higherRoles: z.array(ApprovalRouteHigherRole),
+});
+export type ApprovalRouteAdminActions = z.infer<typeof ApprovalRouteAdminActions>;
 
 export const ApprovalRouteResponse = z.object({
   /** True for Draft / Rejected: the levels Submit would create now. */
@@ -250,5 +284,7 @@ export const ApprovalRouteResponse = z.object({
   problem: z.string().nullable(),
   /** The viewer is the current approver and may approve or reject. */
   canDecide: z.boolean(),
+  /** Filled only for an Administrator while a level is Pending or On hold. */
+  admin: ApprovalRouteAdminActions.nullable(),
 });
 export type ApprovalRouteResponse = z.infer<typeof ApprovalRouteResponse>;

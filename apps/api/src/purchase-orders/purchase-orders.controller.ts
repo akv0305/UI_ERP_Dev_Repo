@@ -19,7 +19,9 @@ import {
   PurchaseOrderListQuery,
   PurchaseOrderSearchQuery,
   PurchaseOrderVendorDetailsQuery,
+  ReassignApproverRequest,
   RejectPurchaseOrderRequest,
+  RouteToHigherRoleRequest,
   SubmitPurchaseOrderRequest,
   UpdatePurchaseOrderRequest,
   type ApprovalRouteResponse,
@@ -174,6 +176,27 @@ export class PurchaseOrdersController {
     @Req() request: Request,
   ): Promise<PurchaseOrderResponse> {
     return this.purchaseOrders.reject(id, body, actorIdOf(request), accessOf(request));
+  }
+  /** Administrator only (OQ-118); checked in the service. */
+  @Post(':id/approval-route/reassign')
+  @HttpCode(HttpStatus.OK)
+  reassignApprover(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(ReassignApproverRequest)) body: ReassignApproverRequest,
+    @Req() request: Request,
+  ): Promise<PurchaseOrderResponse> {
+    return this.purchaseOrders.reassignApprover(id, body, actorIdOf(request), accessOf(request));
+  }
+
+  /** Administrator only, On hold level (OQ-119); checked in the service. */
+  @Post(':id/approval-route/route-higher')
+  @HttpCode(HttpStatus.OK)
+  routeToHigherRole(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body(new ZodValidationPipe(RouteToHigherRoleRequest)) body: RouteToHigherRoleRequest,
+    @Req() request: Request,
+  ): Promise<PurchaseOrderResponse> {
+    return this.purchaseOrders.routeToHigherRole(id, body, actorIdOf(request), accessOf(request));
   }
 
   @Post(':id/cancel')

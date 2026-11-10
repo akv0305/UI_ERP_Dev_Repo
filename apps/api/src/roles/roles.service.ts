@@ -14,6 +14,7 @@ import { auditActionFor } from '../audit/audit-action';
 import { AuditService } from '../audit/audit.service';
 import { ApiError } from '../common/errors/api-error';
 import { PrismaService } from '../prisma/prisma.service';
+import type { PurchaseOrderApprovalsService } from '../purchase-order-approvals/purchase-order-approvals.service';
 
 const roleInclude = {
   permissions: true,
@@ -57,6 +58,7 @@ export class RolesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly approvals: PurchaseOrderApprovalsService,
   ) {}
 
   async list(): Promise<RoleListResponse> {
@@ -144,6 +146,8 @@ export class RolesService {
         data: { code: request.code, name: request.name, isActive: request.isActive },
         include: roleInclude,
       });
+      // Deactivating a role takes it from every holder (OQ-99, OQ-117).
+      await this.approvals.reconcileOpenSteps(tx, actorId, { roleId: id });
 
       await this.audit.record(tx, {
         actorUserId: actorId,

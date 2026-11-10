@@ -3,6 +3,7 @@ import { ApiError } from '../common/errors/api-error';
 import { AuditService } from '../audit/audit.service';
 import type { PasswordService } from '../auth/password.service';
 import type { PrismaService } from '../prisma/prisma.service';
+import type { PurchaseOrderApprovalsService } from '../purchase-order-approvals/purchase-order-approvals.service';
 import { UsersService } from './users.service';
 
 const ADMIN_ROLE = {
@@ -121,13 +122,15 @@ function setup() {
   tx.user.create.mockImplementation(async () => ({ id: TARGET_ID }));
   tx.user.findUniqueOrThrow.mockImplementation(async () => userRow({ mustChangePassword: true }));
 
+  const approvals = { reconcileOpenSteps: jest.fn() };
   const service = new UsersService(
     prisma as unknown as PrismaService,
     passwords as unknown as PasswordService,
     new AuditService(),
+    approvals as unknown as PurchaseOrderApprovalsService,
   );
 
-  return { prisma, tx, service, passwords };
+  return { prisma, tx, service, passwords, approvals };
 }
 
 async function codeOf(promise: Promise<unknown>): Promise<string | undefined> {
@@ -312,6 +315,18 @@ describe('UsersService.update rules', () => {
         },
       ],
     });
+  });
+  it('re-checks open approval levels in the same transaction (OQ-99, OQ-117)', async () => {
+    const { prisma, tx, service, approvals } = setup();
+    prisma.user.findUnique.mockResolvedValue(userRow({ roles: [link(OTHER_ROLE)] }));
+
+    await service.update(
+      TARGET_ID,
+      { ...baseUpdate, isActive: false, assignments: [global(OTHER_ROLE.id)] },
+      ACTOR_ID,
+    );
+
+    expect(approvals.reconcileOpenSteps).toHaveBeenCalledWith(tx, ACTOR_ID, { userId: TARGET_ID });
   });
 });
 
