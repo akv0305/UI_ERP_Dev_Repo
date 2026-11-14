@@ -1138,7 +1138,7 @@ export const terminology = {
       submit: 'Submit',
       submitTitle: 'Submit purchase order',
       submitDescription:
-        'The purchase order gets its number and can no longer be edited. To change it later, cancel it and raise a new one.',
+        'The purchase order gets its number and goes for approval on the route shown on this page. It can be edited again only if an approver rejects it.',
       submittedMessage: 'Purchase order submitted.',
       cancel: 'Cancel PO',
       cancelTitle: 'Cancel purchase order',
@@ -1149,8 +1149,83 @@ export const terminology = {
       remarksRequiredHint: 'Required.',
       createFor: 'Create PO:',
     },
+    approval: {
+      sectionTitle: 'Approval route',
+      previewNote:
+        'Preview: these levels apply if the purchase order is submitted now. The route is fixed at Submit.',
+      loadError: 'The approval route could not be loaded. Reload the page.',
+      noSteps: 'No approval levels.',
+      infoWorkflow: 'Approval workflow',
+      versionPrefix: 'Version',
+      infoAmountBasis: 'Compared value',
+      infoRouteValue: 'PO value for approval',
+      amountBases: {
+        NET_AMOUNT: 'Net amount (lines after discount, without GST and charges)',
+        GRAND_TOTAL: 'Grand total',
+      },
+      columnLevel: 'Level',
+      columnRole: 'Role',
+      columnAppliesWhen: 'Applies when',
+      columnStatus: 'Status',
+      columnApprover: 'Approver',
+      columnDecision: 'Decision',
+      columnDecidedAt: 'Date',
+      columnRemarks: 'Remarks',
+      always: 'Always',
+      abovePrefix: 'Above',
+      routedTo: 'routed to',
+      routeReasonPrefix: 'Routing reason:',
+      stepStatuses: {
+        WAITING: 'Waiting',
+        PENDING: 'Pending',
+        ON_HOLD: 'On hold',
+        APPROVED: 'Approved',
+        REJECTED: 'Rejected',
+        CLOSED: 'Not needed',
+      },
+      decisions: {
+        APPROVED: 'Approved',
+        SAME_APPROVER: 'Same approver (covered by an earlier approval)',
+        MAKER_SUBMIT: 'Approved at submit (maker holds this role)',
+        REJECTED: 'Rejected',
+      },
+      nextLevelPrefix: 'Next: level',
+      approverLabel: 'Approver',
+      higherRoleLabel: 'Higher role',
+      choosePlaceholder: 'Choose',
+      noCandidates: 'Nobody can be assigned to this level now.',
+      remarksOptionalHint: 'Optional.',
+      approve: 'Approve',
+      approveTitle: 'Approve purchase order',
+      approveDescription:
+        'Your approval is recorded. The purchase order moves to the next level, or is approved if this is the last level.',
+      approvedMessage: 'Purchase order approved.',
+      reject: 'Reject',
+      rejectTitle: 'Reject purchase order',
+      rejectDescription:
+        'The purchase order goes back to the maker for correction and resubmission. Give the reason.',
+      rejectedMessage: 'Purchase order rejected.',
+      reassign: 'Reassign approver',
+      reassignTitle: 'Reassign approver',
+      reassignDescription: 'Another holder of the role takes this level. Give the reason.',
+      reassignedMessage: 'Approver reassigned.',
+      routeHigher: 'Route to higher role',
+      routeHigherTitle: 'Route to higher role',
+      routeHigherDescription:
+        'Nobody holds the role of this level. Send it to a role from a later level of this route. Give the reason.',
+      routedMessage: 'Level routed to a higher role.',
+    },
     apiErrors: {
-      INVALID_STATUS: 'Only draft purchase orders can be changed. Reload the page.',
+      INVALID_STATUS:
+        'The purchase order cannot be changed in its current status, or someone else changed it. Reload the page.',
+      NO_APPROVAL_WORKFLOW:
+        'No approval workflow for purchase orders. Ask the administrator to set one in Administration → Approval matrix.',
+      NO_APPROVER:
+        'Nobody holds the role for the next approval level on this project. Ask the administrator to assign it.',
+      APPROVER_REQUIRED: 'Choose the approver for the next level.',
+      INVALID_APPROVER:
+        'The chosen approver can no longer take this level. Reload the page and choose again.',
+      NOT_YOUR_STEP: 'This purchase order is not waiting for your approval. Reload the page.',
       INVALID_COMPARISON:
         'The comparison is no longer finalised or no longer matches this purchase order.',
       DUPLICATE_PURCHASE_ORDER:

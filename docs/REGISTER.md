@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-056 · CQ-132 · OQ-127 · PDEF-047 · CR-003
+# REGISTER — next free: PD-056 · CQ-132 · OQ-129 · PDEF-048 · CR-003
 
 ## Decisions
 
@@ -184,6 +184,8 @@
 | OQ-124 | Company override on the screen while CQ-130 is open | CLOSED 10-11-2026 — owner ok: built now (API already supports it) |
 | OQ-125 | Bell / Home approvals need a small notifications API | CLOSED 10-11-2026 — owner ok: built in 3c after 3a/3b |
 | OQ-126 | Approval Matrix save does not check the version the editor started from (a later save replaces an earlier one without warning; both are kept as versions + Audit Log) | OPEN — recommended: accept for now (one or two admins); add a "based on version" check later if needed |
+| OQ-127 | Chip label for a Submitted PO | CLOSED 14-11-2026 — "Pending approval" (existing statuses.pendingApproval) |
+| OQ-128 | Approver without purchase.purchaseOrders.view has no sidebar entry | CLOSED 14-11-2026 — accepted; reaches the PO via link until the bell / Home list (3c); detail page relies on API access (OQ-103) |
 
 
 ## Client questions

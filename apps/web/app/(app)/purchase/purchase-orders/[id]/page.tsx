@@ -1,4 +1,4 @@
-import { PurchaseOrderDetailResponse } from '@uie/contracts';
+import { ApprovalRouteResponse, PurchaseOrderDetailResponse } from '@uie/contracts';
 import Link from 'next/link';
 import { ErrorState, KeyValueGrid, NotAuthorised, PageHeader } from '@/components/erp';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import {
   termText,
 } from '../_components/purchase-order-text';
 import { PurchaseOrderActions } from './purchase-order-actions';
+import { ApprovalRouteSection } from './approval-route-section';
 
 const t = terminology.purchaseOrders;
 const notSet = terminology.labels.notSet;
@@ -31,10 +32,6 @@ export default async function PurchaseOrderDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const permissions = await getCurrentPermissions();
-
-  if (!permissions.includes('purchase.purchaseOrders.view')) {
-    return <NotAuthorised />;
-  }
 
   const { id } = await params;
   const result = await apiGet(
@@ -55,6 +52,11 @@ export default async function PurchaseOrderDetailPage({
   }
 
   const po = result.data;
+  const routeResult = await apiGet(
+    `/api/purchase-orders/${encodeURIComponent(id)}/approval-route`,
+    ApprovalRouteResponse,
+  );
+  const route = routeResult.kind === 'ok' ? routeResult.data : null;
   const splitGst = po.taxType === 'CGST_SGST';
   const integratedGst = po.taxType === 'IGST';
 
@@ -90,7 +92,7 @@ export default async function PurchaseOrderDetailPage({
           <>
             {history}
             {edit}
-            <PurchaseOrderActions purchaseOrder={po} />
+            <PurchaseOrderActions purchaseOrder={po} route={route} />
           </>
         }
       />
@@ -108,6 +110,7 @@ export default async function PurchaseOrderDetailPage({
           ]}
         />
       </section>
+      <ApprovalRouteSection route={route} purchaseOrder={po} />
       <section className="rounded-lg border border-border bg-surface p-(--card-padding)">
         <h2 className="mb-3 text-sm font-semibold text-foreground">{t.sectionHeader}</h2>
         <KeyValueGrid
