@@ -11,6 +11,7 @@ import { validateEnv } from './config/env.validation';
 import { HealthModule } from './health/health.module';
 import { IndentsModule } from './indents/indents.module';
 import { ItemsModule } from './items/items.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuotationsModule } from './quotations/quotations.module';
 import { ProjectsModule } from './projects/projects.module';
@@ -48,6 +49,7 @@ import { VendorsModule } from './vendors/vendors.module';
     ComparisonsModule,
     PurchaseOrdersModule,
     ApprovalWorkflowsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

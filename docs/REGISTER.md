@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-056 · CQ-132 · OQ-129 · PDEF-048 · CR-003
+# REGISTER — next free: PD-056 · CQ-132 · OQ-132 · PDEF-048 · CR-003
 
 ## Decisions
 
@@ -174,9 +174,9 @@
 | OQ-114 | Notification read API | CLOSED 06-11-2026 — 2b only writes notification rows; read / mark-read API with the bell in batch 3 |
 | OQ-115 | No approval matrix saved | CLOSED 06-11-2026 — Submit refused: "No approval matrix is set up for purchase orders. Ask the administrator." |
 | OQ-116 | Rejected PO edited before resubmit: can the PO date change? | CLOSED 06-11-2026 — No. PO date locked once the PO has a number; edit of a Rejected PO with a different date refused (INVALID_DATE). Number, FY and date stay as first submitted |
-| OQ-117 | When does a level go On hold? | OPEN — proposed: immediately on approver deactivation / role removal (same transaction), and when the route reaches a level with no qualifying holder (previous approval kept) |
-| OQ-118 | Who are "admins" for On hold notifications and reassign/re-route? | OPEN — proposed: active users holding the Administrator role (OQ-106), no new permission |
-| OQ-119 | Admin actions on a level | OPEN — proposed: reassign to another holder of the same role on Pending/On hold (reason, audit); route to higher role only on On hold — any role at a later level of the PO's workflow version (reason in routeReason); new approver must hold the role, not the maker |
+| OQ-117 | When does a level go On hold? | CLOSED — approved ("OQ-117 to OQ-121 ok"); built in 2c-1 (872300e): immediately on approver deactivation / role removal (same transaction), and when the route reaches a level with no qualifying holder (previous approval kept) |
+| OQ-118 | Who are "admins" for On hold notifications and reassign/re-route? | CLOSED — approved ("OQ-117 to OQ-121 ok"); built in 2c-1: active users holding the Administrator role (OQ-106), no new permission |
+| OQ-119 | Admin actions on a level | CLOSED — approved ("OQ-117 to OQ-121 ok"); built in 2c-1: reassign to another holder of the same role on Pending/On hold (reason, audit); route to higher role only on On hold — any role at a later level of the PO's workflow version (reason in routeReason); new approver must hold the role, not the maker |
 | OQ-120 | Delegation rules | ON HOLD — owner 10-11-2026: delegation feature deferred; draft rules (self-service, no overlap, no chaining, IST whole days, delegate holds the role, not the maker) to be re-confirmed when resumed |
 | OQ-121 | Same-approver coverage after a delegate acts | ON HOLD — with OQ-120; when resumed: count decidedById, not approverId |
 | OQ-122 | Auto-assigned sole holder (re-check after user/role save) who already approved an earlier level of the cycle | OPEN — proposed: assigned anyway for now (approves again); revisit with batch 3 screens |
@@ -186,7 +186,9 @@
 | OQ-126 | Approval Matrix save does not check the version the editor started from (a later save replaces an earlier one without warning; both are kept as versions + Audit Log) | OPEN — recommended: accept for now (one or two admins); add a "based on version" check later if needed |
 | OQ-127 | Chip label for a Submitted PO | CLOSED 14-11-2026 — "Pending approval" (existing statuses.pendingApproval) |
 | OQ-128 | Approver without purchase.purchaseOrders.view has no sidebar entry | CLOSED 14-11-2026 — accepted; reaches the PO via link until the bell / Home list (3c); detail page relies on API access (OQ-103) |
-
+| OQ-129 | Bell count refresh | CLOSED 16-11-2026 — on page load only (incl. refresh after an action); no polling |
+| OQ-130 | Notification list size and order | CLOSED 16-11-2026 — latest 30; action needed first, then unread, then read; newest first in each group; no cleanup job in Phase A |
+| OQ-131 | Home when nothing is waiting | CLOSED 16-11-2026 — "Nothing waiting for you" |
 
 ## Client questions
 
@@ -269,6 +271,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-044 | Comparison PO edit could not add back lines removed in an earlier save (edit screen only had the saved lines; comparison-form refused the vendor because the edited PO counted as live); edit matched vendor GST/contact by GSTIN/name | FIXED — comparison-form accepts purchaseOrderId (ignored in live-PO check), edit page loads all chosen lines; PO response adds vendorGstRegistrationId, vendorContactId; no migration |
 | PDEF-045 | G-12 2b (f196609): advance() only treated the immediately previous approver as covering a later level; a person holding a non-adjacent later role (e.g. VP+FD on a ₹30L PO) was asked to approve again. Breaks OQ-100 (b). Fix: pass all approvers of the cycle (approvedByIds) | FIXED — f382bba (CI #101) |
 | PDEF-046 | LIVE_PURCHASE_ORDER_STATUSES listed only Draft/Submitted; DB index purchase_orders_one_live_per_comparison_vendor counts every status except Cancelled (OQ-83). Unused, corrected to match | FIXED — f382bba (CI #101) |
+| PDEF-047 | 3c-1 spec imported describe/it/expect from @jest/globals and typed jest.fn<T>(); repo pattern imports only jest and uses untyped jest.fn() + mockResolvedValue | FIXED in 3c-1 before commit; rule: read an existing spec before writing a new one |
 
 
 ## Change requests

@@ -42,3 +42,5 @@ export * from './comparisons';
 export * from './purchase-orders';
 
 export * from './approval-workflows';
+
+export * from './notifications';
