@@ -27,6 +27,7 @@ function companyRow(overrides: Record<string, unknown> = {}) {
     stateId: null,
     state: null,
     pinCode: null,
+    emailDomain: null,
     isActive: true,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -83,6 +84,7 @@ const createRequest = {
   city: null,
   stateId: null,
   pinCode: null,
+  emailDomain: null,
 };
 
 describe('CompaniesService.create', () => {

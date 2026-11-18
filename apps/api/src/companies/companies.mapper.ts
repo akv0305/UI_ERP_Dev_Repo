@@ -40,6 +40,7 @@ export function toCompanyResponse(company: CompanyWithState, canManage: boolean)
     city: company.city,
     state: company.state === null ? null : toStateResponse(company.state),
     pinCode: company.pinCode,
+    emailDomain: company.emailDomain,
     isActive: company.isActive,
     createdAt: company.createdAt.toISOString(),
     updatedAt: company.updatedAt.toISOString(),
@@ -96,6 +97,7 @@ export function toCompanyAuditSnapshot(company: CompanyWithState): Record<string
     city: company.city,
     state: stateLabel(company.state),
     pinCode: company.pinCode,
+    emailDomain: company.emailDomain,
     isActive: company.isActive,
   };
 }

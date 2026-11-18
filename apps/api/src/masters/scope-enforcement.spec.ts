@@ -60,6 +60,7 @@ const company = (id: string, code: string) => ({
   stateId: null,
   state: null,
   pinCode: null,
+  emailDomain: null,
   isActive: true,
   createdAt: NOW,
   updatedAt: NOW,
@@ -203,6 +204,7 @@ describe('Company scope', () => {
     city: null,
     stateId: null,
     pinCode: null,
+    emailDomain: null,
   };
 
   it('create needs masters.companies.manage GLOBAL: allowed for a global holder', async () => {

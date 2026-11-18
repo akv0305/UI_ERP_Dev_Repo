@@ -3,6 +3,7 @@
 import {
   COMPANY_ENTITY_TYPES,
   CreateCompanyRequest,
+  EMAIL_DOMAIN_PATTERN,
   UpdateCompanyRequest,
   isValidCin,
   isValidLlpin,
@@ -38,6 +39,10 @@ const baseShape = {
   city: z.string().max(100),
   stateId: z.string(),
   pinCode: optionalOf(isValidPinCode, terminology.validation.invalidPinCode),
+  emailDomain: optionalOf(
+    (value) => EMAIL_DOMAIN_PATTERN.test(value.trim().toLowerCase()),
+    terminology.validation.invalidEmailDomain,
+  ),
 };
 
 const createSchema = z.object({
@@ -77,6 +82,7 @@ export function CompanyForm({ company, states }: CompanyFormProps) {
     city: company?.city ?? '',
     stateId: company?.state?.id ?? NO_STATE_VALUE,
     pinCode: company?.pinCode ?? '',
+    emailDomain: company?.emailDomain ?? '',
   }));
 
   async function handleSubmit(values: CompanyFormValues): Promise<void> {
@@ -146,6 +152,11 @@ export function CompanyForm({ company, states }: CompanyFormProps) {
               label: terminology.companies.entityTypes[value],
             }))}
             required
+          />
+          <TextField<CompanyFormValues>
+            name="emailDomain"
+            label={terminology.companies.fieldEmailDomain}
+            description={terminology.companies.fieldEmailDomainHint}
           />
         </FormSection>
         <FormSection title={terminology.companies.sectionTax}>

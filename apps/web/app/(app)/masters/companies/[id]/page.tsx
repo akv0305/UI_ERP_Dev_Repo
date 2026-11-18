@@ -90,6 +90,10 @@ export default async function CompanyDetailPage({ params }: { params: Promise<{ 
                 value: terminology.companies.entityTypes[company.entityType],
               },
               {
+                label: terminology.companies.fieldEmailDomain,
+                value: company.emailDomain ?? terminology.labels.notSet,
+              },
+              {
                 label: terminology.companies.fieldPan,
                 value: company.pan ?? terminology.labels.notSet,
               },

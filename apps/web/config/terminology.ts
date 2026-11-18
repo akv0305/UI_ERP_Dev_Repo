@@ -142,6 +142,7 @@ export const terminology = {
     invalidCin: 'Enter a valid CIN (21 characters).',
     invalidLlpin: 'Enter a valid LLPIN (for example AAB-1234).',
     invalidPinCode: 'Enter a valid 6-digit PIN code.',
+    invalidEmailDomain: 'Enter a domain like uniqueinfraengineers.in, without @.',
     invalidPhone: 'Enter a valid phone number (10 to 15 digits).',
     invalidCode: 'Use capital letters, digits and hyphens, up to 20 characters.',
     invalidUnitDecimals: 'Enter a whole number from 0 to 3.',
@@ -494,6 +495,9 @@ export const terminology = {
     fieldCity: 'City',
     fieldState: 'State',
     fieldPinCode: 'PIN code',
+    fieldEmailDomain: 'Official email domain',
+    fieldEmailDomainHint:
+      'Without @, e.g. uniqueinfraengineers.in. Employee official emails must end with it.',
     sectionDetails: 'Company',
     sectionTax: 'Tax identifiers',
     sectionAddress: 'Registered address',

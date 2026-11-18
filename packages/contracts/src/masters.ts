@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   CinSchema,
+  EmailDomainSchema,
   GstinInputSchema,
   LlpinSchema,
   MasterCodeSchema,
@@ -74,6 +75,8 @@ export const CompanyFields = z.object({
   city: OptionalText(100),
   stateId: optional(z.uuid()),
   pinCode: optional(PinCodeSchema),
+  /** Lowercase, without "@". Employee official emails must end with it (OQ-91). */
+  emailDomain: optional(EmailDomainSchema),
 });
 
 export const CreateCompanyRequest = CompanyFields.extend({ code: MasterCodeSchema });
@@ -155,6 +158,7 @@ export const CompanyResponse = z.object({
   city: z.string().nullable(),
   state: StateResponse.nullable(),
   pinCode: z.string().nullable(),
+  emailDomain: z.string().nullable(),
   isActive: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string(),
