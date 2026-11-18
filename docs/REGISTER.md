@@ -203,6 +203,7 @@
 | OQ-142 | "First company in the list" | CLOSED 16-11-2026 — Sorted by company code A–Z |
 | OQ-143 | G-14 data defaults | CLOSED 18-11-2026 — (a) Designations shared, DSG-0001 no gaps, name unique ignoring case; (b) official email unique when entered; (c) code: spaces removed, uppercase, A–Z 0–9 / . _ -, max 40; (d) full name max 120. Built 6526004 |
 | OQ-144 | Designation rules | CLOSED 18-11-2026 — (a) hr.designations.manage GLOBAL only, view at any scope; (b) no deactivate while active employees use it. Built d566ad2 |
+| OQ-145 | Scope of HR employee permissions | CLOSED 18-11-2026 — (a) hr.employees.view / .manage count only from a COMPANY or GLOBAL assignment covering the employee's company; project/site-only holders see no employees. Built G-14 batch 2b |
 
 
 ## Client questions

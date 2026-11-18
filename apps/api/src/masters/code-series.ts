@@ -4,6 +4,8 @@ import {
   CATEGORY_CODE_PREFIX,
   DESIGNATION_CODE_DIGITS,
   DESIGNATION_CODE_PREFIX,
+  EMPLOYEE_NO_DIGITS,
+  EMPLOYEE_NO_PREFIX,
   ITEM_CODE_DIGITS,
   ITEM_CODE_PREFIX,
   formatMasterCode,
@@ -17,6 +19,8 @@ export interface CodeSeries {
   lockKey: number;
   /** Table holding the codes (a fixed constant, never user input). */
   table: string;
+  /** Column holding the codes; default "code". A fixed constant, never user input. */
+  column?: string;
   prefix: string;
   digits: number;
 }
@@ -49,6 +53,14 @@ export const DESIGNATION_SERIES: CodeSeries = {
   digits: DESIGNATION_CODE_DIGITS,
 };
 
+export const EMPLOYEE_SERIES: CodeSeries = {
+  lockKey: 50_005,
+  table: 'employees',
+  column: 'employeeNo',
+  prefix: EMPLOYEE_NO_PREFIX,
+  digits: EMPLOYEE_NO_DIGITS,
+};
+
 /** The part of a Prisma transaction client the code series needs. */
 export type CodeSeriesTx = Pick<Prisma.TransactionClient, '$executeRaw' | '$queryRaw'>;
 
@@ -70,11 +82,11 @@ export async function nextNumber(tx: CodeSeriesTx, series: CodeSeries): Promise<
 
   const pattern = `^${series.prefix}[0-9]+$`;
   const numberStart = series.prefix.length + 1;
+  const column = Prisma.raw(`"${series.column ?? 'code'}"`);
   const rows = await tx.$queryRaw<{ last: number | null }[]>`
-    SELECT MAX(CAST(SUBSTRING("code" FROM ${numberStart}::int) AS INTEGER))::int AS "last"
+    SELECT MAX(CAST(SUBSTRING(${column} FROM ${numberStart}::int) AS INTEGER))::int AS "last"
     FROM ${Prisma.raw(`"${series.table}"`)}
-    WHERE "code" ~ ${pattern}`;
-
+    WHERE ${column} ~ ${pattern}`;
   return (rows[0]?.last ?? 0) + 1;
 }
 

@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { ContextCompanyOption, ScopeTargetSummary } from './access';
+import {
+  ContextCompanyOption,
+  ContextProjectOption,
+  ScopeSiteOption,
+  ScopeTargetSummary,
+} from './access';
 import { normalizeText } from './items';
 import { ISO_DATE_PATTERN, MasterListQueryBase } from './masters';
 import { OptionalText, PhoneSchema, optional } from './validators';
@@ -194,10 +199,15 @@ export const EmployeeDesignationOption = z.object({ id: z.uuid(), label: z.strin
 
 export type EmployeeDesignationOption = z.infer<typeof EmployeeDesignationOption>;
 
-/** companies: active, where the user holds hr.employees.manage, sorted by code; the first is the default (OQ-140, OQ-142). */
+/**
+ * companies: active, where the user holds hr.employees.manage, sorted by code; the first is the
+ * default (OQ-140, OQ-142). projects / sites: active ones under those companies, for work location.
+ */
 export const EmployeeFormOptionsResponse = z.object({
   companies: z.array(ContextCompanyOption),
   designations: z.array(EmployeeDesignationOption),
+  projects: z.array(ContextProjectOption),
+  sites: z.array(ScopeSiteOption),
 });
 
 export type EmployeeFormOptionsResponse = z.infer<typeof EmployeeFormOptionsResponse>;
