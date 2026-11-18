@@ -43,7 +43,7 @@ customer portal, live statutory integrations, advanced analytics.
 
 ## Menu (PD-023, PD-025)
 
-Home · Purchase · Stores · Planning · Masters · Administration.
+Home · Purchase · Stores · Planning · Masters · HR · Administration.
 No Approvals menu: approvals via notification bell + "Pending for my approval" on Home.
 Every item, screen and action is shown only with its permission code.
 

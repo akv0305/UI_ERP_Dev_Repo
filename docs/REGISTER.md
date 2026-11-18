@@ -1,4 +1,4 @@
-# REGISTER — next free: PD-056 · CQ-132 · OQ-132 · PDEF-048 · CR-003
+# REGISTER — next free: PD-057 · CQ-133 · OQ-145 · PDEF-049 · CR-003
 
 ## Decisions
 
@@ -26,7 +26,7 @@
 | PD-020 | File storage and email deferred (Cloudflare R2; Resend/Hostinger mail) | APPROVED |
 | PD-021 | Browser calls same-origin /api/*; Next.js rewrites to API_BASE_URL; no CORS | APPROVED (cookie verified G-03) |
 | PD-022 | Hostinger api: type "Other", root "/", build `build:api`, entry `apps/api/dist/main.js`; Node 22 | DEFERRED — last in build order (PD-045) |
-| PD-023 | Menu: Home · Purchase · Stores · Planning · Masters · Administration. Approvals via bell + Home list | APPROVED |
+| PD-023 | Menu: Home · Purchase · Stores · Planning · Masters · HR · Administration. Approvals via bell + Home list. HR group added 18-11-2026 (G-14) | APPROVED |
 | PD-024 | Theme defaults in apps/web/config/theme.ts (Demo-uie look), all configurable | APPROVED |
 | PD-025 | Every menu item, screen and action gated by permission code | APPROVED |
 | PD-026 | G-02c Genspark choices; shell sizes moved to theme.layout | APPROVED |
@@ -59,6 +59,7 @@
 | PD-053 | Purchase Order (G-11): source COMPARISON (from a Finalised comparison, one live PO per comparison + vendor, lines carry comparison line, rate/discount/GST % editable with "Quoted" hint) or DIRECT (any approved active items and vendors, no indent link); qty may differ from enquiry qty (hint, ladder controls); header company/project/site/store, billing = project billing GST registration, vendor GST row (none = unregistered), vendor contact, subject, vendor quotation ref + date, delivery date, payment days, remarks, terms rows (defaults from client sample); GST split CGST+SGST same state / IGST different / none unregistered, per line half-up (PD-006); Draft → Submitted → Cancelled (remarks), approval in G-12; number PO/<project>/<FY>/0001 on Submit, no gaps; revision after approval in G-12; permissions purchase.purchaseOrders.view/.manage on project/site; print per client sample | APPROVED — G-11 batch 1 3e1dba8 (CI #89); 2a d776c06 (CI #90); 2b 1f37edd (CI #91); 2c d9e54fd (CI #92); 3a 4a18d20 (CI #93); 3b b1b4f93 (CI #94); 3c-A c2a96e4 (CI #96), merged to main; PDEF-044 fixed; print pending |
 | PD-054 | Approval workflows (G-12): Administration → Approval Workflows (administration.approvalWorkflows.manage, GLOBAL); per document type (PO first); ordered levels = role + "applies when value above" (L1 PM ₹0, L2 VP ₹2,00,000, L3 ED ₹10,00,000, L4 FD ₹25,00,000, L5 MD ₹50,00,000); cumulative strictly sequential (PD-008 corrected); level 1 always applies, amounts non-decreasing, each role once; versioned, in-flight POs keep their route. Route levels fixed at Submit; approver per level resolved when the PO reaches it (PD-037 findUsersWithRoleCovering): one holder = shown read-only, several = the submitter/previous approver picks one; maker picks only the next level. Route panel shows done/current/later levels with names or warnings. OQ-98 b: maker holding level-1 role = level 1 approved at Submit (≤₹2L → Approved). OQ-94 c / OQ-100 b: same person on several levels (adjacent or not) approves once, other levels "same approver". Maker never approves above level 1 (OQ-95). Reject → remarks → back to maker, route restarts. No active holder / chosen approver deactivated or role removed → level On hold, in-app notification to maker + admins; one new holder = auto-assigned, several = admin picks; admin "Route to higher level" (ED/FD/MD, reason required). Revisions start a new route (OQ-74). In-app only (PD-020, PD-023); full audit | APPROVED — DONE 16-11-2026: matrix screens, route on Submit, approve/reject, on hold, admin reassign/route-higher, notifications (bell) and Home "Waiting for my approval"; merged to main after browser test. Delegation ON HOLD (OQ-97) |
 | PD-055 | G-12 data model: approval_workflows (versioned, one current per document type + company, null company = all, NULLS NOT DISTINCT), approval_workflow_levels (role, "above" amount, maker tick level 1 only), approval_steps (route per PO per submit cycle; Waiting/Pending/On hold/Approved/Rejected/Closed; decision Approved/Same approver/Maker submit/Rejected; admin route-to-higher role + reason; one open step per PO), approval_delegations, notifications (in-app; text from terminology); PO statuses + Approved/Rejected/Superseded (Submitted = pending approval), approvalWorkflowId, approvalCycle, approvedAt, supersededAt; permission administration.approvalMatrix.manage (existing Approval matrix screen, replaces "approvalWorkflows" in PD-054); two migrations (enum values, then CHECKs) | APPROVED — batch 1 afbc609 (CI #98); 2a f2be738 (CI #99, migration po_status_checks); 2b f196609 (CI #100, migration approval_amount_basis, route/approve/reject) ; PDEF-045/046 fix f382bba (CI #101) ; delegation (2c-2) ON HOLD 10-11-2026 — approval_delegations table kept unused, no API/screens |
+| PD-056 | Employee Master (G-14), HR menu: Employees + Designations. Employee No. EMP-000001 (system, no gaps, immutable) + Employee Code (client, mandatory, unique across companies ignoring case/spaces, editable with remarks + audit; linked username renamed in same save). Mandatory now: Company (list; auto if one, else first by code, fixed after create), Employee Code, Full name. Optional: designation, work location (HO / Project + optional Site), DOJ, DOL, official email (unique, must match company email domain when set), mobile. Status Left from leaving date; sign-in refused once DOL ≤ today IST. Deactivate only for mistakes; no hard deletes; full audit. Create user from employee (username = code, temp password, forced change). Excel import with optional user creation (one common temp password). Designations DSG-0001, shared, manage GLOBAL only. Child tables (personal, address, statutory, bank, professional, pay) later; employee approval later | APPROVED — batch 1 6526004 (CI #111); 2a d566ad2 (CI #112) |
 
 
 ## Owner questions
@@ -189,6 +190,20 @@
 | OQ-129 | Bell count refresh | CLOSED 16-11-2026 — on page load only (incl. refresh after an action); no polling |
 | OQ-130 | Notification list size and order | CLOSED 16-11-2026 — latest 30; action needed first, then unread, then read; newest first in each group; no cleanup job in Phase A |
 | OQ-131 | Home when nothing is waiting | CLOSED 16-11-2026 — "Nothing waiting for you" |
+| OQ-132 | PO print layout (from the client PO sample) | ON HOLD — owner 16-11-2026, after G-14 |
+| OQ-133 | Is Employee Code required? | CLOSED 16-11-2026 — superseded by OQ-139 (mandatory now) |
+| OQ-134 | How is a leaver recorded? | CLOSED 16-11-2026 — (a) Date of leaving; shows Left once passed, linked user cannot sign in; Deactivate only for records created by mistake |
+| OQ-135 | Username when Employee Code changes | CLOSED 16-11-2026 — (a) Linked username changes in the same save, with audit row |
+| OQ-136 | Employee Code uniqueness | CLOSED 16-11-2026 — (a) Across all companies, ignoring case and spaces |
+| OQ-137 | Password for users created by import | CLOSED 16-11-2026 — (a) One common temporary password typed at import, meets password policy, forced change |
+| OQ-138 | Work location | CLOSED 16-11-2026 — (a) Optional; when entered Head Office or Project, Site optional |
+| OQ-139 | Mandatory employee fields | CLOSED 16-11-2026 — Employee No. (system), Employee Code (unique), Full name; more after client response |
+| OQ-140 | Company on employee | CLOSED 16-11-2026 — Required list; auto when one company, else first in list, user may change before save; fixed after create; list = companies where user has hr.employees.manage |
+| OQ-141 | Leaver sign-in block without a worker | CLOSED 16-11-2026 — Sign-in and session checks refuse users whose employee DOL ≤ today (IST); saving DOL ≤ today also deactivates the user with audit; Users screen shows Left |
+| OQ-142 | "First company in the list" | CLOSED 16-11-2026 — Sorted by company code A–Z |
+| OQ-143 | G-14 data defaults | CLOSED 18-11-2026 — (a) Designations shared, DSG-0001 no gaps, name unique ignoring case; (b) official email unique when entered; (c) code: spaces removed, uppercase, A–Z 0–9 / . _ -, max 40; (d) full name max 120. Built 6526004 |
+| OQ-144 | Designation rules | CLOSED 18-11-2026 — (a) hr.designations.manage GLOBAL only, view at any scope; (b) no deactivate while active employees use it. Built d566ad2 |
+
 
 ## Client questions
 
@@ -227,6 +242,8 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | CQ-129 | Original process statement mentions a "final GM signature": still needed after the ladder, or replaced by PD-008? | OPEN — client |
 | CQ-130 | Same bands for every company / SPV / JV and every project? | OPEN — client (default: yes, per-company override possible) |
 | CQ-131 | Reminder / escalation if an approver does not act within N days? Who covers approvers on leave? | OPEN — client (default: reminder on Home only, delegation by approver) |
+| CQ-132 | Employee codes for the directors (missing in the staff sample). Employee Code is now mandatory (OQ-139), so import skips rows without one | OPEN |
+
 
 ## Defects
 
@@ -272,6 +289,7 @@ CQ-01..CQ-78 drafted in chat; to be consolidated into docs/CLIENT-QUESTIONS.md.
 | PDEF-045 | G-12 2b (f196609): advance() only treated the immediately previous approver as covering a later level; a person holding a non-adjacent later role (e.g. VP+FD on a ₹30L PO) was asked to approve again. Breaks OQ-100 (b). Fix: pass all approvers of the cycle (approvedByIds) | FIXED — f382bba (CI #101) |
 | PDEF-046 | LIVE_PURCHASE_ORDER_STATUSES listed only Draft/Submitted; DB index purchase_orders_one_live_per_comparison_vendor counts every status except Cancelled (OQ-83). Unused, corrected to match | FIXED — f382bba (CI #101) |
 | PDEF-047 | 3c-1 spec imported describe/it/expect from @jest/globals and typed jest.fn<T>(); repo pattern imports only jest and uses untyped jest.fn() + mockResolvedValue | FIXED in 3c-1 before commit; rule: read an existing spec before writing a new one |
+| PDEF-048 | Staff list (employee personal data) still in public repo history after 5348065 removed it (DPDP Act 2023, cf. PDEF-040) | ON HOLD — owner 16-11-2026; no more personal data to be committed |
 
 
 ## Change requests
