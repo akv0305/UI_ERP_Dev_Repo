@@ -2,6 +2,8 @@ import { Prisma } from '@prisma/client';
 import {
   CATEGORY_CODE_DIGITS,
   CATEGORY_CODE_PREFIX,
+  DESIGNATION_CODE_DIGITS,
+  DESIGNATION_CODE_PREFIX,
   ITEM_CODE_DIGITS,
   ITEM_CODE_PREFIX,
   formatMasterCode,
@@ -38,6 +40,13 @@ export const VENDOR_SERIES: CodeSeries = {
   table: 'vendors',
   prefix: VENDOR_CODE_PREFIX,
   digits: VENDOR_CODE_DIGITS,
+};
+
+export const DESIGNATION_SERIES: CodeSeries = {
+  lockKey: 50_004,
+  table: 'designations',
+  prefix: DESIGNATION_CODE_PREFIX,
+  digits: DESIGNATION_CODE_DIGITS,
 };
 
 /** The part of a Prisma transaction client the code series needs. */

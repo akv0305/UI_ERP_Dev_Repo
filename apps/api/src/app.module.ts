@@ -9,6 +9,7 @@ import { ComparisonsModule } from './comparisons/comparisons.module';
 import { EnquiriesModule } from './enquiries/enquiries.module';
 import { validateEnv } from './config/env.validation';
 import { HealthModule } from './health/health.module';
+import { HrModule } from './hr/hr.module';
 import { IndentsModule } from './indents/indents.module';
 import { ItemsModule } from './items/items.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -43,6 +44,7 @@ import { VendorsModule } from './vendors/vendors.module';
     SitesModule,
     ItemsModule,
     VendorsModule,
+    HrModule,
     IndentsModule,
     EnquiriesModule,
     QuotationsModule,

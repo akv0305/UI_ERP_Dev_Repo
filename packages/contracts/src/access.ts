@@ -20,6 +20,7 @@ export const GLOBAL_ONLY_PERMISSIONS = [
   'masters.items.approve',
   'masters.vendors.manage',
   'masters.vendors.approve',
+  'hr.designations.manage',
 ] as const satisfies readonly Permission[];
 
 /** True for administration.* and the GLOBAL_ONLY_PERMISSIONS. */
