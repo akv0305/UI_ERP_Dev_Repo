@@ -100,6 +100,12 @@ model User {
   updatedApprovalDelegations ApprovalDelegation[] @relation("ApprovalDelegationUpdatedBy")
   notifications              Notification[]
 
+  createdDesignations Designation[] @relation("DesignationCreatedBy")
+  updatedDesignations Designation[] @relation("DesignationUpdatedBy")
+  createdEmployees    Employee[]    @relation("EmployeeCreatedBy")
+  updatedEmployees    Employee[]    @relation("EmployeeUpdatedBy")
+  employee            Employee?     @relation("EmployeeUser")
+
   @@map("users")
 }
 
@@ -260,6 +266,7 @@ model Company {
   city         String?
   stateId      String?           @db.Uuid
   pinCode      String?
+  emailDomain  String?
   isActive     Boolean           @default(true)
   createdAt    DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime          @updatedAt @db.Timestamptz(3)
@@ -281,6 +288,7 @@ model Company {
   comparisons       Comparison[]
   purchaseOrders    PurchaseOrder[]
   approvalWorkflows ApprovalWorkflow[]
+  employees         Employee[]
 
   @@map("companies")
 }
@@ -334,14 +342,14 @@ model Project {
   sites      Site[]
   userRoles  UserRole[]
 
-  documentSeries DocumentSeries[]
-  indents        Indent[]
-  enquiries      Enquiry[]
-  quotations     Quotation[]
-  comparisons    Comparison[]
-  purchaseOrders PurchaseOrder[]
-
-  sessionContexts Session[] @relation("SessionCurrentProject")
+  documentSeries  DocumentSeries[]
+  indents         Indent[]
+  enquiries       Enquiry[]
+  quotations      Quotation[]
+  comparisons     Comparison[]
+  purchaseOrders  PurchaseOrder[]
+  employees       Employee[]
+  sessionContexts Session[]        @relation("SessionCurrentProject")
 
   @@index([companyId])
   @@map("projects")
@@ -377,6 +385,7 @@ model Site {
   quotations     Quotation[]
   comparisons    Comparison[]
   purchaseOrders PurchaseOrder[]
+  employees      Employee[]
 
   @@index([projectId])
   @@map("sites")
@@ -1367,4 +1376,68 @@ model Notification {
 
   @@index([userId, readAt])
   @@map("notifications")
+}
+
+enum WorkLocationType {
+  HEAD_OFFICE
+  PROJECT
+}
+
+/// Shared by all companies (OQ-143 a). code DSG-0001 = last saved number + 1 (no gaps, PD-041).
+/// Name unique ignoring case (index in the migration).
+model Designation {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique
+  name        String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  createdById String   @db.Uuid
+  updatedById String   @db.Uuid
+
+  createdBy User       @relation("DesignationCreatedBy", fields: [createdById], references: [id])
+  updatedBy User       @relation("DesignationUpdatedBy", fields: [updatedById], references: [id])
+  employees Employee[]
+
+  @@map("designations")
+}
+
+/// HR employee (G-14). employeeNo EMP-000001 = last saved number + 1 (no gaps, PD-041), never changes.
+/// code = client employee code, unique across companies ignoring case and spaces (OQ-136, index in the
+/// migration). Company fixed at create (OQ-140). Work location and date CHECKs in the migration (OQ-138).
+/// Status Left is worked out from dateOfLeaving (OQ-134, OQ-141).
+model Employee {
+  id               String            @id @default(uuid()) @db.Uuid
+  employeeNo       String            @unique
+  code             String
+  fullName         String
+  companyId        String            @db.Uuid
+  designationId    String?           @db.Uuid
+  workLocationType WorkLocationType?
+  projectId        String?           @db.Uuid
+  siteId           String?           @db.Uuid
+  dateOfJoining    DateTime?         @db.Date
+  dateOfLeaving    DateTime?         @db.Date
+  officialEmail    String?
+  mobile           String?
+  userId           String?           @unique @db.Uuid
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+  createdById      String            @db.Uuid
+  updatedById      String            @db.Uuid
+
+  company     Company      @relation(fields: [companyId], references: [id])
+  designation Designation? @relation(fields: [designationId], references: [id])
+  project     Project?     @relation(fields: [projectId], references: [id])
+  site        Site?        @relation(fields: [siteId], references: [id])
+  user        User?        @relation("EmployeeUser", fields: [userId], references: [id])
+  createdBy   User         @relation("EmployeeCreatedBy", fields: [createdById], references: [id])
+  updatedBy   User         @relation("EmployeeUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([companyId])
+  @@index([designationId])
+  @@index([projectId])
+  @@index([siteId])
+  @@map("employees")
 }

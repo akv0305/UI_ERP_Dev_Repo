@@ -94,3 +94,13 @@ export const optional = <T extends z.ZodType>(schema: T) =>
   z.preprocess(blankToNull, schema.nullable());
 
 export const OptionalText = (max: number) => optional(z.string().trim().min(1).max(max));
+/** Company official email domain, stored lowercase without "@", e.g. uniqueinfraengineers.in (OQ-91). */
+export const EMAIL_DOMAIN_PATTERN =
+  /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
+
+export const EmailDomainSchema = z.string().trim().toLowerCase().regex(EMAIL_DOMAIN_PATTERN);
+
+/** True when the email ends with "@" + domain, ignoring case. */
+export function emailMatchesDomain(email: string, domain: string): boolean {
+  return email.trim().toLowerCase().endsWith(`@${domain.trim().toLowerCase()}`);
+}

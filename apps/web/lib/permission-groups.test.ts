@@ -99,6 +99,24 @@ describe('buildPermissionGroups', () => {
       approve: null,
     });
   });
+  it('adds manage only for HR screens', () => {
+    const hr = groups.find((group) => group.labelKey === 'hr');
+
+    expect(hr?.rows).toEqual([
+      {
+        labelKey: 'employees',
+        view: 'hr.employees.view',
+        manage: 'hr.employees.manage',
+        approve: null,
+      },
+      {
+        labelKey: 'designations',
+        view: 'hr.designations.view',
+        manage: 'hr.designations.manage',
+        approve: null,
+      },
+    ]);
+  });
 
   it('leaves manage and approve empty for screens without them', () => {
     const stores = groups.find((group) => group.labelKey === 'stores');

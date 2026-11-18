@@ -1,9 +1,11 @@
 import {
   Activity,
   Boxes,
+  Briefcase,
   Building2,
   ClipboardList,
   Component,
+  Contact,
   FileSearch,
   FileText,
   FolderKanban,
@@ -167,6 +169,23 @@ export const navigation: NavigationGroup[] = [
         href: '/masters/vendors',
         icon: Truck,
         permission: 'masters.vendors.view',
+      },
+    ],
+  },
+  {
+    labelKey: 'hr',
+    items: [
+      {
+        labelKey: 'employees',
+        href: '/hr/employees',
+        icon: Contact,
+        permission: 'hr.employees.view',
+      },
+      {
+        labelKey: 'designations',
+        href: '/hr/designations',
+        icon: Briefcase,
+        permission: 'hr.designations.view',
       },
     ],
   },
