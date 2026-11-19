@@ -13,6 +13,8 @@ import type { AccessContext } from '../access/access-context';
 import { AccessService } from '../access/access.service';
 import { ApiError } from '../common/errors/api-error';
 import { PrismaService } from '../prisma/prisma.service';
+import { employeeStatusOf } from '../hr/employees.mapper';
+import { todayIst } from '../hr/hr-dates';
 import type { AuthContext } from './auth.types';
 import {
   NO_CONTEXT,
@@ -94,7 +96,8 @@ export class AuthService {
 
     const passwordOk = await this.passwords.verify(user.passwordHash, request.password);
 
-    if (!user.isActive) {
+    // A user whose linked employee has left is refused like an inactive one (OQ-141).
+    if (!user.isActive || (await this.hasLeft(user.id))) {
       throw this.invalidCredentials();
     }
 
@@ -152,6 +155,11 @@ export class AuthService {
       session.expiresAt <= now ||
       !session.user.isActive
     ) {
+      return null;
+    }
+
+    // Checked on every request, so no scheduled job is needed when the leaving date arrives (OQ-141).
+    if (await this.hasLeft(session.user.id)) {
       return null;
     }
 
@@ -278,6 +286,16 @@ export class AuthService {
       projectId: project?.id ?? null,
       projectLabel: project?.label ?? null,
     };
+  }
+
+  /** True when the user's linked employee has a leaving date today or earlier, IST (OQ-134, OQ-141). */
+  private async hasLeft(userId: string): Promise<boolean> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId },
+      select: { dateOfLeaving: true },
+    });
+
+    return employee !== null && employeeStatusOf(employee.dateOfLeaving, todayIst()) === 'LEFT';
   }
 
   private contextNotAllowed(): ApiError {

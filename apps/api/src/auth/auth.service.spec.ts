@@ -7,6 +7,7 @@ import type { PrismaService } from '../prisma/prisma.service';
 import { AuthService, hashToken, LOCKOUT_MINUTES, MAX_FAILED_LOGINS } from './auth.service';
 import { LoginRateLimiter } from './login-rate-limiter';
 import { PasswordService } from './password.service';
+import { todayIst } from '../hr/hr-dates';
 
 const META = { ipAddress: '10.0.0.1', userAgent: 'jest' };
 
@@ -52,12 +53,16 @@ function createPrismaMock() {
     company: { findMany: jest.fn() },
     project: { findMany: jest.fn() },
     site: { findMany: jest.fn() },
+    employee: { findUnique: jest.fn() },
+
     $transaction: jest.fn(),
   };
   // No companies or projects exist unless a test says so.
   mock.company.findMany.mockResolvedValue([]);
   mock.project.findMany.mockResolvedValue([]);
   mock.site.findMany.mockResolvedValue([]);
+  // No linked employee unless a test says so.
+  mock.employee.findUnique.mockResolvedValue(null);
 
   return mock;
 }
@@ -722,5 +727,60 @@ describe('AuthService.resolveSession re-reads permissions on every request', () 
       where: { id: 'session-1' },
       data: { lastSeenAt: expect.any(Date) as unknown },
     });
+  });
+});
+describe('AuthService and employees who have left (OQ-141)', () => {
+  const todayDate = () => new Date(`${todayIst()}T00:00:00Z`);
+  const tomorrowDate = () => new Date(todayDate().getTime() + 86_400_000);
+
+  function sessionRow(user: FakeUser) {
+    return {
+      id: 'session-1',
+      revokedAt: null,
+      expiresAt: new Date(Date.now() + 3_600_000),
+      user,
+      currentCompany: null,
+      currentProject: null,
+    };
+  }
+
+  it('refuses sign-in once the leaving date is today, without creating a session', async () => {
+    const { prisma, service, user } = await setup();
+    prisma.user.findFirst.mockResolvedValue(user);
+    prisma.employee.findUnique.mockResolvedValue({ dateOfLeaving: todayDate() });
+
+    await expectApiError(
+      service.login({ identifier: 'EMP001', password: 'Correct1pass' }, META),
+      'INVALID_CREDENTIALS',
+    );
+    expect(prisma.session.create).not.toHaveBeenCalled();
+  });
+
+  it('allows sign-in while the leaving date is still in the future', async () => {
+    const { prisma, service, user } = await setup();
+    prisma.user.findFirst.mockResolvedValue(user);
+    prisma.employee.findUnique.mockResolvedValue({ dateOfLeaving: tomorrowDate() });
+
+    const result = await service.login({ identifier: 'EMP001', password: 'Correct1pass' }, META);
+
+    expect(result.me.username).toBe('EMP001');
+  });
+
+  it('ends an existing session once the leaving date has come', async () => {
+    const { prisma, service, user } = await setup();
+    prisma.session.findUnique.mockResolvedValue(sessionRow(user));
+    prisma.employee.findUnique.mockResolvedValue({ dateOfLeaving: todayDate() });
+
+    await expect(service.resolveSession('some-token')).resolves.toBeNull();
+    expect(prisma.session.update).not.toHaveBeenCalled();
+  });
+
+  it('keeps the session of a user with no linked employee', async () => {
+    const { prisma, service, user } = await setup();
+    prisma.session.findUnique.mockResolvedValue(sessionRow(user));
+
+    const auth = await service.resolveSession('some-token');
+
+    expect(auth?.user.username).toBe('EMP001');
   });
 });
