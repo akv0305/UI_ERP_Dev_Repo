@@ -8,6 +8,7 @@ import {
 import { normalizeText } from './items';
 import { ISO_DATE_PATTERN, MasterListQueryBase } from './masters';
 import { OptionalText, PhoneSchema, optional } from './validators';
+import { PasswordPolicy } from './auth';
 
 export const HR_ERROR_CODES = [
   'DUPLICATE_NAME',
@@ -20,6 +21,11 @@ export const HR_ERROR_CODES = [
   'INVALID_DATES',
   'COMPANY_IMMUTABLE',
   'CODE_CHANGE_REMARKS_REQUIRED',
+  'EMPLOYEE_NOT_ACTIVE',
+  'USER_ALREADY_LINKED',
+  'INVALID_USER',
+  'USERNAME_TAKEN',
+  'USER_EMAIL_TAKEN',
 ] as const;
 
 export type HrErrorCode = (typeof HR_ERROR_CODES)[number];
@@ -211,3 +217,27 @@ export const EmployeeFormOptionsResponse = z.object({
 });
 
 export type EmployeeFormOptionsResponse = z.infer<typeof EmployeeFormOptionsResponse>;
+// ---------- Sign-in user of an employee (OQ-135, OQ-137, OQ-148, OQ-149) ----------
+
+/** Username = Employee Code, display name = Full name, email = official email; no roles. */
+export const CreateEmployeeUserRequest = z.object({ temporaryPassword: PasswordPolicy });
+
+export type CreateEmployeeUserRequest = z.infer<typeof CreateEmployeeUserRequest>;
+
+/** Links an existing active, unlinked, non-administrator user; its username becomes the Employee Code. */
+export const LinkEmployeeUserRequest = z.object({ userId: z.uuid() });
+
+export type LinkEmployeeUserRequest = z.infer<typeof LinkEmployeeUserRequest>;
+
+export const LinkableUserOption = z.object({
+  id: z.uuid(),
+  /** "username — display name". */
+  label: z.string(),
+  email: z.string().nullable(),
+});
+
+export type LinkableUserOption = z.infer<typeof LinkableUserOption>;
+
+export const LinkableUsersResponse = z.object({ items: z.array(LinkableUserOption) });
+
+export type LinkableUsersResponse = z.infer<typeof LinkableUsersResponse>;

@@ -42,6 +42,9 @@ import {
   invalidEmailDomain,
   invalidWorkLocation,
 } from './hr-errors';
+import { PurchaseOrderApprovalsService } from '../purchase-order-approvals/purchase-order-approvals.service';
+import { toUserAuditSnapshot, userWithRolesInclude } from '../users/users.mapper';
+import { assertUserFieldsFree } from './employee-user-rules';
 
 const ENTITY = 'Employee';
 
@@ -66,6 +69,7 @@ export class EmployeesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly approvals: PurchaseOrderApprovalsService,
   ) {}
 
   async list(query: EmployeeListQuery, access: AccessContext): Promise<PagedEmployeesResponse> {
@@ -277,7 +281,13 @@ export class EmployeesService {
 
     await this.validate(fields, company, existing);
 
-    // The linked username follows a code change (OQ-135) once users can be linked (batch 4).
+    // Leaving date today or earlier (IST) ends the linked user's access now (OQ-141).
+    const leftNow = fields.dateOfLeaving !== null && fields.dateOfLeaving <= todayIst();
+
+    if (existing.userId !== null) {
+      await assertUserFieldsFree(this.prisma, fields.code, fields.officialEmail, existing.userId);
+    }
+
     const updated = await guardEmployeeUnique(() =>
       this.prisma.$transaction(async (tx) => {
         const employee = await tx.employee.update({
@@ -298,6 +308,10 @@ export class EmployeesService {
             ...(codeChanged ? { codeChangeRemarks } : {}),
           },
         });
+
+        if (existing.userId !== null) {
+          await this.syncLinkedUser(tx, existing.userId, employee, leftNow, actorId);
+        }
 
         return employee;
       }),
@@ -351,6 +365,62 @@ export class EmployeesService {
     });
 
     return toEmployeeResponse(updated, true, todayIst());
+  }
+
+  /**
+   * Username = Employee Code, display name = Full name, email = official email when entered
+   * (OQ-135, OQ-149); deactivated with sessions ended once the leaving date has come (OQ-141).
+   */
+  private async syncLinkedUser(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    employee: EmployeeWithRelations,
+    leftNow: boolean,
+    actorId: string,
+  ): Promise<void> {
+    const before = await tx.user.findUniqueOrThrow({
+      where: { id: userId },
+      include: userWithRolesInclude,
+    });
+    const data = {
+      username: employee.code,
+      displayName: employee.fullName,
+      email: employee.officialEmail ?? before.email,
+      isActive: leftNow ? false : before.isActive,
+    };
+
+    if (
+      data.username === before.username &&
+      data.displayName === before.displayName &&
+      data.email === before.email &&
+      data.isActive === before.isActive
+    ) {
+      return;
+    }
+
+    const after = await tx.user.update({
+      where: { id: userId },
+      data: { ...data, updatedById: actorId },
+      include: userWithRolesInclude,
+    });
+
+    if (before.isActive && !after.isActive) {
+      await tx.session.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      // Open approval levels may lose this approver (OQ-99, OQ-117), as in Users.
+      await this.approvals.reconcileOpenSteps(tx, actorId, { userId });
+    }
+
+    await this.audit.record(tx, {
+      actorUserId: actorId,
+      action: auditActionFor(before.isActive, after.isActive),
+      entityType: 'User',
+      entityId: userId,
+      before: toUserAuditSnapshot(before),
+      after: toUserAuditSnapshot(after),
+    });
   }
 
   /** 404 when out of scope, 403 when visible but view-only. */

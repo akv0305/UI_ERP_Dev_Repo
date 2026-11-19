@@ -68,6 +68,65 @@ export function codeChangeRemarksRequired(): ApiError {
   );
 }
 
+export function employeeNotActive(): ApiError {
+  return new ApiError(
+    HttpStatus.CONFLICT,
+    'EMPLOYEE_NOT_ACTIVE',
+    'Only an active employee who has not left can get a sign-in user',
+  );
+}
+
+export function userAlreadyLinked(): ApiError {
+  return new ApiError(
+    HttpStatus.CONFLICT,
+    'USER_ALREADY_LINKED',
+    'This employee or this user is already linked',
+  );
+}
+
+export function invalidUser(): ApiError {
+  return new ApiError(
+    HttpStatus.BAD_REQUEST,
+    'INVALID_USER',
+    'Choose an active user who is not an administrator',
+  );
+}
+
+export function usernameTaken(): ApiError {
+  return new ApiError(
+    HttpStatus.CONFLICT,
+    'USERNAME_TAKEN',
+    'Another user already has this employee code as username',
+  );
+}
+
+export function userEmailTaken(): ApiError {
+  return new ApiError(
+    HttpStatus.CONFLICT,
+    'USER_EMAIL_TAKEN',
+    'Another user already has this email',
+  );
+}
+
+/** Unique index hit while writing the user or the link: link -> USER_ALREADY_LINKED, email, else username. */
+export async function guardUserUnique<T>(work: () => Promise<T>): Promise<T> {
+  try {
+    return await work();
+  } catch (error) {
+    if (!isUniqueViolation(error)) {
+      throw error;
+    }
+
+    const detail = JSON.stringify((error as { meta?: unknown }).meta ?? {});
+
+    if (/userId/i.test(detail)) {
+      throw userAlreadyLinked();
+    }
+
+    throw /email/i.test(detail) ? userEmailTaken() : usernameTaken();
+  }
+}
+
 /** A concurrent save can still hit a unique index: email index -> DUPLICATE_EMAIL, else the code. */
 export async function guardEmployeeUnique<T>(work: () => Promise<T>): Promise<T> {
   try {

@@ -3,12 +3,30 @@ import { AuditService } from '../audit/audit.service';
 import { codeOf, globalAccess, scopedAccess, TransactionRecorder } from '../masters/test-harness';
 import type { PrismaService } from '../prisma/prisma.service';
 import { EmployeesService } from './employees.service';
+import type { PurchaseOrderApprovalsService } from '../purchase-order-approvals/purchase-order-approvals.service';
+import { todayIst } from './hr-dates';
 
 const ACTOR = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const COMPANY_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 const OTHER_COMPANY_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const EMPLOYEE_ID = '11111111-1111-4111-8111-111111111111';
 const PROJECT_ID = '22222222-2222-4222-8222-222222222222';
+const USER_ID = '33333333-3333-4333-8333-333333333333';
+
+function linkedUserRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: USER_ID,
+    username: 'UIEPL/HO/004',
+    email: null,
+    displayName: 'Ravi Kumar',
+    isActive: true,
+    mustChangePassword: false,
+    roles: [],
+    ...overrides,
+  };
+}
+
+const LINKED = { userId: USER_ID, user: { id: USER_ID, username: 'UIEPL/HO/004', isActive: true } };
 
 function employeeRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -69,6 +87,11 @@ function setup(lastNumber: number | null = 3) {
       create: recorder.write('employee.create', () => employeeRow()),
       update: recorder.write('employee.update', () => employeeRow()),
     },
+    user: {
+      findUniqueOrThrow: jest.fn(async () => linkedUserRow()),
+      update: recorder.write('user.update', () => linkedUserRow({ username: 'UIEPL/HO/005' })),
+    },
+    session: { updateMany: recorder.write('session.updateMany', () => ({ count: 1 })) },
     auditEvent: { create: recorder.write('auditEvent.create') },
   };
   const prisma = {
@@ -83,6 +106,7 @@ function setup(lastNumber: number | null = 3) {
       count: jest.fn(),
     },
     $transaction: jest.fn(recorder.run(tx)),
+    user: { findFirst: jest.fn() },
   };
   prisma.company.findUnique.mockResolvedValue({
     id: COMPANY_ID,
@@ -90,10 +114,15 @@ function setup(lastNumber: number | null = 3) {
     emailDomain: 'uniqueinfraengineers.in',
   });
   prisma.employee.findFirst.mockResolvedValue(null);
+  prisma.user.findFirst.mockResolvedValue(null);
+  const approvals = { reconcileOpenSteps: jest.fn(async () => undefined) };
+  const service = new EmployeesService(
+    prisma as unknown as PrismaService,
+    new AuditService(),
+    approvals as unknown as PurchaseOrderApprovalsService,
+  );
 
-  const service = new EmployeesService(prisma as unknown as PrismaService, new AuditService());
-
-  return { prisma, tx, recorder, service };
+  return { prisma, tx, recorder, service, approvals };
 }
 
 describe('EmployeesService.create', () => {
@@ -232,5 +261,67 @@ describe('EmployeesService.update and access', () => {
       canManage: false,
       canCreateUser: false,
     });
+  });
+});
+describe('EmployeesService.update with a linked user', () => {
+  it('renames the linked username with the code, in the same transaction (OQ-135)', async () => {
+    const { prisma, tx, recorder, service } = setup();
+    prisma.employee.findUnique.mockResolvedValue(employeeRow(LINKED));
+    tx.employee.update = recorder.write('employee.update', () =>
+      employeeRow({ ...LINKED, code: 'UIEPL/HO/005' }),
+    );
+
+    await service.update(
+      EMPLOYEE_ID,
+      { ...FIELDS, code: 'UIEPL/HO/005', codeChangeRemarks: 'Typo in import' },
+      ACTOR,
+      globalAccess(),
+    );
+
+    const data = (tx.user.update.mock.calls[0] as [{ data: Record<string, unknown> }])[0].data;
+
+    expect(data).toMatchObject({ username: 'UIEPL/HO/005', isActive: true });
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(recorder.audit()).toEqual(
+      expect.arrayContaining([expect.objectContaining({ entityType: 'User', action: 'UPDATE' })]),
+    );
+  });
+
+  it('refuses a code that another user already has as username', async () => {
+    const { prisma, service } = setup();
+    prisma.employee.findUnique.mockResolvedValue(employeeRow(LINKED));
+    prisma.user.findFirst.mockResolvedValue({ id: 'other' });
+
+    await expect(
+      codeOf(
+        service.update(
+          EMPLOYEE_ID,
+          { ...FIELDS, code: 'UIEPL/HO/005', codeChangeRemarks: 'Typo' },
+          ACTOR,
+          globalAccess(),
+        ),
+      ),
+    ).resolves.toBe('USERNAME_TAKEN');
+  });
+
+  it('deactivates the linked user and ends sessions when the leaving date is today (OQ-141)', async () => {
+    const { prisma, tx, recorder, service, approvals } = setup();
+    prisma.employee.findUnique.mockResolvedValue(employeeRow(LINKED));
+    tx.user.update = recorder.write('user.update', () => linkedUserRow({ isActive: false }));
+
+    await service.update(
+      EMPLOYEE_ID,
+      { ...FIELDS, dateOfLeaving: todayIst(), codeChangeRemarks: null },
+      ACTOR,
+      globalAccess(),
+    );
+
+    expect(recorder.tables()).toContain('session.updateMany');
+    expect(approvals.reconcileOpenSteps).toHaveBeenCalledTimes(1);
+    expect(recorder.audit()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ entityType: 'User', action: 'DEACTIVATE' }),
+      ]),
+    );
   });
 });
