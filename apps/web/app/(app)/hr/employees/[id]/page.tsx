@@ -17,6 +17,7 @@ import {
 import { EmploymentStatus } from '../_components/employment-status';
 import { EmployeeForm } from '../employee-form';
 import { EmployeeActions } from './employee-actions';
+import { EmployeeUserActions } from './employee-user-actions';
 
 const t = terminology.employees;
 const notSet = terminology.labels.notSet;
@@ -55,6 +56,7 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
   const actions = (
     <>
       {history}
+      {employee.canCreateUser ? <EmployeeUserActions employee={employee} /> : null}
       {employee.canManage ? <EmployeeActions employee={employee} /> : null}
     </>
   );
