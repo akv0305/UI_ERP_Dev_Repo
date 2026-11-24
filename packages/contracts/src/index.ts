@@ -46,3 +46,5 @@ export * from './approval-workflows';
 export * from './notifications';
 
 export * from './hr';
+
+export * from './employee-import';

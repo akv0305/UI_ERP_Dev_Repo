@@ -1,8 +1,39 @@
 # UIE ERP — CONTEXT (read first, every session)
 
-Client: Unique Infra Engineers Pvt Ltd, Hyderabad (infra/EPC). Developer: PNM Smart Solutions.
-Source authority: signed contract (if any) > approved proposal (client-inputs/) > client process
-statement > client samples > CQ answers > PD/OQ decisions. Register: docs/REGISTER.md.
+Client: Unique Infra Engineers Pvt Ltd, Hyderabad. Developer: PNM Smart Solutions.
+Authority: contract > approved proposal > client process statement > samples > CQ > PD/OQ.
+Register: docs/REGISTER.md (next-free header). Patterns: docs/PATTERNS.md. Current task: docs/NEXT.md.
+
+## Stack
+apps/web — Next.js, TS strict, Tailwind, shadcn/ui; no DB access (PD-012). components/erp/ frozen;
+all wording in config/terminology.ts; theme in config/theme.ts; pages fetch (container), components props-only (presenter).
+apps/api — NestJS, Prisma 7, PostgreSQL on Neon. Service + mapper + <module>-errors.ts per module.
+Audit Log written in the same transaction (PD-004). Numbers gapless via series lock (PD-003/041).
+packages/contracts — one Zod schema file per entity + permission codes; web reads its built dist.
+Auth: argon2id, PostgreSQL sessions, httpOnly cookie; scoped roles GLOBAL/COMPANY/PROJECT/SITE (PD-037).
+Not in dev: Redis, worker, Docker, file storage, email.
+
+## Local
+Windows 10, PowerShell, VS Code, Node 22, pnpm. web :3000, api :3001. Secrets only in apps/api/.env.
+
+## Rules (binding)
+1. Never guess fields, files, components, props. Read the file at the commit SHA first.
+2. File won't load → ask owner to paste it or Select-String output. Large files in chunks.
+3. Numbers (PD, CQ, OQ, PDEF, CR) only from the REGISTER.md header; check the header against the last row of each section; never reuse.
+4. Business questions → OQ rows before code, each with a recommended option.
+5. Every batch includes docs changes in the existing format.
+6. Fix only real errors, from the real file.
+7. Never commit client personal data (PDEF-048). Test data synthetic only.
+8. Outside Phase A scope → CR, not code.
+
+## Batch workflow (PD-039)
+1. Branch dev/G-xx from main. 2. Claude gives complete files (full path) + commands.
+3. Owner runs pnpm typecheck, lint, test; pastes full errors. 4. Migrations: create-only → SQL reviewed → apply.
+5. Commit, push, CI green → owner sends SHA + CI # → Claude reviews raw files → next batch.
+6. Group done → ff-merge to main. One batch at a time.
+
+## On hold
+PO print · approval delegation (OQ-97) · PDEF-048 repo history.
 
 ## Rules (binding)
 
