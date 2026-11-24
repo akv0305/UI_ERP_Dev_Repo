@@ -10,7 +10,8 @@ import {
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { z } from 'zod';
-import { FormLayout, FormSection, SwitchField, TextField } from '@/components/erp';
+import { FieldShell, FormLayout, FormSection, SwitchField, TextField } from '@/components/erp';
+import { Input } from '@/components/ui/input';
 import { terminology } from '@/config/terminology';
 import { apiRequest, messageForApiError } from '@/lib/api/client';
 import {
@@ -63,6 +64,8 @@ export function UserForm({ user, roleOptions, scopeOptions }: UserFormProps) {
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const isEdit = user !== undefined;
+  // Username, display name and email come from the employee (OQ-150); kept from defaults on save.
+  const linked = user?.employee != null;
 
   // Defaults are only read when the form mounts.
   const [defaults] = useState(() => ({
@@ -124,21 +127,46 @@ export function UserForm({ user, roleOptions, scopeOptions }: UserFormProps) {
         onCancel={() => router.push('/administration/users')}
       >
         <FormSection title={terminology.users.sectionAccount}>
-          <TextField<UserFormValues>
-            name="username"
-            label={terminology.users.fieldUsername}
-            required
-          />
-          <TextField<UserFormValues>
-            name="displayName"
-            label={terminology.users.fieldDisplayName}
-            required
-          />
-          <TextField<UserFormValues>
-            name="email"
-            label={terminology.users.fieldEmail}
-            type="email"
-          />
+          {linked ? (
+            <>
+              <FieldShell
+                id="field-username-linked"
+                label={terminology.users.fieldUsername}
+                description={terminology.users.linkedFieldsHint}
+              >
+                <Input id="field-username-linked" value={user?.username ?? ''} readOnly disabled />
+              </FieldShell>
+              <FieldShell id="field-display-name-linked" label={terminology.users.fieldDisplayName}>
+                <Input
+                  id="field-display-name-linked"
+                  value={user?.displayName ?? ''}
+                  readOnly
+                  disabled
+                />
+              </FieldShell>
+              <FieldShell id="field-email-linked" label={terminology.users.fieldEmail}>
+                <Input id="field-email-linked" value={user?.email ?? ''} readOnly disabled />
+              </FieldShell>
+            </>
+          ) : (
+            <>
+              <TextField<UserFormValues>
+                name="username"
+                label={terminology.users.fieldUsername}
+                required
+              />
+              <TextField<UserFormValues>
+                name="displayName"
+                label={terminology.users.fieldDisplayName}
+                required
+              />
+              <TextField<UserFormValues>
+                name="email"
+                label={terminology.users.fieldEmail}
+                type="email"
+              />
+            </>
+          )}
           {isEdit ? null : (
             <TextField<UserFormValues>
               name="temporaryPassword"

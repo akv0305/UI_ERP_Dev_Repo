@@ -99,11 +99,15 @@ function setup() {
     company: { findMany: jest.fn() },
     project: { findMany: jest.fn() },
     site: { findMany: jest.fn() },
+    employee: { findUnique: jest.fn(), findMany: jest.fn() },
     $transaction: jest.fn(),
   };
   const passwords = { hash: jest.fn() };
   passwords.hash.mockResolvedValue('hashed');
   prisma.user.findFirst.mockResolvedValue(null);
+  // No linked employee unless a test says so.
+  prisma.employee.findUnique.mockResolvedValue(null);
+  prisma.employee.findMany.mockResolvedValue([]);
   // Default: every requested role exists and holds no administration permission.
   prisma.role.findMany.mockImplementation(async (args: unknown) => {
     const ids = (args as { where: { id: { in: string[] } } }).where.id.in;
@@ -731,5 +735,68 @@ describe('item manage/approve roles are global-only (OQ-34)', () => {
     const result = await service.roleOptions();
 
     expect(result.items[0]?.requiresGlobalScope).toBe(true);
+  });
+});
+
+describe('UsersService and a linked employee (OQ-150)', () => {
+  const EMPLOYEE = {
+    id: 'ffffffff-ffff-4fff-8fff-ffffffffffff',
+    employeeNo: 'EMP-000001',
+    code: 'UIEPL/HO/001',
+    dateOfLeaving: null,
+  };
+
+  it('refuses a username change of a linked user with LINKED_TO_EMPLOYEE', async () => {
+    const { prisma, service } = setup();
+    prisma.user.findUnique.mockResolvedValue(userRow({ roles: [link(OTHER_ROLE)] }));
+    prisma.employee.findUnique.mockResolvedValue(EMPLOYEE);
+
+    await expect(
+      codeOf(
+        service.update(
+          TARGET_ID,
+          { ...baseUpdate, username: 'renamed', assignments: [global(OTHER_ROLE.id)] },
+          ACTOR_ID,
+        ),
+      ),
+    ).resolves.toBe('LINKED_TO_EMPLOYEE');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('still lets roles change on a linked user and returns the employee', async () => {
+    const { prisma, service } = setup();
+    prisma.user.findUnique.mockResolvedValue(userRow({ roles: [link(OTHER_ROLE)] }));
+    prisma.employee.findUnique.mockResolvedValue(EMPLOYEE);
+
+    const result = await service.update(
+      TARGET_ID,
+      { ...baseUpdate, assignments: [global(OTHER_ROLE.id), global(PM_ROLE.id)] },
+      ACTOR_ID,
+    );
+
+    expect(result.employee).toEqual({
+      id: EMPLOYEE.id,
+      employeeNo: 'EMP-000001',
+      code: 'UIEPL/HO/001',
+      status: 'ACTIVE',
+    });
+  });
+
+  it('shows Left in the list once the leaving date has come', async () => {
+    const { prisma, service } = setup();
+    prisma.user.count.mockResolvedValue(1);
+    prisma.user.findMany.mockResolvedValue([userRow()]);
+    prisma.employee.findMany.mockResolvedValue([
+      { ...EMPLOYEE, userId: TARGET_ID, dateOfLeaving: new Date('2026-01-01T00:00:00Z') },
+    ]);
+
+    const page = await service.list({
+      page: 1,
+      pageSize: 20,
+      sortBy: 'username',
+      sortDir: 'asc',
+    });
+
+    expect(page.items[0]?.employee?.status).toBe('LEFT');
   });
 });

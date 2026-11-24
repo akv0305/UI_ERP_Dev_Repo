@@ -1,5 +1,5 @@
 import type { Prisma } from '@prisma/client';
-import type { UserResponse } from '@uie/contracts';
+import type { UserEmployeeSummary, UserResponse } from '@uie/contracts';
 import {
   assignmentInclude,
   describeAssignment,
@@ -13,7 +13,10 @@ export const userWithRolesInclude = {
 
 export type UserWithRoles = Prisma.UserGetPayload<{ include: typeof userWithRolesInclude }>;
 
-export function toUserResponse(user: UserWithRoles): UserResponse {
+export function toUserResponse(
+  user: UserWithRoles,
+  employee: UserEmployeeSummary | null = null,
+): UserResponse {
   const distinctRoles = new Map<string, { id: string; code: string; name: string }>();
 
   for (const link of user.roles) {
@@ -38,6 +41,7 @@ export function toUserResponse(user: UserWithRoles): UserResponse {
     updatedAt: user.updatedAt.toISOString(),
     roles: [...distinctRoles.values()].sort((a, b) => a.name.localeCompare(b.name)),
     assignments: sortAssignments(user.roles.map(toAssignmentResponse)),
+    employee,
   };
 }
 

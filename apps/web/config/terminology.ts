@@ -208,6 +208,11 @@ export const terminology = {
     infoCreated: 'Created',
     infoUpdated: 'Updated',
     never: 'Never',
+    columnEmployee: 'Employee',
+    infoEmployee: 'Employee',
+    notLinked: 'Not linked',
+    employmentLeft: 'Left',
+    linkedFieldsHint: 'Linked to an employee: change these on the employee record.',
     notLocked: 'Not locked',
     locked: 'Locked',
     noRoles: 'No roles',
@@ -1890,6 +1895,8 @@ export const terminology = {
       'This vendor already has a draft or submitted quotation for this enquiry. Open it, or revise the submitted one.',
     INVALID_LINES:
       'Check the lines: every quoted line needs a rate and GST %, and its item must still be approved and active.',
+    LINKED_TO_EMPLOYEE:
+      'This user is linked to an employee. Change the username, display name and email on the employee record.',
   },
   gallery: {
     description: 'Every shared component rendered with sample data.',

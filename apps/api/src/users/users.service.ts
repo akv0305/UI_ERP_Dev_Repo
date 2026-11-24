@@ -10,6 +10,7 @@ import {
   type RoleOptionsResponse,
   type ScopeOptionsResponse,
   type UpdateUserRequest,
+  type UserEmployeeSummary,
   type UserListQuery,
   type UserResponse,
 } from '@uie/contracts';
@@ -19,6 +20,8 @@ import { auditActionFor } from '../audit/audit-action';
 import { AuditService } from '../audit/audit.service';
 import { ApiError } from '../common/errors/api-error';
 import { PrismaService } from '../prisma/prisma.service';
+import { employeeStatusOf } from '../hr/employees.mapper';
+import { todayIst } from '../hr/hr-dates';
 import { PurchaseOrderApprovalsService } from '../purchase-order-approvals/purchase-order-approvals.service';
 import {
   toUserAuditSnapshot,
@@ -92,7 +95,7 @@ export class UsersService {
     ]);
 
     return {
-      items: users.map(toUserResponse),
+      items: await this.withEmployees(users),
       total,
       page: query.page,
       pageSize: query.pageSize,
@@ -170,7 +173,7 @@ export class UsersService {
       throw this.notFound();
     }
 
-    return toUserResponse(user);
+    return toUserResponse(user, await this.employeeOf(user.id));
   }
 
   async create(request: CreateUserRequest, actorId: string): Promise<UserResponse> {
@@ -237,6 +240,22 @@ export class UsersService {
       );
     }
 
+    // A linked user's username, display name and email come from the employee (OQ-135, OQ-150).
+    const employee = await this.employeeOf(id);
+
+    if (
+      employee !== null &&
+      (request.username !== existing.username ||
+        request.displayName !== existing.displayName ||
+        request.email !== existing.email)
+    ) {
+      throw new ApiError(
+        HttpStatus.CONFLICT,
+        'LINKED_TO_EMPLOYEE',
+        'Change the username, display name and email on the employee record',
+      );
+    }
+
     await this.assertUnique(request.username, request.email, id);
 
     // Assignments the user already holds may point at targets that were deactivated since.
@@ -300,7 +319,7 @@ export class UsersService {
       return user;
     });
 
-    return toUserResponse(updated);
+    return toUserResponse(updated, employee);
   }
 
   async resetPassword(id: string, request: ResetPasswordRequest, actorId: string): Promise<void> {
@@ -561,6 +580,45 @@ export class UsersService {
         'The last active administrator cannot be deactivated or lose the Administrator role',
       );
     }
+  }
+
+  /** The employee linked to this user, if any (employees.userId is unique). */
+  private async employeeOf(userId: string): Promise<UserEmployeeSummary | null> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId },
+      select: { id: true, employeeNo: true, code: true, dateOfLeaving: true },
+    });
+
+    return employee === null ? null : this.toEmployeeSummary(employee);
+  }
+
+  /** One query for the whole page of users. */
+  private async withEmployees(users: UserWithRoles[]): Promise<UserResponse[]> {
+    const employees = await this.prisma.employee.findMany({
+      where: { userId: { in: users.map((user) => user.id) } },
+      select: { id: true, employeeNo: true, code: true, dateOfLeaving: true, userId: true },
+    });
+    const byUser = new Map(employees.map((employee) => [employee.userId, employee]));
+
+    return users.map((user) => {
+      const employee = byUser.get(user.id);
+
+      return toUserResponse(user, employee === undefined ? null : this.toEmployeeSummary(employee));
+    });
+  }
+
+  private toEmployeeSummary(employee: {
+    id: string;
+    employeeNo: string;
+    code: string;
+    dateOfLeaving: Date | null;
+  }): UserEmployeeSummary {
+    return {
+      id: employee.id,
+      employeeNo: employee.employeeNo,
+      code: employee.code,
+      status: employeeStatusOf(employee.dateOfLeaving, todayIst()),
+    };
   }
 
   private notFound(): ApiError {

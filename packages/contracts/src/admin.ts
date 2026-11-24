@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { RoleAssignmentInput, RoleAssignmentResponse } from './access';
 import { PasswordPolicy, PermissionCode } from './auth';
+import { EmployeeStatus } from './hr';
 
 export const ADMIN_ERROR_CODES = [
   'LAST_ADMINISTRATOR',
@@ -11,6 +12,7 @@ export const ADMIN_ERROR_CODES = [
   'DUPLICATE_ROLE_CODE',
   'NOT_FOUND',
   'INVALID_ROLE',
+  'LINKED_TO_EMPLOYEE',
 ] as const;
 
 export type AdminErrorCode = (typeof ADMIN_ERROR_CODES)[number];
@@ -56,6 +58,16 @@ export const UserRoleSummary = z.object({
 
 export type UserRoleSummary = z.infer<typeof UserRoleSummary>;
 
+/** The employee this user signs in for (OQ-148, OQ-149); its code/name/email drive the user (OQ-150). */
+export const UserEmployeeSummary = z.object({
+  id: z.uuid(),
+  employeeNo: z.string(),
+  code: z.string(),
+  status: EmployeeStatus,
+});
+
+export type UserEmployeeSummary = z.infer<typeof UserEmployeeSummary>;
+
 export const UserResponse = z.object({
   id: z.uuid(),
   username: z.string(),
@@ -71,6 +83,8 @@ export const UserResponse = z.object({
   /** Distinct roles held, for list display. */
   roles: z.array(UserRoleSummary),
   assignments: z.array(RoleAssignmentResponse),
+  /** Linked employee, or null. When set, username, display name and email are read-only (OQ-150). */
+  employee: UserEmployeeSummary.nullable(),
 });
 
 export type UserResponse = z.infer<typeof UserResponse>;

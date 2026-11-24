@@ -36,6 +36,15 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
     <KeyValueGrid
       items={[
         {
+          label: terminology.users.infoEmployee,
+          value:
+            user.employee === null
+              ? terminology.users.notLinked
+              : user.employee.status === 'LEFT'
+                ? `${user.employee.code} (${terminology.users.employmentLeft})`
+                : user.employee.code,
+        },
+        {
           label: terminology.users.infoLastLogin,
           value: formatOptional(user.lastLoginAt, terminology.users.never),
         },
@@ -105,7 +114,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
   return (
     <div className="flex flex-col gap-4">
       <PageHeader title={terminology.users.editUser} subtitle={user.username} />
-      <section className="rounded-lg border border-border bg-surface p-[var(--card-padding)]">
+      <section className="rounded-lg border border-border bg-surface p-(--card-padding)">
         <h2 className="mb-3 text-sm font-semibold text-foreground">
           {terminology.users.sectionInfo}
         </h2>

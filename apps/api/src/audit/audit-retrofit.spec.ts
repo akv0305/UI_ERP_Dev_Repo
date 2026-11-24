@@ -110,6 +110,7 @@ function setup() {
     company: { findMany: jest.fn() },
     project: { findMany: jest.fn() },
     site: { findMany: jest.fn() },
+    employee: { findUnique: jest.fn(async () => null), findMany: jest.fn(async () => []) },
     // An audit write on the top-level client (outside the transaction) would throw.
     auditEvent: {
       create: jest.fn(() => {

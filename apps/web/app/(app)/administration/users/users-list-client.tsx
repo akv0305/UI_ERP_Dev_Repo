@@ -45,14 +45,23 @@ const columns: DataTableColumn<UserResponse>[] = [
         : row.original.roles.map((role) => role.name).join(', '),
   },
   {
+    id: 'employee',
+    header: terminology.users.columnEmployee,
+    enableSorting: false,
+    cell: ({ row }) => row.original.employee?.code ?? '',
+  },
+  {
     id: 'status',
     header: terminology.users.columnStatus,
     enableSorting: false,
-    cell: ({ row }) => (
-      <span className={row.original.isActive ? 'text-success' : 'text-muted-foreground'}>
-        {row.original.isActive ? terminology.labels.active : terminology.labels.inactive}
-      </span>
-    ),
+    cell: ({ row }) =>
+      row.original.employee?.status === 'LEFT' ? (
+        <span className="text-muted-foreground">{terminology.users.employmentLeft}</span>
+      ) : (
+        <span className={row.original.isActive ? 'text-success' : 'text-muted-foreground'}>
+          {row.original.isActive ? terminology.labels.active : terminology.labels.inactive}
+        </span>
+      ),
   },
   {
     accessorKey: 'lastLoginAt',
